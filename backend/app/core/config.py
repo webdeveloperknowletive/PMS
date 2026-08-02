@@ -30,13 +30,13 @@ load_dotenv()
 # Application Configuration
 # ==========================================================
 
-APP_NAME = os.getenv("APP_NAME", "Student Management System")
+APP_NAME = os.getenv("APP_NAME", "Project Management System")
 
 APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
 
 APP_DESCRIPTION = os.getenv(
     "APP_DESCRIPTION",
-    "Production Ready Student Management API",
+    "Production Ready Project Management API",
 )
 
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
@@ -49,7 +49,7 @@ DB_HOST = os.getenv("DB_HOST", "localhost")
 
 DB_PORT = int(os.getenv("DB_PORT", 5432))
 
-DB_NAME = os.getenv("DB_NAME", "student_db")
+DB_NAME = os.getenv("DB_NAME", "pms_db")
 
 DB_USER = os.getenv("DB_USER", "postgres")
 

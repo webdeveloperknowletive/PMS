@@ -44,7 +44,7 @@ file_handler.setFormatter(formatter)
 # Logger Configuration
 # ==========================================================
 
-logger = logging.getLogger("StudentManagementAPI")
+logger = logging.getLogger("ProjectManagementAPI")
 
 logger.setLevel(logging.INFO)
 

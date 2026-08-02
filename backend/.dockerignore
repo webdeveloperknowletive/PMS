@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment variables
+.env
+*.env
+
+# Caches
+.pytest_cache/
+.mypy_cache/
+
+# Logs
+*.log
+
