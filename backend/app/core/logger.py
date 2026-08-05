@@ -6,7 +6,7 @@ from logging.handlers import RotatingFileHandler
 # Create Logs Directory
 # ==========================================================
 
-LOG_DIR = "backend/logs"
+LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
 # ==========================================================

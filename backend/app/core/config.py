@@ -34,10 +34,9 @@ APP_NAME = os.getenv("APP_NAME", "Project Management System")
 
 APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
 
-APP_DESCRIPTION = os.getenv(
-    "APP_DESCRIPTION",
-    "Production Ready Project Management API",
-)
+API_V1_PREFIX = os.getenv("API_V1_PREFIX", "/api/v1")
+
+APP_DESCRIPTION = os.getenv("APP_DESCRIPTION",  "Production Ready Project Management API",)
 
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
@@ -55,9 +54,9 @@ DB_USER = os.getenv("DB_USER", "postgres")
 
 DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
 
-DATABASE_URL = (
-    f"postgresql://{DB_USER}:{DB_PASSWORD}"
-    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 
 # ==========================================================
@@ -104,6 +103,7 @@ ALLOW_ORIGINS = [
 # ==========================================================
 # Display Configuration (For Learning)
 # ==========================================================
+
 
 if __name__ == "__main__":
 

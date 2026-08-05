@@ -3,12 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.router import api_router
 from app.lifespan import lifespan
-from backend.core.logger import logger
+from app.core.logger import logger
 
-from core.config import (
+from app.core.exceptions import register_exception_handlers
+
+from app.core.config import (
     APP_NAME,
     APP_VERSION,
     APP_DESCRIPTION,
+    API_V1_PREFIX,
 )
 
 app = FastAPI(
@@ -33,8 +36,9 @@ app.add_middleware(
 # ==========================================================
 # Register API Routes
 # ==========================================================
+print(f"API_V1_PREFIX = '{API_V1_PREFIX}'")
 
-app.include_router(api_router)
+app.include_router(api_router, prefix=API_V1_PREFIX)
 
 # ==========================================================
 # Root Endpoint
