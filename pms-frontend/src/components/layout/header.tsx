@@ -13,14 +13,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { getInitials, stringToColor } from "@/lib/utils";
-import { useNotifications } from "@/hooks/queries/use-notifications";
+import { useQuery } from "@tanstack/react-query";
+import { notificationsApi } from "@/lib/api/notifications";
+import { NOTIFICATIONS_KEY } from "@/hooks/queries/use-notifications";
 import Link from "next/link";
 
 export function Header() {
   const { user, logout } = useAuth();
 
-  const { data: notifications } = useNotifications();
-  const unreadCount = notifications?.filter((n) => !n.is_read).length ?? 0;
+  // Same key + queryFn as useNotifications() in hooks/queries/use-notifications.ts —
+  // React Query dedupes this into one shared fetch instead of two separate calls.
+  const { data: notifications } = useQuery({
+    queryKey: [NOTIFICATIONS_KEY, user?.user_id],
+    queryFn: () => notificationsApi.list({ limit: 500 }),
+    enabled: !!user,
+    select: (data) => data.filter((n) => !n.is_read && n.user_id === user?.user_id),
+  });
+
+  const unreadCount = notifications?.length ?? 0;
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-6">
@@ -74,4 +84,4 @@ export function Header() {
       </div>
     </header>
   );
-}
+} 

@@ -7,35 +7,42 @@ import type { Notification } from "@/types/notification";
 
 /**
  * Shared query key across the header bell and the /notifications page so
- * both read from (and invalidate) the same cache entry.
+ * both read from (and invalidate) the exact same cache entry.
  */
 export const NOTIFICATIONS_KEY = "notifications";
 
+/**
+ * GET /notifications has NO server-side user filter — it returns every
+ * user's rows. The `select` below is mandatory: without it this hook would
+ * mix every user's notifications together.
+ */
 export function useNotifications() {
   const user = useAuthStore((s) => s.user);
   return useQuery({
     queryKey: [NOTIFICATIONS_KEY, user?.user_id],
-    queryFn: () => notificationsApi.list({ limit: 100 }),
+    queryFn: () => notificationsApi.list({ limit: 500 }),
     enabled: !!user,
+    select: (data) => data.filter((n) => n.user_id === user?.user_id),
   });
 }
 
+/** Toggles read/unread — pass the target state explicitly rather than assuming "mark read". */
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   return useMutation({
-    mutationFn: (notificationId: string) => notificationsApi.update(notificationId, { is_read: true }),
+    mutationFn: ({ id, is_read }: { id: string; is_read: boolean }) => notificationsApi.update(id, { is_read }),
     // Optimistic update so the badge/list feel instant instead of waiting on a refetch.
-    onMutate: async (notificationId) => {
+    onMutate: async ({ id, is_read }) => {
       const key = [NOTIFICATIONS_KEY, user?.user_id];
       await queryClient.cancelQueries({ queryKey: key });
       const previous = queryClient.getQueryData<Notification[]>(key);
       queryClient.setQueryData<Notification[]>(key, (old) =>
-        old?.map((n) => (n.notification_id === notificationId ? { ...n, is_read: true } : n))
+        old?.map((n) => (n.notification_id === id ? { ...n, is_read } : n))
       );
       return { previous };
     },
-    onError: (_err, _id, context) => {
+    onError: (_err, _vars, context) => {
       if (context?.previous) queryClient.setQueryData([NOTIFICATIONS_KEY, user?.user_id], context.previous);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY, user?.user_id] }),

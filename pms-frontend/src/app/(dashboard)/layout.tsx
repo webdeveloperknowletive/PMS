@@ -6,10 +6,13 @@ import { Loader2 } from "lucide-react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { useAuthStore } from "@/store/auth-store";
+import { useEventReminders } from "@/hooks/use-event-reminders";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, isInitializing } = useAuthStore();
+
+  useEventReminders(); // polls for upcoming events across the whole app while a session is active
 
   useEffect(() => {
     if (!isInitializing && !isAuthenticated) {
