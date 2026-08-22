@@ -25,6 +25,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 const CORE_MODULES = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -48,8 +49,8 @@ const AI_MODULES = [
   { label: "AI Meeting Summary", href: "/ai/meeting-summary", icon: MessageSquareText },
 ];
 
-const SYSTEM_MODULES = [
-  { label: "Notifications", href: "/notifications", icon: Bell },
+// These are only shown to admins (see useIsAdmin — heuristic based on role name containing "admin").
+const ADMIN_ONLY_MODULES = [
   { label: "Roles & Permissions", href: "/roles", icon: ShieldCheck },
   { label: "Users", href: "/users", icon: UserCog },
 ];
@@ -79,6 +80,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function Sidebar() {
+  const { isAdmin } = useIsAdmin();
+
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-border bg-sidebar">
       <div className="flex items-center gap-2 px-5 py-5">
@@ -86,7 +89,7 @@ export function Sidebar() {
           <FolderKanban className="h-4 w-4 text-white" />
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-bold text-foreground">SprintIX</p>
+          <p className="text-sm font-bold text-foreground">PMS</p>
           <p className="text-[10px] text-muted-foreground">Project Management System</p>
         </div>
       </div>
@@ -112,12 +115,21 @@ export function Sidebar() {
           ))}
         </div>
 
-        <SectionLabel>System</SectionLabel>
+        <SectionLabel>Notifications</SectionLabel>
         <div className="space-y-0.5">
-          {SYSTEM_MODULES.map((item) => (
-            <NavLink key={item.href} {...item} />
-          ))}
+          <NavLink href="/notifications" label="Notifications" icon={Bell} />
         </div>
+
+        {isAdmin && (
+          <>
+            <SectionLabel>System</SectionLabel>
+            <div className="space-y-0.5">
+              {ADMIN_ONLY_MODULES.map((item) => (
+                <NavLink key={item.href} {...item} />
+              ))}
+            </div>
+          </>
+        )}
       </nav>
 
       <div className="border-t border-border p-3">

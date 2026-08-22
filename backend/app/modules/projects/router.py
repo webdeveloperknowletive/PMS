@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.modules.projects.model import Project
 from app.modules.projects.schema import ProjectCreate, ProjectRead, ProjectUpdate
+from app.modules.projects.permissions import can_manage_projects, can_view_projects
 
 router = APIRouter(
     prefix="/projects",
@@ -13,7 +14,12 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=list[ProjectRead], status_code=status.HTTP_200_OK)
+@router.get(
+    "/",
+    response_model=list[ProjectRead],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_projects)],
+)
 async def get_projects(
     skip: int = 0,
     limit: int = 100,
@@ -22,7 +28,12 @@ async def get_projects(
     return db.query(Project).offset(skip).limit(limit).all()
 
 
-@router.get("/{project_id}", response_model=ProjectRead, status_code=status.HTTP_200_OK)
+@router.get(
+    "/{project_id}",
+    response_model=ProjectRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_projects)],
+)
 async def get_project(
     project_id: UUID,
     db: Session = Depends(get_db),
@@ -33,7 +44,12 @@ async def get_project(
     return project
 
 
-@router.post("/", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=ProjectRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(can_manage_projects)],
+)
 async def create_project(
     payload: ProjectCreate,
     db: Session = Depends(get_db),
@@ -45,7 +61,12 @@ async def create_project(
     return project
 
 
-@router.put("/{project_id}", response_model=ProjectRead, status_code=status.HTTP_200_OK)
+@router.put(
+    "/{project_id}",
+    response_model=ProjectRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_manage_projects)],
+)
 async def update_project(
     project_id: UUID,
     payload: ProjectUpdate,
@@ -63,7 +84,11 @@ async def update_project(
     return project
 
 
-@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{project_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(can_manage_projects)],
+)
 async def delete_project(
     project_id: UUID,
     db: Session = Depends(get_db),

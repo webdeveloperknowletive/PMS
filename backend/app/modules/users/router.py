@@ -5,8 +5,10 @@ from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
+from app.core.dependencies import get_current_user
 from app.modules.users.model import User
 from app.modules.users.schema import UserCreate, UserRead, UserUpdate
+from app.modules.users.permissions import can_manage_users, can_modify_user
 
 router = APIRouter(
     prefix="/users",
@@ -22,6 +24,7 @@ def _hash_password(plain_password: str) -> str:
 async def get_users(
     skip: int = 0,
     limit: int = 100,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     return db.query(User).offset(skip).limit(limit).all()
@@ -30,6 +33,7 @@ async def get_users(
 @router.get("/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK)
 async def get_user(
     user_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     user = db.get(User, user_id)
@@ -38,7 +42,7 @@ async def get_user(
     return user
 
 
-@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(can_manage_users)])
 async def create_user(
     payload: UserCreate,
     db: Session = Depends(get_db),
@@ -55,11 +59,14 @@ async def create_user(
 async def update_user(
     user_id: UUID,
     payload: UserUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    can_modify_user(target_user_id=user_id, current_user=current_user, db=db)
 
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(user, field, value)
@@ -69,7 +76,7 @@ async def update_user(
     return user
 
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(can_manage_users)])
 async def delete_user(
     user_id: UUID,
     db: Session = Depends(get_db),
@@ -82,7 +89,7 @@ async def delete_user(
     db.commit()
 
 
-@router.patch("/{user_id}/status", response_model=UserRead, status_code=status.HTTP_200_OK)
+@router.patch("/{user_id}/status", response_model=UserRead, status_code=status.HTTP_200_OK, dependencies=[Depends(can_manage_users)])
 async def update_user_status(
     user_id: UUID,
     is_active: bool = Body(..., embed=True),
@@ -102,11 +109,14 @@ async def update_user_status(
 async def change_password(
     user_id: UUID,
     new_password: str = Body(..., embed=True, min_length=8),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    can_modify_user(target_user_id=user_id, current_user=current_user, db=db)
 
     user.password_hash = _hash_password(new_password)
     db.commit()
@@ -118,11 +128,14 @@ async def change_password(
 async def update_profile(
     user_id: UUID,
     payload: UserUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    can_modify_user(target_user_id=user_id, current_user=current_user, db=db)
 
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(user, field, value)

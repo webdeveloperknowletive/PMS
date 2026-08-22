@@ -13,6 +13,7 @@ from app.modules.kanban.schema import (
     KanbanTaskRead,
     KanbanTaskUpdate,
 )
+from app.modules.kanban.permissions import can_manage_board, can_move_task, can_view_board
 
 router = APIRouter(
     prefix="/kanban",
@@ -23,14 +24,24 @@ router = APIRouter(
 # Kanban Columns
 # ==========================================================
 
-@router.get("/columns", response_model=list[KanbanColumnRead], status_code=status.HTTP_200_OK)
+@router.get(
+    "/columns",
+    response_model=list[KanbanColumnRead],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_board)],
+)
 async def get_kanban_columns(
     db: Session = Depends(get_db),
 ):
     return db.query(KanbanColumn).all()
 
 
-@router.get("/columns/{column_id}", response_model=KanbanColumnRead, status_code=status.HTTP_200_OK)
+@router.get(
+    "/columns/{column_id}",
+    response_model=KanbanColumnRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_board)],
+)
 async def get_kanban_column(
     column_id: UUID,
     db: Session = Depends(get_db),
@@ -41,7 +52,12 @@ async def get_kanban_column(
     return column
 
 
-@router.post("/columns", response_model=KanbanColumnRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/columns",
+    response_model=KanbanColumnRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(can_manage_board)],
+)
 async def create_kanban_column(
     payload: KanbanColumnCreate,
     db: Session = Depends(get_db),
@@ -53,7 +69,12 @@ async def create_kanban_column(
     return column
 
 
-@router.put("/columns/{column_id}", response_model=KanbanColumnRead, status_code=status.HTTP_200_OK)
+@router.put(
+    "/columns/{column_id}",
+    response_model=KanbanColumnRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_manage_board)],
+)
 async def update_kanban_column(
     column_id: UUID,
     payload: KanbanColumnUpdate,
@@ -71,7 +92,11 @@ async def update_kanban_column(
     return column
 
 
-@router.delete("/columns/{column_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/columns/{column_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(can_manage_board)],
+)
 async def delete_kanban_column(
     column_id: UUID,
     db: Session = Depends(get_db),
@@ -85,17 +110,27 @@ async def delete_kanban_column(
 
 
 # ==========================================================
-# Kanban Tasks
+# Kanban Tasks (card placements)
 # ==========================================================
 
-@router.get("/tasks", response_model=list[KanbanTaskRead], status_code=status.HTTP_200_OK)
+@router.get(
+    "/tasks",
+    response_model=list[KanbanTaskRead],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_board)],
+)
 async def get_kanban_tasks(
     db: Session = Depends(get_db),
 ):
     return db.query(KanbanTask).all()
 
 
-@router.get("/tasks/{task_id}", response_model=KanbanTaskRead, status_code=status.HTTP_200_OK)
+@router.get(
+    "/tasks/{task_id}",
+    response_model=KanbanTaskRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_board)],
+)
 async def get_kanban_task(
     task_id: UUID,
     db: Session = Depends(get_db),
@@ -106,7 +141,12 @@ async def get_kanban_task(
     return kanban_task
 
 
-@router.post("/tasks", response_model=KanbanTaskRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/tasks",
+    response_model=KanbanTaskRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(can_manage_board)],
+)
 async def create_kanban_task(
     payload: KanbanTaskCreate,
     db: Session = Depends(get_db),
@@ -118,7 +158,12 @@ async def create_kanban_task(
     return kanban_task
 
 
-@router.put("/tasks/{task_id}", response_model=KanbanTaskRead, status_code=status.HTTP_200_OK)
+@router.put(
+    "/tasks/{task_id}",
+    response_model=KanbanTaskRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_move_task)],
+)
 async def update_kanban_task(
     task_id: UUID,
     payload: KanbanTaskUpdate,
@@ -136,7 +181,11 @@ async def update_kanban_task(
     return kanban_task
 
 
-@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/tasks/{task_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(can_manage_board)],
+)
 async def delete_kanban_task(
     task_id: UUID,
     db: Session = Depends(get_db),
