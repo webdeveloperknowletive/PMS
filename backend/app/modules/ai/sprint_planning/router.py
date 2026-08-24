@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.modules.ai.sprint_planning.model import AISprintPlan
 from app.modules.ai.sprint_planning.schema import AISprintPlanCreate, AISprintPlanRead, AISprintPlanUpdate
+from app.modules.ai.sprint_planning.permissions import can_generate, can_view_results
 
 router = APIRouter(
     prefix="/ai/sprint-plans",
@@ -13,7 +14,12 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=list[AISprintPlanRead], status_code=status.HTTP_200_OK)
+@router.get(
+    "/",
+    response_model=list[AISprintPlanRead],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_results)],
+)
 async def get_sprint_plans(
     skip: int = 0,
     limit: int = 100,
@@ -22,7 +28,12 @@ async def get_sprint_plans(
     return db.query(AISprintPlan).offset(skip).limit(limit).all()
 
 
-@router.get("/{sprint_plan_id}", response_model=AISprintPlanRead, status_code=status.HTTP_200_OK)
+@router.get(
+    "/{sprint_plan_id}",
+    response_model=AISprintPlanRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_results)],
+)
 async def get_sprint_plan(
     sprint_plan_id: UUID,
     db: Session = Depends(get_db),
@@ -33,7 +44,12 @@ async def get_sprint_plan(
     return sprint_plan
 
 
-@router.post("/", response_model=AISprintPlanRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=AISprintPlanRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(can_generate)],
+)
 async def generate_sprint_plan(
     payload: AISprintPlanCreate,
     db: Session = Depends(get_db),
@@ -45,7 +61,12 @@ async def generate_sprint_plan(
     return sprint_plan
 
 
-@router.put("/{sprint_plan_id}", response_model=AISprintPlanRead, status_code=status.HTTP_200_OK)
+@router.put(
+    "/{sprint_plan_id}",
+    response_model=AISprintPlanRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_generate)],
+)
 async def update_sprint_plan(
     sprint_plan_id: UUID,
     payload: AISprintPlanUpdate,
@@ -63,7 +84,11 @@ async def update_sprint_plan(
     return sprint_plan
 
 
-@router.delete("/{sprint_plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{sprint_plan_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(can_generate)],
+)
 async def delete_sprint_plan(
     sprint_plan_id: UUID,
     db: Session = Depends(get_db),

@@ -21,6 +21,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+register_exception_handlers(app)
+
 # ==========================================================
 # CORS Middleware
 # ==========================================================

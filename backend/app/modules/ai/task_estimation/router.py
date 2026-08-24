@@ -10,6 +10,7 @@ from app.modules.ai.task_estimation.schema import (
     AITaskEstimationRead,
     AITaskEstimationUpdate,
 )
+from app.modules.ai.task_estimation.permissions import can_generate, can_view_results
 
 router = APIRouter(
     prefix="/ai/task-estimations",
@@ -17,7 +18,12 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=list[AITaskEstimationRead], status_code=status.HTTP_200_OK)
+@router.get(
+    "/",
+    response_model=list[AITaskEstimationRead],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_results)],
+)
 async def get_task_estimations(
     skip: int = 0,
     limit: int = 100,
@@ -26,7 +32,12 @@ async def get_task_estimations(
     return db.query(AITaskEstimation).offset(skip).limit(limit).all()
 
 
-@router.get("/{estimation_id}", response_model=AITaskEstimationRead, status_code=status.HTTP_200_OK)
+@router.get(
+    "/{estimation_id}",
+    response_model=AITaskEstimationRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_results)],
+)
 async def get_task_estimation(
     estimation_id: UUID,
     db: Session = Depends(get_db),
@@ -37,7 +48,12 @@ async def get_task_estimation(
     return estimation
 
 
-@router.post("/", response_model=AITaskEstimationRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=AITaskEstimationRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(can_generate)],
+)
 async def generate_task_estimation(
     payload: AITaskEstimationCreate,
     db: Session = Depends(get_db),
@@ -49,7 +65,12 @@ async def generate_task_estimation(
     return estimation
 
 
-@router.put("/{estimation_id}", response_model=AITaskEstimationRead, status_code=status.HTTP_200_OK)
+@router.put(
+    "/{estimation_id}",
+    response_model=AITaskEstimationRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_generate)],
+)
 async def update_task_estimation(
     estimation_id: UUID,
     payload: AITaskEstimationUpdate,
@@ -67,7 +88,11 @@ async def update_task_estimation(
     return estimation
 
 
-@router.delete("/{estimation_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{estimation_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(can_generate)],
+)
 async def delete_task_estimation(
     estimation_id: UUID,
     db: Session = Depends(get_db),

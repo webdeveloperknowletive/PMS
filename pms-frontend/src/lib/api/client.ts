@@ -107,9 +107,19 @@ apiClient.interceptors.response.use(
 /** Pulls FastAPI's { detail: "..." } (or 422 validation array) into a readable string. */
 export function getApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    const detail = error.response?.data?.detail;
+    const data = error.response?.data;
+
+    // New custom error shape from register_exception_handlers:
+    // { success: false, error_code: "...", message: "...", details: ... }
+    if (typeof data?.message === "string") return data.message;
+
+    // FastAPI's default shape for anything not caught by the custom
+    // handlers (e.g. a raw 422 from Pydantic validation before it hits
+    // your routes): { detail: "..." } or { detail: [{ msg: "..." }, ...] }
+    const detail = data?.detail;
     if (typeof detail === "string") return detail;
     if (Array.isArray(detail)) return detail.map((d) => d.msg).join(", ");
+
     return error.message;
   }
   return "Something went wrong. Please try again.";

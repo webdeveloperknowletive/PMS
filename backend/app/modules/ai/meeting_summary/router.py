@@ -10,6 +10,7 @@ from app.modules.ai.meeting_summary.schema import (
     AIMeetingSummaryRead,
     AIMeetingSummaryUpdate,
 )
+from app.modules.ai.meeting_summary.permissions import can_generate, can_view_results
 
 router = APIRouter(
     prefix="/ai/meeting-summaries",
@@ -17,7 +18,12 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=list[AIMeetingSummaryRead], status_code=status.HTTP_200_OK)
+@router.get(
+    "/",
+    response_model=list[AIMeetingSummaryRead],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_results)],
+)
 async def get_meeting_summaries(
     skip: int = 0,
     limit: int = 100,
@@ -26,7 +32,12 @@ async def get_meeting_summaries(
     return db.query(AIMeetingSummary).offset(skip).limit(limit).all()
 
 
-@router.get("/{summary_id}", response_model=AIMeetingSummaryRead, status_code=status.HTTP_200_OK)
+@router.get(
+    "/{summary_id}",
+    response_model=AIMeetingSummaryRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_results)],
+)
 async def get_meeting_summary(
     summary_id: UUID,
     db: Session = Depends(get_db),
@@ -37,7 +48,12 @@ async def get_meeting_summary(
     return summary
 
 
-@router.post("/", response_model=AIMeetingSummaryRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=AIMeetingSummaryRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(can_generate)],
+)
 async def generate_meeting_summary(
     payload: AIMeetingSummaryCreate,
     db: Session = Depends(get_db),
@@ -49,7 +65,12 @@ async def generate_meeting_summary(
     return summary
 
 
-@router.put("/{summary_id}", response_model=AIMeetingSummaryRead, status_code=status.HTTP_200_OK)
+@router.put(
+    "/{summary_id}",
+    response_model=AIMeetingSummaryRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_generate)],
+)
 async def update_meeting_summary(
     summary_id: UUID,
     payload: AIMeetingSummaryUpdate,
@@ -67,7 +88,11 @@ async def update_meeting_summary(
     return summary
 
 
-@router.delete("/{summary_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{summary_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(can_generate)],
+)
 async def delete_meeting_summary(
     summary_id: UUID,
     db: Session = Depends(get_db),

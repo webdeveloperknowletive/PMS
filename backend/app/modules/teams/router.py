@@ -5,9 +5,12 @@ from sqlalchemy.orm import Session
 
 from db.session import get_db
 from app.core.dependencies import get_current_user
-from app.modules.teams.model import Team, TeamMember
+from app.modules.teams import repository as teams_repository
+from app.modules.teams.model import Team, TeamLead, TeamMember
 from app.modules.teams.schema import (
     TeamCreate,
+    TeamLeadCreate,
+    TeamLeadRead,
     TeamMemberCreate,
     TeamMemberRead,
     TeamMemberUpdate,
@@ -22,6 +25,77 @@ router = APIRouter(
     tags=["Teams"]
 )
 
+# ==========================================================
+# Team Leads
+# ==========================================================
+
+@router.get("/leads", response_model=list[TeamLeadRead], status_code=status.HTTP_200_OK)
+async def get_team_leads(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return teams_repository.get_team_leads(db, skip=skip, limit=limit)
+
+
+@router.get("/leads/by-user/{user_id}", response_model=TeamLeadRead, status_code=status.HTTP_200_OK)
+async def get_team_lead_by_user(
+    user_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    team_lead = teams_repository.get_team_lead_by_user(db, user_id=user_id)
+    if team_lead is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This user is not a team lead")
+    return team_lead
+
+
+@router.get("/leads/{team_lead_id}", response_model=TeamLeadRead, status_code=status.HTTP_200_OK)
+async def get_team_lead(
+    team_lead_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    team_lead = teams_repository.get_team_lead(db, team_lead_id=team_lead_id)
+    if team_lead is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team lead not found")
+    return team_lead
+
+
+@router.post(
+    "/leads",
+    response_model=TeamLeadRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(can_manage_teams)],
+)
+async def create_team_lead(
+    payload: TeamLeadCreate,
+    db: Session = Depends(get_db),
+):
+    existing = teams_repository.get_team_lead_by_user(db, user_id=payload.user_id)
+    if existing is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This user is already a team lead")
+    return teams_repository.create_team_lead(db, payload=payload)
+
+
+@router.delete(
+    "/leads/{team_lead_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(can_manage_teams)],
+)
+async def delete_team_lead(
+    team_lead_id: UUID,
+    db: Session = Depends(get_db),
+):
+    deleted = teams_repository.delete_team_lead(db, team_lead_id=team_lead_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team lead not found")
+
+
+# ==========================================================
+# Teams
+# ==========================================================
 
 @router.get(
     "/",
@@ -141,8 +215,6 @@ async def add_team_member(
     if team is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
 
-    # Only this team's own lead (or Admin/Project Manager) may add members —
-    # team.team_lead is the TeamLead row, .user_id is the actual person.
     can_manage_team_membership(team_lead_user_id=team.team_lead.user_id, current_user=current_user, db=db)
 
     member = TeamMember(**{**payload.model_dump(), "team_id": team_id})

@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useDeleteProject, useProjects } from "@/hooks/queries/use-projects";
+import { usePermissions } from "@/hooks/use-permissions";
 import { formatDate } from "@/lib/utils";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { Project } from "@/types/project";
@@ -34,6 +35,7 @@ import type { Project } from "@/types/project";
 export default function ProjectsPage() {
   const { data: projects, isLoading } = useProjects();
   const deleteMutation = useDeleteProject();
+  const { canManageProjects } = usePermissions();
 
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -76,10 +78,12 @@ export default function ProjectsPage() {
         title="Projects"
         description="Manage all projects in your organization"
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            New Project
-          </Button>
+          canManageProjects ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              New Project
+            </Button>
+          ) : undefined
         }
       />
 
@@ -133,8 +137,8 @@ export default function ProjectsPage() {
               icon={FolderKanban}
               title={search ? "No projects match your search" : "No projects yet"}
               description={search ? "Try a different search term." : "Create your first project to get started."}
-              actionLabel={search ? undefined : "New Project"}
-              onAction={search ? undefined : openCreate}
+              actionLabel={search || !canManageProjects ? undefined : "New Project"}
+              onAction={search || !canManageProjects ? undefined : openCreate}
             />
           </CardContent>
         ) : (
@@ -145,7 +149,7 @@ export default function ProjectsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Updated</TableHead>
-                <TableHead className="w-10" />
+                {canManageProjects && <TableHead className="w-10" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -171,28 +175,30 @@ export default function ProjectsPage() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(project.created_at)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(project.updated_at)}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(project)}>
-                          <Pencil />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => setDeletingProject(project)}
-                        >
-                          <Trash2 />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+                  {canManageProjects && (
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(project)}>
+                            <Pencil />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setDeletingProject(project)}
+                          >
+                            <Trash2 />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -200,16 +206,20 @@ export default function ProjectsPage() {
         )}
       </Card>
 
-      <ProjectFormDialog open={formOpen} onOpenChange={setFormOpen} project={editingProject} />
+      {canManageProjects && (
+        <>
+          <ProjectFormDialog open={formOpen} onOpenChange={setFormOpen} project={editingProject} />
 
-      <ConfirmDialog
-        open={!!deletingProject}
-        onOpenChange={(open) => !open && setDeletingProject(null)}
-        title="Delete project?"
-        description={`This will permanently delete "${deletingProject?.project_name}". This action cannot be undone.`}
-        onConfirm={confirmDelete}
-        isLoading={deleteMutation.isPending}
-      />
+          <ConfirmDialog
+            open={!!deletingProject}
+            onOpenChange={(open) => !open && setDeletingProject(null)}
+            title="Delete project?"
+            description={`This will permanently delete "${deletingProject?.project_name}". This action cannot be undone.`}
+            onConfirm={confirmDelete}
+            isLoading={deleteMutation.isPending}
+          />
+        </>
+      )}
     </div>
   );
 }
