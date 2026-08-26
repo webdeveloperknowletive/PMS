@@ -9,6 +9,7 @@ from app.core.dependencies import get_current_user
 from app.modules.users.model import User
 from app.modules.users.schema import UserCreate, UserRead, UserUpdate
 from app.modules.users.permissions import can_manage_users, can_modify_user
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(
     prefix="/users",
@@ -42,6 +43,8 @@ async def get_user(
     return user
 
 
+from sqlalchemy.exc import IntegrityError
+
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(can_manage_users)])
 async def create_user(
     payload: UserCreate,
@@ -50,7 +53,14 @@ async def create_user(
     data = payload.model_dump(exclude={"password"})
     user = User(**data, password_hash=_hash_password(payload.password))
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A user with this email already exists",
+        )
     db.refresh(user)
     return user
 
