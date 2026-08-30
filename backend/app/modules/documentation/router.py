@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
-from app.modules.documentation.model import Document
+from app.modules.documentation import service
 from app.modules.documentation.schema import DocumentCreate, DocumentRead, DocumentUpdate
 from app.modules.documentation.permissions import can_delete_documents, can_upload_documents, can_view_documents
 
@@ -25,7 +25,7 @@ async def get_documents(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(Document).offset(skip).limit(limit).all()
+    return service.get_documents(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -38,10 +38,7 @@ async def get_document(
     document_id: UUID,
     db: Session = Depends(get_db),
 ):
-    document = db.get(Document, document_id)
-    if document is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-    return document
+    return service.get_document(db, document_id)
 
 
 @router.post(
@@ -54,11 +51,7 @@ async def create_document(
     payload: DocumentCreate,
     db: Session = Depends(get_db),
 ):
-    document = Document(**payload.model_dump())
-    db.add(document)
-    db.commit()
-    db.refresh(document)
-    return document
+    return service.create_document(db, payload)
 
 
 @router.put(
@@ -72,16 +65,7 @@ async def update_document(
     payload: DocumentUpdate,
     db: Session = Depends(get_db),
 ):
-    document = db.get(Document, document_id)
-    if document is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(document, field, value)
-
-    db.commit()
-    db.refresh(document)
-    return document
+    return service.update_document(db, document_id, payload)
 
 
 @router.delete(
@@ -93,9 +77,4 @@ async def delete_document(
     document_id: UUID,
     db: Session = Depends(get_db),
 ):
-    document = db.get(Document, document_id)
-    if document is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-
-    db.delete(document)
-    db.commit()
+    service.delete_document(db, document_id)

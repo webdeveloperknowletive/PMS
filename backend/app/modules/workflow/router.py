@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
-from app.modules.workflow.model import Workflow
+from app.modules.workflow import service
 from app.modules.workflow.schema import WorkflowCreate, WorkflowRead, WorkflowUpdate
 from app.modules.workflow.permissions import can_manage_workflows, can_view_workflows
 
@@ -25,7 +25,7 @@ async def get_workflows(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(Workflow).offset(skip).limit(limit).all()
+    return service.get_workflows(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -38,10 +38,7 @@ async def get_workflow(
     workflow_id: UUID,
     db: Session = Depends(get_db),
 ):
-    workflow = db.get(Workflow, workflow_id)
-    if workflow is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
-    return workflow
+    return service.get_workflow(db, workflow_id)
 
 
 @router.post(
@@ -54,11 +51,7 @@ async def create_workflow(
     payload: WorkflowCreate,
     db: Session = Depends(get_db),
 ):
-    workflow = Workflow(**payload.model_dump())
-    db.add(workflow)
-    db.commit()
-    db.refresh(workflow)
-    return workflow
+    return service.create_workflow(db, payload)
 
 
 @router.put(
@@ -72,16 +65,7 @@ async def update_workflow(
     payload: WorkflowUpdate,
     db: Session = Depends(get_db),
 ):
-    workflow = db.get(Workflow, workflow_id)
-    if workflow is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
-
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(workflow, field, value)
-
-    db.commit()
-    db.refresh(workflow)
-    return workflow
+    return service.update_workflow(db, workflow_id, payload)
 
 
 @router.delete(
@@ -93,9 +77,4 @@ async def delete_workflow(
     workflow_id: UUID,
     db: Session = Depends(get_db),
 ):
-    workflow = db.get(Workflow, workflow_id)
-    if workflow is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
-
-    db.delete(workflow)
-    db.commit()
+    service.delete_workflow(db, workflow_id)

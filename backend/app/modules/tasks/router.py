@@ -1,11 +1,11 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
 from app.core.dependencies import get_current_user
-from app.modules.tasks.model import Task
+from app.modules.tasks import service
 from app.modules.tasks.schema import TaskCreate, TaskRead, TaskUpdate
 from app.modules.tasks.permissions import can_manage_tasks, can_update_task, can_view_tasks
 from app.modules.users.model import User
@@ -27,7 +27,7 @@ async def get_tasks(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(Task).offset(skip).limit(limit).all()
+    return service.get_tasks(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -40,10 +40,7 @@ async def get_task(
     task_id: UUID,
     db: Session = Depends(get_db),
 ):
-    task = db.get(Task, task_id)
-    if task is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    return task
+    return service.get_task(db, task_id)
 
 
 @router.post(
@@ -56,11 +53,7 @@ async def create_task(
     payload: TaskCreate,
     db: Session = Depends(get_db),
 ):
-    task = Task(**payload.model_dump())
-    db.add(task)
-    db.commit()
-    db.refresh(task)
-    return task
+    return service.create_task(db, payload)
 
 
 @router.put("/{task_id}", response_model=TaskRead, status_code=status.HTTP_200_OK)
@@ -70,21 +63,13 @@ async def update_task(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    task = db.get(Task, task_id)
-    if task is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-
-    # Ownership check happens here, not in `dependencies=`, because we only
-    # know who this task is assigned to (task.user_id) after fetching it —
-    # a static Depends() can't see that.
+    # Fetched via the service layer (raises 404 if missing) so we know who
+    # this task is assigned to — a static Depends() can't see that, so the
+    # ownership check has to happen here, after the fetch.
+    task = service.get_task(db, task_id)
     can_update_task(task_assignee_id=task.user_id, current_user=current_user, db=db)
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(task, field, value)
-
-    db.commit()
-    db.refresh(task)
-    return task
+    return service.update_task(db, task_id, payload)
 
 
 @router.delete(
@@ -96,12 +81,7 @@ async def delete_task(
     task_id: UUID,
     db: Session = Depends(get_db),
 ):
-    task = db.get(Task, task_id)
-    if task is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-
-    db.delete(task)
-    db.commit()
+    service.delete_task(db, task_id)
 
 
 @router.get(
@@ -114,7 +94,4 @@ async def get_subtasks(
     task_id: UUID,
     db: Session = Depends(get_db),
 ):
-    parent = db.get(Task, task_id)
-    if parent is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    return db.query(Task).filter(Task.parent_task_id == task_id).all()
+    return service.get_subtasks(db, task_id)

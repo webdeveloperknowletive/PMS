@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
-from app.modules.reports.model import Report
+from app.modules.reports import service
 from app.modules.reports.schema import ReportCreate, ReportRead, ReportUpdate
 from app.modules.reports.permissions import can_manage_reports, can_view_reports
 
@@ -25,7 +25,7 @@ async def get_reports(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(Report).offset(skip).limit(limit).all()
+    return service.get_reports(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -38,10 +38,7 @@ async def get_report(
     report_id: UUID,
     db: Session = Depends(get_db),
 ):
-    report = db.get(Report, report_id)
-    if report is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-    return report
+    return service.get_report(db, report_id)
 
 
 @router.post(
@@ -54,11 +51,7 @@ async def generate_report(
     payload: ReportCreate,
     db: Session = Depends(get_db),
 ):
-    report = Report(**payload.model_dump())
-    db.add(report)
-    db.commit()
-    db.refresh(report)
-    return report
+    return service.generate_report(db, payload)
 
 
 @router.put(
@@ -72,16 +65,7 @@ async def update_report(
     payload: ReportUpdate,
     db: Session = Depends(get_db),
 ):
-    report = db.get(Report, report_id)
-    if report is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(report, field, value)
-
-    db.commit()
-    db.refresh(report)
-    return report
+    return service.update_report(db, report_id, payload)
 
 
 @router.delete(
@@ -93,9 +77,4 @@ async def delete_report(
     report_id: UUID,
     db: Session = Depends(get_db),
 ):
-    report = db.get(Report, report_id)
-    if report is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-
-    db.delete(report)
-    db.commit()
+    service.delete_report(db, report_id)

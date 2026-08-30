@@ -1,11 +1,11 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
 from app.core.dependencies import get_current_user
-from app.modules.calendar.model import CalendarEvent
+from app.modules.calendar import service
 from app.modules.calendar.schema import CalendarEventCreate, CalendarEventRead, CalendarEventUpdate
 from app.modules.calendar.permissions import can_create_event, can_modify_event, can_view_calendar
 from app.modules.users.model import User
@@ -27,7 +27,7 @@ async def get_calendar_events(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(CalendarEvent).offset(skip).limit(limit).all()
+    return service.get_calendar_events(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -40,10 +40,7 @@ async def get_calendar_event(
     event_id: UUID,
     db: Session = Depends(get_db),
 ):
-    event = db.get(CalendarEvent, event_id)
-    if event is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Calendar event not found")
-    return event
+    return service.get_calendar_event(db, event_id)
 
 
 @router.post(
@@ -56,11 +53,7 @@ async def create_calendar_event(
     payload: CalendarEventCreate,
     db: Session = Depends(get_db),
 ):
-    event = CalendarEvent(**payload.model_dump())
-    db.add(event)
-    db.commit()
-    db.refresh(event)
-    return event
+    return service.create_calendar_event(db, payload)
 
 
 @router.put("/{event_id}", response_model=CalendarEventRead, status_code=status.HTTP_200_OK)
@@ -70,18 +63,13 @@ async def update_calendar_event(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    event = db.get(CalendarEvent, event_id)
-    if event is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Calendar event not found")
-
+    # Fetched via the service layer (raises 404 if missing) so we know who
+    # the organizer is — a static Depends() can't see that, so the
+    # ownership check has to happen here, after the fetch.
+    event = service.get_calendar_event(db, event_id)
     can_modify_event(organizer_id=event.organizer, current_user=current_user, db=db)
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(event, field, value)
-
-    db.commit()
-    db.refresh(event)
-    return event
+    return service.update_calendar_event(db, event_id, payload)
 
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -90,11 +78,7 @@ async def delete_calendar_event(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    event = db.get(CalendarEvent, event_id)
-    if event is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Calendar event not found")
-
+    event = service.get_calendar_event(db, event_id)
     can_modify_event(organizer_id=event.organizer, current_user=current_user, db=db)
 
-    db.delete(event)
-    db.commit()
+    service.delete_calendar_event(db, event_id)

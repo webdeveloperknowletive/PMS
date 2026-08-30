@@ -17,6 +17,21 @@ from sqlalchemy.orm import Session
 from app.modules.workflow.model import Workflow
 from app.modules.workflow.schema import WorkflowCreate, WorkflowUpdate
 
+def get_workflows(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Workflow]:
+
+    return (
+        db.query(Workflow)
+        .order_by(Workflow.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 
 # ==========================================================
 # Create

@@ -17,6 +17,21 @@ from sqlalchemy.orm import Session
 from app.modules.reports.model import Report
 from app.modules.reports.schema import ReportCreate, ReportUpdate
 
+def get_reports(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Report]:
+
+    return (
+        db.query(Report)
+        .order_by(Report.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 
 # ==========================================================
 # Create

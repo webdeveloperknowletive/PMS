@@ -40,6 +40,21 @@ def create_notification(
 # Read
 # ==========================================================
 
+def get_notifications(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Notification]:
+
+    return (
+        db.query(Notification)
+        .order_by(Notification.sent_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 def get_notification(
     db: Session,
     notification_id: UUID,

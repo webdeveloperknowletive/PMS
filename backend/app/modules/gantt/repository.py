@@ -18,6 +18,21 @@ from sqlalchemy.orm import Session
 from app.modules.gantt.model import GanttTask
 from app.modules.gantt.schema import GanttTaskCreate, GanttTaskUpdate
 
+def get_gantt_tasks(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[GanttTask]:
+
+    return (
+        db.query(GanttTask)
+        .order_by(GanttTask.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 
 # ==========================================================
 # Create

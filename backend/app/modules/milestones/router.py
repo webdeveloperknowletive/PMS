@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
-from app.modules.milestones.model import Milestone
+from app.modules.milestones import service
 from app.modules.milestones.schema import MilestoneCreate, MilestoneRead, MilestoneUpdate
 from app.modules.milestones.permissions import can_manage_milestones, can_view_milestones
 
@@ -25,7 +25,7 @@ async def get_milestones(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(Milestone).offset(skip).limit(limit).all()
+    return service.get_milestones(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -38,10 +38,7 @@ async def get_milestone(
     milestone_id: UUID,
     db: Session = Depends(get_db),
 ):
-    milestone = db.get(Milestone, milestone_id)
-    if milestone is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
-    return milestone
+    return service.get_milestone(db, milestone_id)
 
 
 @router.post(
@@ -54,11 +51,7 @@ async def create_milestone(
     payload: MilestoneCreate,
     db: Session = Depends(get_db),
 ):
-    milestone = Milestone(**payload.model_dump())
-    db.add(milestone)
-    db.commit()
-    db.refresh(milestone)
-    return milestone
+    return service.create_milestone(db, payload)
 
 
 @router.put(
@@ -72,16 +65,7 @@ async def update_milestone(
     payload: MilestoneUpdate,
     db: Session = Depends(get_db),
 ):
-    milestone = db.get(Milestone, milestone_id)
-    if milestone is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
-
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(milestone, field, value)
-
-    db.commit()
-    db.refresh(milestone)
-    return milestone
+    return service.update_milestone(db, milestone_id, payload)
 
 
 @router.delete(
@@ -93,9 +77,4 @@ async def delete_milestone(
     milestone_id: UUID,
     db: Session = Depends(get_db),
 ):
-    milestone = db.get(Milestone, milestone_id)
-    if milestone is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
-
-    db.delete(milestone)
-    db.commit()
+    service.delete_milestone(db, milestone_id)

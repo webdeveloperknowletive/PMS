@@ -1,123 +1,52 @@
+"""
+==========================================================
+                REPORTS SERVICE
+==========================================================
+
+Business logic layer for Reports. Orchestrates calls to
+repository.py and translates "not found" into HTTP errors.
+Routers should only ever call this layer, never the model
+or repository directly.
+"""
+
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.modules.reports import repository
 from app.modules.reports.model import Report
-from app.modules.reports.schema import (
-    ReportCreate,
-    ReportUpdate,
-)
+from app.modules.reports.schema import ReportCreate, ReportUpdate
 
 
-def get_reports(
-    db: Session,
-    skip: int = 0,
-    limit: int = 100,
-):
-    """
-    Get all reports.
-    """
-    return (
-        db.query(Report)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+def get_reports(db: Session, skip: int = 0, limit: int = 100) -> list[Report]:
+    """Get all reports (paginated)."""
+    return repository.get_reports(db, skip=skip, limit=limit)
 
 
-def get_report(
-    db: Session,
-    report_id: UUID,
-):
-    """
-    Get a report by ID.
-    """
-    report = db.get(
-        Report,
-        report_id,
-    )
-
+def get_report(db: Session, report_id: UUID) -> Report:
+    """Get a single report by ID, or raise 404."""
+    report = repository.get_report(db, report_id)
     if report is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Report not found",
-        )
-
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
     return report
 
 
-def generate_report(
-    db: Session,
-    payload: ReportCreate,
-):
-    """
-    Generate a new report.
-    """
-    report = Report(
-        **payload.model_dump()
-    )
+def generate_report(db: Session, payload: ReportCreate) -> Report:
+    """Create (generate) a new report."""
+    return repository.create_report(db, payload)
 
-    db.add(report)
-    db.commit()
-    db.refresh(report)
 
+def update_report(db: Session, report_id: UUID, payload: ReportUpdate) -> Report:
+    """Update an existing report, or raise 404."""
+    report = repository.update_report(db, report_id, payload)
+    if report is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
     return report
 
 
-def update_report(
-    db: Session,
-    report_id: UUID,
-    payload: ReportUpdate,
-):
-    """
-    Update an existing report.
-    """
-    report = db.get(
-        Report,
-        report_id,
-    )
-
-    if report is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Report not found",
-        )
-
-    for field, value in payload.model_dump(
-        exclude_unset=True
-    ).items():
-        setattr(
-            report,
-            field,
-            value,
-        )
-
-    db.commit()
-    db.refresh(report)
-
-    return report
-
-
-def delete_report(
-    db: Session,
-    report_id: UUID,
-):
-    """
-    Delete a report.
-    """
-    report = db.get(
-        Report,
-        report_id,
-    )
-
-    if report is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Report not found",
-        )
-
-    db.delete(report)
-    db.commit()
-
-    return None
+def delete_report(db: Session, report_id: UUID) -> None:
+    """Delete a report, or raise 404."""
+    deleted = repository.delete_report(db, report_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")

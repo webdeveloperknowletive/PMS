@@ -18,16 +18,16 @@ export type TaskStatus = (typeof TASK_STATUSES)[number];
 export const TASK_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 
+
 // ── Projects ─────────────────────────────────────────────
 export const PROJECT_STATUSES = [
   "ACTIVE",
-  "ON_HOLD",
   "COMPLETED",
+  "ON_HOLD",
   "ARCHIVED",
-  "CANCELLED",
-  "INACTIVE",
 ] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
 
 // ── Teams ────────────────────────────────────────────────
 export const TEAM_STATUSES = ["ACTIVE", "INACTIVE", "ARCHIVED"] as const;
@@ -104,11 +104,9 @@ export const PRIORITY_COLOR: Record<TaskPriority, string> = {
 
 export const PROJECT_STATUS_COLOR: Record<string, string> = {
   ACTIVE: "bg-blue-100 text-blue-700",
-  ON_HOLD: "bg-amber-100 text-amber-700",
   COMPLETED: "bg-green-100 text-green-700",
+  ON_HOLD: "bg-amber-100 text-amber-700",
   ARCHIVED: "bg-slate-100 text-slate-500",
-  CANCELLED: "bg-red-100 text-red-700",
-  INACTIVE: "bg-slate-100 text-slate-400",
 };
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";

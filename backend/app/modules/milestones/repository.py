@@ -17,6 +17,21 @@ from sqlalchemy.orm import Session
 from app.modules.milestones.model import Milestone
 from app.modules.milestones.schema import MilestoneCreate, MilestoneUpdate
 
+def get_milestones(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Milestone]:
+
+    return (
+        db.query(Milestone)
+        .order_by(Milestone.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 
 # ==========================================================
 # Create

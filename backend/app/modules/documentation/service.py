@@ -1,119 +1,52 @@
+"""
+==========================================================
+                DOCUMENTATION SERVICE
+==========================================================
+
+Business logic layer for Documents. Orchestrates calls to
+repository.py and translates "not found" into HTTP errors.
+Routers should only ever call this layer, never the model
+or repository directly.
+"""
+
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.modules.documentation import repository
 from app.modules.documentation.model import Document
-from app.modules.documentation.schema import (
-    DocumentCreate,
-    DocumentUpdate,
-)
+from app.modules.documentation.schema import DocumentCreate, DocumentUpdate
 
 
-def get_documents(
-    db: Session,
-    skip: int = 0,
-    limit: int = 100,
-):
-    """
-    Get all documents.
-    """
-    return (
-        db.query(Document)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+def get_documents(db: Session, skip: int = 0, limit: int = 100) -> list[Document]:
+    """Get all documents (paginated)."""
+    return repository.get_documents(db, skip=skip, limit=limit)
 
 
-def get_document(
-    db: Session,
-    document_id: UUID,
-):
-    """
-    Get a document by ID.
-    """
-    document = db.get(
-        Document,
-        document_id,
-    )
-
+def get_document(db: Session, document_id: UUID) -> Document:
+    """Get a single document by ID, or raise 404."""
+    document = repository.get_document(db, document_id)
     if document is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found",
-        )
-
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     return document
 
 
-def create_document(
-    db: Session,
-    payload: DocumentCreate,
-):
-    """
-    Create a new document.
-    """
-    document = Document(
-        **payload.model_dump()
-    )
+def create_document(db: Session, payload: DocumentCreate) -> Document:
+    """Create a new document."""
+    return repository.create_document(db, payload)
 
-    db.add(document)
-    db.commit()
-    db.refresh(document)
 
+def update_document(db: Session, document_id: UUID, payload: DocumentUpdate) -> Document:
+    """Update an existing document, or raise 404."""
+    document = repository.update_document(db, document_id, payload)
+    if document is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     return document
 
 
-def update_document(
-    db: Session,
-    document_id: UUID,
-    payload: DocumentUpdate,
-):
-    """
-    Update an existing document.
-    """
-    document = db.get(
-        Document,
-        document_id,
-    )
-
-    if document is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found",
-        )
-
-    for field, value in payload.model_dump(
-        exclude_unset=True
-    ).items():
-        setattr(document, field, value)
-
-    db.commit()
-    db.refresh(document)
-
-    return document
-
-
-def delete_document(
-    db: Session,
-    document_id: UUID,
-):
-    """
-    Delete a document.
-    """
-    document = db.get(
-        Document,
-        document_id,
-    )
-
-    if document is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found",
-        )
-
-    db.delete(document)
-    db.commit()
-
-    return None
+def delete_document(db: Session, document_id: UUID) -> None:
+    """Delete a document, or raise 404."""
+    deleted = repository.delete_document(db, document_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
