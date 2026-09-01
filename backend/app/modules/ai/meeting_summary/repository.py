@@ -20,6 +20,21 @@ from app.modules.ai.meeting_summary.schema import (
     AIMeetingSummaryUpdate,
 )
 
+def get_meeting_summaries(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[AIMeetingSummary]:
+
+    return (
+        db.query(AIMeetingSummary)
+        .order_by(AIMeetingSummary.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 
 # ==========================================================
 # Create

@@ -20,6 +20,21 @@ from app.modules.ai.task_estimation.schema import (
     AITaskEstimationUpdate,
 )
 
+def get_task_estimations(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[AITaskEstimation]:
+
+    return (
+        db.query(AITaskEstimation)
+        .order_by(AITaskEstimation.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 
 # ==========================================================
 # Create

@@ -20,6 +20,21 @@ from app.modules.ai.sprint_planning.schema import (
     AISprintPlanUpdate,
 )
 
+def get_sprint_plans(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[AISprintPlan]:
+
+    return (
+        db.query(AISprintPlan)
+        .order_by(AISprintPlan.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 
 # ==========================================================
 # Create

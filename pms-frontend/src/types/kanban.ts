@@ -33,6 +33,13 @@ export interface KanbanTaskUpdate {
   moved_by?: string | null;
 }
 
+/** Body for the dedicated drag-and-drop move endpoint — no `moved_by` here,
+ *  since the backend stamps that from the authenticated user's token. */
+export interface KanbanTaskMovePayload {
+  column_id: string;
+  position: number;
+}
+
 export interface KanbanTask extends KanbanTaskBase {
   kanban_task_id: string;
   moved_at: string;

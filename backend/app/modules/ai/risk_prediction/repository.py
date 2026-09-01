@@ -20,6 +20,21 @@ from app.modules.ai.risk_prediction.schema import (
     AIRiskPredictionUpdate,
 )
 
+def get_risk_predictions(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[AIRiskPrediction]:
+
+    return (
+        db.query(AIRiskPrediction)
+        .order_by(AIRiskPrediction.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 
 # ==========================================================
 # Create

@@ -5,6 +5,7 @@ import type {
   KanbanColumnUpdate,
   KanbanTask,
   KanbanTaskCreate,
+  KanbanTaskMovePayload,
   KanbanTaskUpdate,
 } from "@/types/kanban";
 
@@ -52,9 +53,15 @@ export const kanbanApi = {
     const { data } = await apiClient.post<KanbanTask>("/kanban/tasks", payload);
     return data;
   },
-  /** Used on every drag-and-drop drop: moves a task to a new column/position. Pass `kanban_task_id`. */
-  moveTask: async (placementId: string, payload: KanbanTaskUpdate): Promise<KanbanTask> => {
-    const { data } = await apiClient.put<KanbanTask>(`/kanban/tasks/${placementId}`, payload);
+  /**
+   * Used on every drag-and-drop drop: moves a task to a new column/position.
+   * Pass `kanban_task_id`. Hits the dedicated PATCH .../move endpoint, which
+   * stamps `moved_by` from the authenticated user server-side — the client
+   * never sends it. (Previously this called the generic PUT endpoint, which
+   * meant `moved_by`/`moved_at` were never actually set on a drag.)
+   */
+  moveTask: async (placementId: string, payload: KanbanTaskMovePayload): Promise<KanbanTask> => {
+    const { data } = await apiClient.patch<KanbanTask>(`/kanban/tasks/${placementId}/move`, payload);
     return data;
   },
   deleteTaskPlacement: async (placementId: string): Promise<void> => {

@@ -41,6 +41,21 @@ def create_kanban_column(
     return column
 
 
+def get_kanban_columns(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[KanbanColumn]:
+
+    return (
+        db.query(KanbanColumn)
+        .order_by(KanbanColumn.position.asc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 def get_kanban_column(
     db: Session,
     column_id: UUID,
@@ -130,6 +145,21 @@ def create_kanban_task(
     db.refresh(kanban_task)
 
     return kanban_task
+
+
+def get_kanban_tasks(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[KanbanTask]:
+
+    return (
+        db.query(KanbanTask)
+        .order_by(KanbanTask.position.asc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 def get_kanban_task(

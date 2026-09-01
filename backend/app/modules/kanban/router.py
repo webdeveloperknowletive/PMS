@@ -1,10 +1,11 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
-from app.modules.kanban.model import KanbanColumn, KanbanTask
+from app.core.dependencies import get_current_user
+from app.modules.kanban import service
 from app.modules.kanban.schema import (
     KanbanColumnCreate,
     KanbanColumnRead,
@@ -14,6 +15,7 @@ from app.modules.kanban.schema import (
     KanbanTaskUpdate,
 )
 from app.modules.kanban.permissions import can_manage_board, can_move_task, can_view_board
+from app.modules.users.model import User
 
 router = APIRouter(
     prefix="/kanban",
@@ -31,9 +33,11 @@ router = APIRouter(
     dependencies=[Depends(can_view_board)],
 )
 async def get_kanban_columns(
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(KanbanColumn).all()
+    return service.get_kanban_columns(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -46,10 +50,7 @@ async def get_kanban_column(
     column_id: UUID,
     db: Session = Depends(get_db),
 ):
-    column = db.get(KanbanColumn, column_id)
-    if column is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kanban column not found")
-    return column
+    return service.get_kanban_column(db, column_id)
 
 
 @router.post(
@@ -62,11 +63,7 @@ async def create_kanban_column(
     payload: KanbanColumnCreate,
     db: Session = Depends(get_db),
 ):
-    column = KanbanColumn(**payload.model_dump())
-    db.add(column)
-    db.commit()
-    db.refresh(column)
-    return column
+    return service.create_kanban_column(db, payload)
 
 
 @router.put(
@@ -80,16 +77,7 @@ async def update_kanban_column(
     payload: KanbanColumnUpdate,
     db: Session = Depends(get_db),
 ):
-    column = db.get(KanbanColumn, column_id)
-    if column is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kanban column not found")
-
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(column, field, value)
-
-    db.commit()
-    db.refresh(column)
-    return column
+    return service.update_kanban_column(db, column_id, payload)
 
 
 @router.delete(
@@ -101,12 +89,7 @@ async def delete_kanban_column(
     column_id: UUID,
     db: Session = Depends(get_db),
 ):
-    column = db.get(KanbanColumn, column_id)
-    if column is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kanban column not found")
-
-    db.delete(column)
-    db.commit()
+    service.delete_kanban_column(db, column_id)
 
 
 # ==========================================================
@@ -120,9 +103,11 @@ async def delete_kanban_column(
     dependencies=[Depends(can_view_board)],
 )
 async def get_kanban_tasks(
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(KanbanTask).all()
+    return service.get_kanban_tasks(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -135,10 +120,7 @@ async def get_kanban_task(
     task_id: UUID,
     db: Session = Depends(get_db),
 ):
-    kanban_task = db.get(KanbanTask, task_id)
-    if kanban_task is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kanban task not found")
-    return kanban_task
+    return service.get_kanban_task(db, task_id)
 
 
 @router.post(
@@ -151,11 +133,7 @@ async def create_kanban_task(
     payload: KanbanTaskCreate,
     db: Session = Depends(get_db),
 ):
-    kanban_task = KanbanTask(**payload.model_dump())
-    db.add(kanban_task)
-    db.commit()
-    db.refresh(kanban_task)
-    return kanban_task
+    return service.create_kanban_task(db, payload)
 
 
 @router.put(
@@ -169,16 +147,27 @@ async def update_kanban_task(
     payload: KanbanTaskUpdate,
     db: Session = Depends(get_db),
 ):
-    kanban_task = db.get(KanbanTask, task_id)
-    if kanban_task is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kanban task not found")
+    return service.update_kanban_task(db, task_id, payload)
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(kanban_task, field, value)
 
-    db.commit()
-    db.refresh(kanban_task)
-    return kanban_task
+@router.patch(
+    "/tasks/{task_id}/move",
+    response_model=KanbanTaskRead,
+    status_code=status.HTTP_200_OK,
+)
+async def move_kanban_task(
+    task_id: UUID,
+    column_id: UUID = Body(...),
+    position: int = Body(...),
+    current_user: User = Depends(can_move_task),
+    db: Session = Depends(get_db),
+):
+    """
+    The actual drag-and-drop endpoint: moves a card to a new column/position
+    and stamps who moved it (from the authenticated user, not the request
+    body, so this can't be spoofed).
+    """
+    return service.move_kanban_task(db, task_id, column_id, position, moved_by=current_user.user_id)
 
 
 @router.delete(
@@ -190,9 +179,4 @@ async def delete_kanban_task(
     task_id: UUID,
     db: Session = Depends(get_db),
 ):
-    kanban_task = db.get(KanbanTask, task_id)
-    if kanban_task is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kanban task not found")
-
-    db.delete(kanban_task)
-    db.commit()
+    service.delete_kanban_task(db, task_id)

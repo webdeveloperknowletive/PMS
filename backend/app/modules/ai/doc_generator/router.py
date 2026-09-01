@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
-from app.modules.ai.doc_generator.model import AIDocumentGeneration
+from app.modules.ai.doc_generator import service
 from app.modules.ai.doc_generator.schema import (
     AIDocumentGenerationCreate,
     AIDocumentGenerationRead,
@@ -29,7 +29,7 @@ async def get_generated_documents(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(AIDocumentGeneration).offset(skip).limit(limit).all()
+    return service.get_generated_documents(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -42,10 +42,7 @@ async def get_generated_document(
     document_generation_id: UUID,
     db: Session = Depends(get_db),
 ):
-    document = db.get(AIDocumentGeneration, document_generation_id)
-    if document is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Generated document not found")
-    return document
+    return service.get_generated_document(db, document_generation_id)
 
 
 @router.post(
@@ -58,11 +55,7 @@ async def generate_document(
     payload: AIDocumentGenerationCreate,
     db: Session = Depends(get_db),
 ):
-    document = AIDocumentGeneration(**payload.model_dump())
-    db.add(document)
-    db.commit()
-    db.refresh(document)
-    return document
+    return service.generate_document(db, payload)
 
 
 @router.put(
@@ -76,16 +69,7 @@ async def update_generated_document(
     payload: AIDocumentGenerationUpdate,
     db: Session = Depends(get_db),
 ):
-    document = db.get(AIDocumentGeneration, document_generation_id)
-    if document is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Generated document not found")
-
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(document, field, value)
-
-    db.commit()
-    db.refresh(document)
-    return document
+    return service.update_generated_document(db, document_generation_id, payload)
 
 
 @router.delete(
@@ -97,9 +81,4 @@ async def delete_generated_document(
     document_generation_id: UUID,
     db: Session = Depends(get_db),
 ):
-    document = db.get(AIDocumentGeneration, document_generation_id)
-    if document is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Generated document not found")
-
-    db.delete(document)
-    db.commit()
+    service.delete_generated_document(db, document_generation_id)

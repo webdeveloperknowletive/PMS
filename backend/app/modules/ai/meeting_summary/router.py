@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
-from app.modules.ai.meeting_summary.model import AIMeetingSummary
+from app.modules.ai.meeting_summary import service
 from app.modules.ai.meeting_summary.schema import (
     AIMeetingSummaryCreate,
     AIMeetingSummaryRead,
@@ -29,7 +29,7 @@ async def get_meeting_summaries(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(AIMeetingSummary).offset(skip).limit(limit).all()
+    return service.get_meeting_summaries(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -42,10 +42,7 @@ async def get_meeting_summary(
     summary_id: UUID,
     db: Session = Depends(get_db),
 ):
-    summary = db.get(AIMeetingSummary, summary_id)
-    if summary is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meeting summary not found")
-    return summary
+    return service.get_meeting_summary(db, summary_id)
 
 
 @router.post(
@@ -58,11 +55,7 @@ async def generate_meeting_summary(
     payload: AIMeetingSummaryCreate,
     db: Session = Depends(get_db),
 ):
-    summary = AIMeetingSummary(**payload.model_dump())
-    db.add(summary)
-    db.commit()
-    db.refresh(summary)
-    return summary
+    return service.generate_meeting_summary(db, payload)
 
 
 @router.put(
@@ -76,16 +69,7 @@ async def update_meeting_summary(
     payload: AIMeetingSummaryUpdate,
     db: Session = Depends(get_db),
 ):
-    summary = db.get(AIMeetingSummary, summary_id)
-    if summary is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meeting summary not found")
-
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(summary, field, value)
-
-    db.commit()
-    db.refresh(summary)
-    return summary
+    return service.update_meeting_summary(db, summary_id, payload)
 
 
 @router.delete(
@@ -97,9 +81,4 @@ async def delete_meeting_summary(
     summary_id: UUID,
     db: Session = Depends(get_db),
 ):
-    summary = db.get(AIMeetingSummary, summary_id)
-    if summary is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meeting summary not found")
-
-    db.delete(summary)
-    db.commit()
+    service.delete_meeting_summary(db, summary_id)

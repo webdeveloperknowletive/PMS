@@ -1,119 +1,46 @@
+"""
+==========================================================
+                AI RISK PREDICTION SERVICE
+==========================================================
+
+Business logic layer for AI risk predictions. See the note
+in ai/doc_generator/service.py — this module stores results,
+it does not call an LLM itself.
+"""
+
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.modules.ai.risk_prediction import repository
 from app.modules.ai.risk_prediction.model import AIRiskPrediction
-from app.modules.ai.risk_prediction.schema import (
-    AIRiskPredictionCreate,
-    AIRiskPredictionUpdate,
-)
+from app.modules.ai.risk_prediction.schema import AIRiskPredictionCreate, AIRiskPredictionUpdate
 
 
-def get_risk_predictions(
-    db: Session,
-    skip: int = 0,
-    limit: int = 100,
-):
-    """
-    Get all AI risk predictions.
-    """
-    return (
-        db.query(AIRiskPrediction)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+def get_risk_predictions(db: Session, skip: int = 0, limit: int = 100) -> list[AIRiskPrediction]:
+    return repository.get_risk_predictions(db, skip=skip, limit=limit)
 
 
-def get_risk_prediction(
-    db: Session,
-    prediction_id: UUID,
-):
-    """
-    Get AI risk prediction by ID.
-    """
-    prediction = db.get(
-        AIRiskPrediction,
-        prediction_id,
-    )
-
+def get_risk_prediction(db: Session, prediction_id: UUID) -> AIRiskPrediction:
+    prediction = repository.get_risk_prediction(db, prediction_id)
     if prediction is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Risk prediction not found",
-        )
-
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Risk prediction not found")
     return prediction
 
 
-def generate_risk_prediction(
-    db: Session,
-    payload: AIRiskPredictionCreate,
-):
-    """
-    Generate a new AI risk prediction.
-    """
-    prediction = AIRiskPrediction(
-        **payload.model_dump()
-    )
+def generate_risk_prediction(db: Session, payload: AIRiskPredictionCreate) -> AIRiskPrediction:
+    return repository.create_risk_prediction(db, payload)
 
-    db.add(prediction)
-    db.commit()
-    db.refresh(prediction)
 
+def update_risk_prediction(db: Session, prediction_id: UUID, payload: AIRiskPredictionUpdate) -> AIRiskPrediction:
+    prediction = repository.update_risk_prediction(db, prediction_id, payload)
+    if prediction is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Risk prediction not found")
     return prediction
 
 
-def update_risk_prediction(
-    db: Session,
-    prediction_id: UUID,
-    payload: AIRiskPredictionUpdate,
-):
-    """
-    Update an existing AI risk prediction.
-    """
-    prediction = db.get(
-        AIRiskPrediction,
-        prediction_id,
-    )
-
-    if prediction is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Risk prediction not found",
-        )
-
-    for field, value in payload.model_dump(
-        exclude_unset=True
-    ).items():
-        setattr(prediction, field, value)
-
-    db.commit()
-    db.refresh(prediction)
-
-    return prediction
-
-
-def delete_risk_prediction(
-    db: Session,
-    prediction_id: UUID,
-):
-    """
-    Delete an AI risk prediction.
-    """
-    prediction = db.get(
-        AIRiskPrediction,
-        prediction_id,
-    )
-
-    if prediction is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Risk prediction not found",
-        )
-
-    db.delete(prediction)
-    db.commit()
-
-    return None
+def delete_risk_prediction(db: Session, prediction_id: UUID) -> None:
+    deleted = repository.delete_risk_prediction(db, prediction_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Risk prediction not found")

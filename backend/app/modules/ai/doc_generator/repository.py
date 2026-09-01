@@ -20,6 +20,21 @@ from app.modules.ai.doc_generator.schema import (
     AIDocumentGenerationUpdate,
 )
 
+def get_document_generations(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[AIDocumentGeneration]:
+
+    return (
+        db.query(AIDocumentGeneration)
+        .order_by(AIDocumentGeneration.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 
 # ==========================================================
 # Create

@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
-from app.modules.ai.task_estimation.model import AITaskEstimation
+from app.modules.ai.task_estimation import service
 from app.modules.ai.task_estimation.schema import (
     AITaskEstimationCreate,
     AITaskEstimationRead,
@@ -29,7 +29,7 @@ async def get_task_estimations(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(AITaskEstimation).offset(skip).limit(limit).all()
+    return service.get_task_estimations(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -42,10 +42,7 @@ async def get_task_estimation(
     estimation_id: UUID,
     db: Session = Depends(get_db),
 ):
-    estimation = db.get(AITaskEstimation, estimation_id)
-    if estimation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task estimation not found")
-    return estimation
+    return service.get_task_estimation(db, estimation_id)
 
 
 @router.post(
@@ -58,11 +55,7 @@ async def generate_task_estimation(
     payload: AITaskEstimationCreate,
     db: Session = Depends(get_db),
 ):
-    estimation = AITaskEstimation(**payload.model_dump())
-    db.add(estimation)
-    db.commit()
-    db.refresh(estimation)
-    return estimation
+    return service.generate_task_estimation(db, payload)
 
 
 @router.put(
@@ -76,16 +69,7 @@ async def update_task_estimation(
     payload: AITaskEstimationUpdate,
     db: Session = Depends(get_db),
 ):
-    estimation = db.get(AITaskEstimation, estimation_id)
-    if estimation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task estimation not found")
-
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(estimation, field, value)
-
-    db.commit()
-    db.refresh(estimation)
-    return estimation
+    return service.update_task_estimation(db, estimation_id, payload)
 
 
 @router.delete(
@@ -97,9 +81,4 @@ async def delete_task_estimation(
     estimation_id: UUID,
     db: Session = Depends(get_db),
 ):
-    estimation = db.get(AITaskEstimation, estimation_id)
-    if estimation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task estimation not found")
-
-    db.delete(estimation)
-    db.commit()
+    service.delete_task_estimation(db, estimation_id)

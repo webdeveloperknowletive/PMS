@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { kanbanApi } from "@/lib/api/kanban";
-import type { KanbanColumnCreate, KanbanTaskUpdate } from "@/types/kanban";
+import type { KanbanColumnCreate, KanbanTaskMovePayload } from "@/types/kanban";
 
 const COLUMNS_KEY = "kanban-columns";
 const PLACEMENTS_KEY = "kanban-tasks";
@@ -44,13 +44,13 @@ export function useDeleteKanbanColumn() {
  * Moves a task's placement to a new column/position. `placementId` MUST be
  * the placement's own `kanban_task_id`, not the underlying task's `task_id`
  * (see the note in lib/api/kanban.ts on the backend's param-naming quirk).
- * Uses an optimistic update so the drag feels instant, then reconciles with
- * the server response.
+ * Hits the dedicated /move endpoint — `moved_by` is stamped server-side
+ * from the authenticated user, so it's not part of this payload.
  */
 export function useMoveKanbanTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ placementId, payload }: { placementId: string; payload: KanbanTaskUpdate }) =>
+    mutationFn: ({ placementId, payload }: { placementId: string; payload: KanbanTaskMovePayload }) =>
       kanbanApi.moveTask(placementId, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [PLACEMENTS_KEY] }),
   });

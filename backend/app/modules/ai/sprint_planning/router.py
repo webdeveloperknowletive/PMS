@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
-from app.modules.ai.sprint_planning.model import AISprintPlan
+from app.modules.ai.sprint_planning import service
 from app.modules.ai.sprint_planning.schema import AISprintPlanCreate, AISprintPlanRead, AISprintPlanUpdate
 from app.modules.ai.sprint_planning.permissions import can_generate, can_view_results
 
@@ -25,7 +25,7 @@ async def get_sprint_plans(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return db.query(AISprintPlan).offset(skip).limit(limit).all()
+    return service.get_sprint_plans(db, skip=skip, limit=limit)
 
 
 @router.get(
@@ -38,10 +38,7 @@ async def get_sprint_plan(
     sprint_plan_id: UUID,
     db: Session = Depends(get_db),
 ):
-    sprint_plan = db.get(AISprintPlan, sprint_plan_id)
-    if sprint_plan is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sprint plan not found")
-    return sprint_plan
+    return service.get_sprint_plan(db, sprint_plan_id)
 
 
 @router.post(
@@ -54,11 +51,7 @@ async def generate_sprint_plan(
     payload: AISprintPlanCreate,
     db: Session = Depends(get_db),
 ):
-    sprint_plan = AISprintPlan(**payload.model_dump())
-    db.add(sprint_plan)
-    db.commit()
-    db.refresh(sprint_plan)
-    return sprint_plan
+    return service.generate_sprint_plan(db, payload)
 
 
 @router.put(
@@ -72,16 +65,7 @@ async def update_sprint_plan(
     payload: AISprintPlanUpdate,
     db: Session = Depends(get_db),
 ):
-    sprint_plan = db.get(AISprintPlan, sprint_plan_id)
-    if sprint_plan is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sprint plan not found")
-
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(sprint_plan, field, value)
-
-    db.commit()
-    db.refresh(sprint_plan)
-    return sprint_plan
+    return service.update_sprint_plan(db, sprint_plan_id, payload)
 
 
 @router.delete(
@@ -93,9 +77,4 @@ async def delete_sprint_plan(
     sprint_plan_id: UUID,
     db: Session = Depends(get_db),
 ):
-    sprint_plan = db.get(AISprintPlan, sprint_plan_id)
-    if sprint_plan is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sprint plan not found")
-
-    db.delete(sprint_plan)
-    db.commit()
+    service.delete_sprint_plan(db, sprint_plan_id)
