@@ -77,6 +77,14 @@ export interface AIDocumentGenerationBase {
   status: string;
 }
 export interface AIDocumentGenerationCreate extends AIDocumentGenerationBase {}
+/** What the UI actually sends now — the backend calls Groq itself and
+ *  fills in generated_content/ai_model/status server-side. */
+export interface AIDocumentGenerationRequest {
+  project_id: string;
+  document_type: string;
+  title: string;
+  prompt: string;
+}
 export interface AIDocumentGenerationUpdate {
   title?: string;
   document_url?: string | null;

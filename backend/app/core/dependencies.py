@@ -10,7 +10,7 @@ from app.modules.users.model import User
 from app.modules.roles.model import UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/auth/login",
+    tokenUrl="/api/v1/auth/login",
 )
 
 

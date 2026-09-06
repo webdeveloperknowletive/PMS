@@ -29,6 +29,10 @@ class User(Base, TimestampMixin):
     organized_calendar_events = relationship("CalendarEvent", back_populates="organizer_user")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     generated_reports = relationship("Report", back_populates="generated_by_user")
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
+    password_reset_tokens = relationship("PasswordResetToken", back_populates="user", cascade="all, delete-orphan")
+    email_verification_tokens = relationship("EmailVerificationToken", back_populates="user", cascade="all, delete-orphan")
+    login_history = relationship("LoginHistory", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User {self.email}>"

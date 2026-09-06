@@ -89,6 +89,25 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
 )
 
 # ==========================================================
+# AI / Groq Configuration
+# ==========================================================
+# Free tier — no card required. Get a key at https://console.groq.com
+# Model choice matters here: Groq periodically deprecates older Llama
+# models. openai/gpt-oss-120b is the current recommended general-purpose
+# model as of writing — check https://console.groq.com/docs/deprecations
+# if generation starts failing with a "model decommissioned" error.
+
+GROQ_API_KEY = os.getenv(
+    "GROQ_API_KEY",
+    ""
+)
+
+GROQ_MODEL = os.getenv(
+    "GROQ_MODEL",
+    "openai/gpt-oss-120b"
+)
+
+# ==========================================================
 # CORS Configuration
 # ==========================================================
 

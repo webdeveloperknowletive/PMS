@@ -10,7 +10,7 @@ service.decode_token). This router is now a thin HTTP wrapper around
 that service, instead of re-implementing the same logic a second time.
 """
 
-from fastapi import APIRouter, Body, Depends, status
+from fastapi import APIRouter, Body, Depends, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
@@ -37,17 +37,25 @@ async def register(
 
 @router.post("/login", status_code=status.HTTP_200_OK)
 async def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    return service.login(db, form_data.username, form_data.password)
+    return service.login(
+        db,
+        form_data.username,
+        form_data.password,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    return service.logout()
+    return service.logout(db, current_user)
 
 
 @router.post("/refresh-token", status_code=status.HTTP_200_OK)
