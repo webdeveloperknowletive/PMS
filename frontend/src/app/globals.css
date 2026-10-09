@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 225 38% 97%;
+    --foreground: 226 36% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 226 36% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 226 36% 15%;
+    --primary: 249 78% 61%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 224 31% 94%;
+    --secondary-foreground: 226 32% 22%;
+    --muted: 224 31% 95%;
+    --muted-foreground: 224 13% 46%;
+    --accent: 248 100% 97%;
+    --accent-foreground: 249 67% 48%;
+    --destructive: 0 75% 56%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 224 23% 89%;
+    --input: 224 23% 87%;
+    --ring: 249 78% 61%;
+    --radius: 1rem;
+    --sidebar: 231 42% 13%;
+    --sidebar-foreground: 225 23% 78%;
+    --sidebar-active: 249 78% 61%;
+    --sidebar-active-foreground: 0 0% 100%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv11", "salt", "ss01";
+    background-image:
+      radial-gradient(ellipse at 82% 0%, hsl(250 100% 95% / 0.56), transparent 34rem),
+      radial-gradient(ellipse at 4% 100%, hsl(198 100% 95% / 0.46), transparent 30rem);
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: hsl(249 78% 61% / 0.18);
+    color: hsl(226 36% 15%);
+  }
+}
+
+@layer components {
+  .workspace-page {
+    @apply mx-auto w-full max-w-[1600px] space-y-6;
+  }
+
+  .page-banner {
+    @apply relative isolate flex flex-col justify-between gap-5 overflow-hidden rounded-2xl border border-violet-100/80 bg-gradient-to-r from-white via-violet-50/80 to-sky-50/80 px-6 py-5 shadow-sm sm:flex-row sm:items-center;
+  }
+
+  .page-banner::after {
+    content: "";
+    @apply pointer-events-none absolute -right-10 -top-20 -z-10 h-52 w-52 rounded-full bg-violet-300/20 blur-3xl;
+  }
+
+  .metric-card {
+    @apply relative overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:shadow-md;
+  }
+
+  .filter-bar {
+    @apply flex flex-wrap items-center gap-3 rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm backdrop-blur;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--sidebar-foreground) / 0.3) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+
+  .animate-enter {
+    animation: enter 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+
+@keyframes enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-widget[data-chat-theme="dark"] {
+  color-scheme: dark;
+  color: #e2e8f0;
+  background-color: #0f172a;
+  border-color: #334155;
+}
+
+.chat-widget[data-chat-theme="dark"] .bg-white,
+.chat-widget[data-chat-theme="dark"] .bg-slate-50\/70,
+.chat-widget[data-chat-theme="dark"] .bg-slate-50 {
+  background-color: #1e293b;
+}
+
+.chat-widget[data-chat-theme="dark"] .border-slate-100,
+.chat-widget[data-chat-theme="dark"] .border-slate-200 {
+  border-color: #334155;
+}
+
+.chat-widget[data-chat-theme="dark"] .text-slate-800,
+.chat-widget[data-chat-theme="dark"] .text-slate-700,
+.chat-widget[data-chat-theme="dark"] .text-slate-600 {
+  color: #e2e8f0;
+}
+
+.chat-widget[data-chat-theme="dark"] .text-slate-500,
+.chat-widget[data-chat-theme="dark"] .text-slate-400 {
+  color: #94a3b8;
+}
+
+.chat-widget[data-chat-theme="dark"] input,
+.chat-widget[data-chat-theme="dark"] textarea,
+.chat-widget[data-chat-theme="dark"] select {
+  color: #e2e8f0;
+  background-color: #0f172a;
+  border-color: #475569;
+}
+
+.chat-widget[data-chat-theme="dark"] .hover\:bg-violet-50:hover,
+.chat-widget[data-chat-theme="dark"] .hover\:bg-slate-100:hover {
+  background-color: #334155;
+}
+
+.chat-widget[data-chat-font-size="small"] .chat-list-preview { font-size: 0.7rem; }
+.chat-widget[data-chat-font-size="large"] .chat-list-preview { font-size: 0.85rem; }
+
+.chat-widget .chat-scroll-area {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chat-widget .chat-scroll-area::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
