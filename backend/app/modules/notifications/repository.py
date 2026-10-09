@@ -25,12 +25,17 @@ from app.modules.notifications.schema import NotificationCreate, NotificationUpd
 def create_notification(
     db: Session,
     payload: NotificationCreate,
+    *,
+    commit: bool = True,
 ) -> Notification:
 
     notification = Notification(**payload.model_dump())
 
     db.add(notification)
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     db.refresh(notification)
 
     return notification

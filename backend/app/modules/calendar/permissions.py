@@ -12,17 +12,20 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ForbiddenException
-from app.core.permissions import DELIVERY_LEAD_ROLES, user_has_any_role
+from app.core.permissions import has_permission
 from app.modules.users.model import User
 
 
 def can_create_event(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> User:
     """
     Any authenticated user may schedule a calendar event.
     """
 
+    if not has_permission(db, current_user, "calendar.create"):
+        raise ForbiddenException(message="Missing required permission: calendar.create")
     return current_user
 
 
@@ -38,7 +41,7 @@ def can_modify_event(
     if current_user.user_id == organizer_id:
         return current_user
 
-    if not user_has_any_role(db, current_user, DELIVERY_LEAD_ROLES):
+    if not has_permission(db, current_user, "calendar.manage"):
         raise ForbiddenException(
             message="You may only modify events you organize"
         )

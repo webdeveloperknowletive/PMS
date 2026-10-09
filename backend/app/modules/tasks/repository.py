@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.tasks.model import Task
 from app.modules.tasks.schema import TaskCreate, TaskUpdate
+from app.modules.teams.model import Team, TeamLead, TeamMember
 
 
 # ==========================================================
@@ -25,12 +26,17 @@ from app.modules.tasks.schema import TaskCreate, TaskUpdate
 def create_task(
     db: Session,
     payload: TaskCreate,
+    *,
+    commit: bool = True,
 ) -> Task:
 
     task = Task(**payload.model_dump())
 
     db.add(task)
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     db.refresh(task)
 
     return task
@@ -61,6 +67,48 @@ def get_tasks(
         .limit(limit)
         .all()
     )
+
+
+def get_tasks_for_user(
+    db: Session,
+    user_id: UUID,
+    project_ids: set[UUID],
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Task]:
+    query = db.query(Task).filter(Task.user_id == user_id)
+    if project_ids:
+        query = db.query(Task).filter(
+            (Task.user_id == user_id) | (Task.project_id.in_(project_ids))
+        )
+    return query.order_by(Task.created_at.desc()).offset(skip).limit(limit).all()
+
+
+def get_visible_project_ids(db: Session, user_id: UUID) -> set[UUID]:
+    lead_ids = [
+        row[0]
+        for row in db.query(TeamLead.team_lead_id)
+        .filter(TeamLead.user_id == user_id)
+        .all()
+    ]
+    project_ids = {
+        row[0]
+        for row in db.query(Team.project_id)
+        .filter(Team.team_lead_id.in_(lead_ids))
+        .all()
+    } if lead_ids else set()
+    project_ids.update(
+        row[0]
+        for row in db.query(Team.project_id)
+        .join(TeamMember, TeamMember.team_id == Team.team_id)
+        .filter(TeamMember.user_id == user_id)
+        .all()
+    )
+    return project_ids
+
+
+def task_is_visible_to_user(db: Session, task: Task, user_id: UUID, project_ids: set[UUID]) -> bool:
+    return task.user_id == user_id or task.project_id in project_ids
 
 
 def get_tasks_by_project(
@@ -137,6 +185,17 @@ def get_subtasks(
     )
 
 
+def get_visible_subtasks(
+    db: Session,
+    parent_task_id: UUID,
+    user_id: UUID,
+    project_ids: set[UUID],
+) -> list[Task]:
+    query = db.query(Task).filter(Task.parent_task_id == parent_task_id)
+    query = query.filter((Task.user_id == user_id) | (Task.project_id.in_(project_ids))) if project_ids else query.filter(Task.user_id == user_id)
+    return query.all()
+
+
 def count_tasks_by_project(
     db: Session,
     project_id: UUID,
@@ -157,6 +216,8 @@ def update_task(
     db: Session,
     task_id: UUID,
     payload: TaskUpdate,
+    *,
+    commit: bool = True,
 ) -> Task | None:
 
     task = db.get(Task, task_id)
@@ -167,7 +228,10 @@ def update_task(
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(task, field, value)
 
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     db.refresh(task)
 
     return task

@@ -1,13 +1,16 @@
 import logging
-import os
+from pathlib import Path
 from logging.handlers import RotatingFileHandler
+from app.core.config import LOG_FILE
 
 # ==========================================================
 # Create Logs Directory
 # ==========================================================
 
-LOG_DIR = "logs"
-os.makedirs(LOG_DIR, exist_ok=True)
+LOG_PATH = Path(LOG_FILE)
+if not LOG_PATH.is_absolute():
+    LOG_PATH = Path(__file__).resolve().parents[2] / LOG_PATH
+LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # ==========================================================
 # Log Formatter
@@ -32,7 +35,7 @@ console_handler.setFormatter(formatter)
 # ==========================================================
 
 file_handler = RotatingFileHandler(
-    filename=f"{LOG_DIR}/application.log",
+    filename=str(LOG_PATH),
     maxBytes=5 * 1024 * 1024,   # 5 MB
     backupCount=5,
     encoding="utf-8",

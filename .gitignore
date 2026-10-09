@@ -1,31 +1,26 @@
-# Python
+# Python generated files
 __pycache__/
 *.py[cod]
 
-# Virtual Environment
+# Python virtual environments
 backend/venv/
+venv/
+.venv/
 
-# Environment
-backend/.env
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+!.env.local.example
 
 # Logs
-backend/logs/
 *.log
+backend/logs/
 
-# Database
-*.db
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Build
+# Frontend dependencies and generated files
+node_modules/
+.next/
 dist/
 build/
-
-# Zip
-*.zip
+coverage/
+*.tsbuildinfo

@@ -39,3 +39,17 @@ class UserRoleRead(UserRoleBase):
 
     user_role_id: uuid.UUID
     assigned_at: datetime
+
+
+class PermissionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    permission_id: uuid.UUID
+    code: str
+    name: str
+    description: str
+    category: str
+
+
+class RolePermissionsUpdate(BaseModel):
+    permission_ids: list[uuid.UUID]

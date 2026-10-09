@@ -4,18 +4,30 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
+from app.core.dependencies import get_current_user
 from app.modules.ai.task_estimation import service
 from app.modules.ai.task_estimation.schema import (
     AITaskEstimationCreate,
+    AITaskEstimationGenerationRequest,
     AITaskEstimationRead,
     AITaskEstimationUpdate,
 )
 from app.modules.ai.task_estimation.permissions import can_generate, can_view_results
+from app.modules.users.model import User
 
 router = APIRouter(
     prefix="/ai/task-estimations",
     tags=["AI Task Estimation"]
 )
+
+
+@router.post("/generate", response_model=AITaskEstimationRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(can_generate)])
+async def generate_task_estimation_with_ai(
+    payload: AITaskEstimationGenerationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.generate_task_estimation_with_ai(db, payload)
 
 
 @router.get(

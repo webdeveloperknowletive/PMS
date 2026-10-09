@@ -51,9 +51,10 @@ async def get_calendar_event(
 )
 async def create_calendar_event(
     payload: CalendarEventCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.create_calendar_event(db, payload)
+    return service.create_calendar_event(db, payload, actor=current_user)
 
 
 @router.put("/{event_id}", response_model=CalendarEventRead, status_code=status.HTTP_200_OK)
@@ -69,7 +70,7 @@ async def update_calendar_event(
     event = service.get_calendar_event(db, event_id)
     can_modify_event(organizer_id=event.organizer, current_user=current_user, db=db)
 
-    return service.update_calendar_event(db, event_id, payload)
+    return service.update_calendar_event(db, event_id, payload, actor=current_user)
 
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -81,4 +82,4 @@ async def delete_calendar_event(
     event = service.get_calendar_event(db, event_id)
     can_modify_event(organizer_id=event.organizer, current_user=current_user, db=db)
 
-    service.delete_calendar_event(db, event_id)
+    service.delete_calendar_event(db, event_id, actor=current_user)

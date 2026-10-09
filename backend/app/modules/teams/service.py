@@ -24,6 +24,8 @@ from app.modules.teams.schema import (
     TeamMemberUpdate,
     TeamUpdate,
 )
+from app.modules.notifications.events import notify_project_users
+from app.modules.users.model import User
 
 
 # ==========================================================
@@ -76,21 +78,53 @@ def get_team(db: Session, team_id: UUID) -> Team:
     return team
 
 
-def create_team(db: Session, payload: TeamCreate) -> Team:
-    return repository.create_team(db, payload)
-
-
-def update_team(db: Session, team_id: UUID, payload: TeamUpdate) -> Team:
-    team = repository.update_team(db, team_id, payload)
-    if team is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+def create_team(db: Session, payload: TeamCreate, actor: User) -> Team:
+    team = repository.create_team(db, payload)
+    lead = db.get(TeamLead, team.team_lead_id)
+    notify_project_users(
+        db, team.project_id, actor_id=actor.user_id,
+        additional_user_ids=set(payload.member_user_ids) | ({lead.user_id} if lead else set()),
+        title=f"Team created: {team.team_name}",
+        message=f"{actor.name} created this team and set up its membership.",
+        notification_type="Team Created",
+    )
     return team
 
 
-def delete_team(db: Session, team_id: UUID) -> None:
+def update_team(db: Session, team_id: UUID, payload: TeamUpdate, actor: User) -> Team:
+    current = get_team(db, team_id)
+    team = repository.update_team(db, team_id, payload)
+    if team is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    target_ids = {member.user_id for member in current.members}
+    lead = db.get(TeamLead, team.team_lead_id)
+    if lead:
+        target_ids.add(lead.user_id)
+    notify_project_users(
+        db, team.project_id, actor_id=actor.user_id, additional_user_ids=target_ids,
+        title=f"Team updated: {team.team_name}",
+        message=f"{actor.name} updated the team details.",
+        notification_type="Team Updated",
+    )
+    return team
+
+
+def delete_team(db: Session, team_id: UUID, actor: User) -> None:
+    team = get_team(db, team_id)
+    project_id, team_name = team.project_id, team.team_name
+    recipient_ids = {member.user_id for member in team.members}
+    lead = db.get(TeamLead, team.team_lead_id)
+    if lead:
+        recipient_ids.add(lead.user_id)
     deleted = repository.delete_team(db, team_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    notify_project_users(
+        db, project_id, actor_id=actor.user_id, additional_user_ids=recipient_ids,
+        title=f"Team deleted: {team_name}",
+        message=f"{actor.name} deleted this team.",
+        notification_type="Team Deleted",
+    )
 
 
 # ==========================================================
@@ -104,7 +138,7 @@ def get_team_members(db: Session, team_id: UUID) -> list[TeamMember]:
     return repository.get_members_by_team(db, team_id)
 
 
-def add_team_member(db: Session, team_id: UUID, payload: TeamMemberCreate) -> TeamMember:
+def add_team_member(db: Session, team_id: UUID, payload: TeamMemberCreate, actor: User) -> TeamMember:
     team = repository.get_team(db, team_id)
     if team is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
@@ -114,18 +148,41 @@ def add_team_member(db: Session, team_id: UUID, payload: TeamMemberCreate) -> Te
         user_id=payload.user_id,
         responsibility=payload.responsibility,
     )
-    return repository.create_team_member(db, full_payload)
+    member = repository.create_team_member(db, full_payload)
+    notify_project_users(
+        db, team.project_id, actor_id=actor.user_id, additional_user_ids={payload.user_id},
+        title=f"Added to team: {team.team_name}",
+        message=f"{actor.name} added a member to the team.",
+        notification_type="Team Membership",
+    )
+    return member
 
 
-def update_team_member(db: Session, team_id: UUID, member_id: UUID, payload: TeamMemberUpdate) -> TeamMember:
+def update_team_member(db: Session, team_id: UUID, member_id: UUID, payload: TeamMemberUpdate, actor: User) -> TeamMember:
     member = repository.get_team_member(db, member_id)
     if member is None or member.team_id != team_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team member not found")
-    return repository.update_team_member(db, member_id, payload)
+    updated = repository.update_team_member(db, member_id, payload)
+    team = get_team(db, team_id)
+    notify_project_users(
+        db, team.project_id, actor_id=actor.user_id, additional_user_ids={member.user_id},
+        title=f"Team responsibility updated: {team.team_name}",
+        message=f"{actor.name} updated your team responsibility.",
+        notification_type="Team Membership Updated",
+    )
+    return updated
 
 
-def remove_team_member(db: Session, team_id: UUID, member_id: UUID) -> None:
+def remove_team_member(db: Session, team_id: UUID, member_id: UUID, actor: User) -> None:
     member = repository.get_team_member(db, member_id)
     if member is None or member.team_id != team_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team member not found")
+    team = get_team(db, team_id)
+    removed_user_id = member.user_id
     repository.delete_team_member(db, member_id)
+    notify_project_users(
+        db, team.project_id, actor_id=actor.user_id, additional_user_ids={removed_user_id},
+        title=f"Removed from team: {team.team_name}",
+        message=f"{actor.name} removed a member from the team.",
+        notification_type="Team Membership Removed",
+    )

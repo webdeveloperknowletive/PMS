@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -14,6 +14,7 @@ class Notification(Base):
     notification_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
     project_id = Column(UUID(as_uuid=True), ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=True, index=True)
+    chat_conversation_id = Column(UUID(as_uuid=True), ForeignKey("chat_conversations.conversation_id", ondelete="SET NULL"), nullable=True, index=True)
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     notification_type = Column(String(50), nullable=False)
@@ -25,3 +26,17 @@ class Notification(Base):
 
     def __repr__(self) -> str:
         return f"<Notification {self.title} user_id={self.user_id}>"
+
+
+class NotificationSetting(Base):
+    __tablename__ = "notification_settings"
+
+    setting_key = Column(String(100), primary_key=True)
+    setting_value = Column(String(255), nullable=False)
+
+
+class NotificationUserSetting(Base):
+    __tablename__ = "notification_user_settings"
+
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True)
+    volume_percent = Column(Integer, nullable=False, default=65, server_default="65")

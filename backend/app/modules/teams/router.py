@@ -120,9 +120,10 @@ async def get_team(
 )
 async def create_team(
     payload: TeamCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.create_team(db, payload)
+    return service.create_team(db, payload, actor=current_user)
 
 
 @router.put(
@@ -134,9 +135,10 @@ async def create_team(
 async def update_team(
     team_id: UUID,
     payload: TeamUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.update_team(db, team_id, payload)
+    return service.update_team(db, team_id, payload, actor=current_user)
 
 
 @router.delete(
@@ -146,9 +148,10 @@ async def update_team(
 )
 async def delete_team(
     team_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    service.delete_team(db, team_id)
+    service.delete_team(db, team_id, actor=current_user)
 
 
 # ==========================================================
@@ -177,7 +180,7 @@ async def add_team_member(
 ):
     team = service.get_team(db, team_id)
     can_manage_team_membership(team_lead_user_id=team.team_lead.user_id, current_user=current_user, db=db)
-    return service.add_team_member(db, team_id, payload)
+    return service.add_team_member(db, team_id, payload, actor=current_user)
 
 
 @router.put("/{team_id}/members/{member_id}", response_model=TeamMemberRead, status_code=status.HTTP_200_OK)
@@ -190,7 +193,7 @@ async def update_team_member(
 ):
     team = service.get_team(db, team_id)
     can_manage_team_membership(team_lead_user_id=team.team_lead.user_id, current_user=current_user, db=db)
-    return service.update_team_member(db, team_id, member_id, payload)
+    return service.update_team_member(db, team_id, member_id, payload, actor=current_user)
 
 
 @router.delete("/{team_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -202,4 +205,4 @@ async def remove_team_member(
 ):
     team = service.get_team(db, team_id)
     can_manage_team_membership(team_lead_user_id=team.team_lead.user_id, current_user=current_user, db=db)
-    service.remove_team_member(db, team_id, member_id)
+    service.remove_team_member(db, team_id, member_id, actor=current_user)

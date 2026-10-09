@@ -12,7 +12,7 @@ Data-access layer for TeamLead, Team and TeamMember.
 
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.modules.teams.model import Team, TeamLead, TeamMember
 from app.modules.teams.schema import (
@@ -101,11 +101,21 @@ def create_team(
     payload: TeamCreate,
 ) -> Team:
 
-    team = Team(**payload.model_dump())
-
+    team_data = payload.model_dump(exclude={"member_user_ids"})
+    member_user_ids = payload.member_user_ids
+    team = Team(**team_data)
     db.add(team)
-    db.commit()
-    db.refresh(team)
+    try:
+        db.flush()
+        db.add_all(
+            TeamMember(team_id=team.team_id, user_id=user_id)
+            for user_id in member_user_ids
+        )
+        db.commit()
+        db.refresh(team)
+    except Exception:
+        db.rollback()
+        raise
 
     return team
 
@@ -115,7 +125,12 @@ def get_team(
     team_id: UUID,
 ) -> Team | None:
 
-    return db.get(Team, team_id)
+    return (
+        db.query(Team)
+        .options(selectinload(Team.members))
+        .filter(Team.team_id == team_id)
+        .first()
+    )
 
 
 def get_teams(
@@ -126,6 +141,7 @@ def get_teams(
 
     return (
         db.query(Team)
+        .options(selectinload(Team.members))
         .order_by(Team.created_at.desc())
         .offset(skip)
         .limit(limit)

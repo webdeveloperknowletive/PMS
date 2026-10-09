@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ForbiddenException
-from app.core.permissions import is_admin
+from app.core.permissions import has_permission
 from app.modules.users.model import User
 
 
@@ -29,7 +29,7 @@ def can_access_notification(
     if current_user.user_id == notification_owner_id:
         return current_user
 
-    if not is_admin(db, current_user):
+    if not has_permission(db, current_user, "roles.manage"):
         raise ForbiddenException(
             message="You may only access your own notifications"
         )
@@ -45,7 +45,7 @@ def can_create_notification(
     Admin-only: create/broadcast a notification for another user.
     """
 
-    if not is_admin(db, current_user):
+    if not has_permission(db, current_user, "roles.manage"):
         raise ForbiddenException(
             message="Only Admins may create notifications for other users"
         )

@@ -34,6 +34,14 @@ class AISprintPlanUpdate(BaseModel):
     status: str | None = Field(None, max_length=30)
 
 
+class AISprintPlanGenerationRequest(BaseModel):
+    project_id: uuid.UUID
+    sprint_name: str = Field(..., max_length=150)
+    sprint_goal: str
+    sprint_duration_days: int = Field(..., gt=0)
+    prompt: str = ""
+
+
 class AISprintPlanRead(AISprintPlanBase):
     model_config = ConfigDict(from_attributes=True)
 

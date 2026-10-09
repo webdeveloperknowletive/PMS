@@ -34,6 +34,12 @@ class AIRiskPredictionUpdate(BaseModel):
     recommendation: str | None = None
 
 
+class AIRiskPredictionGenerationRequest(BaseModel):
+    project_id: uuid.UUID
+    task_id: uuid.UUID | None = None
+    prompt: str = "Review the current project information and identify the most material delivery risk."
+
+
 class AIRiskPredictionRead(AIRiskPredictionBase):
     model_config = ConfigDict(from_attributes=True)
 

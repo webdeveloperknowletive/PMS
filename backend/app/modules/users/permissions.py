@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ForbiddenException
-from app.core.permissions import ROLE_ADMIN, is_admin
+from app.core.permissions import has_permission
 from app.modules.users.model import User
 
 
@@ -26,9 +26,9 @@ def can_manage_users(
     Admin-only: create, deactivate, or delete any user account.
     """
 
-    if not is_admin(db, current_user):
+    if not has_permission(db, current_user, "users.manage"):
         raise ForbiddenException(
-            message=f"Requires the '{ROLE_ADMIN}' role"
+            message="Missing required permission: users.manage"
         )
 
     return current_user
@@ -46,7 +46,7 @@ def can_modify_user(
     if current_user.user_id == target_user_id:
         return current_user
 
-    if not is_admin(db, current_user):
+    if not has_permission(db, current_user, "users.manage"):
         raise ForbiddenException(
             message="You may only modify your own user profile"
         )

@@ -16,6 +16,12 @@ class User(Base, TimestampMixin):
     email = Column(String(255), nullable=False, unique=True, index=True)
     password_hash = Column(String(255), nullable=False)
     is_active = Column(Boolean, nullable=False, default=True)
+    profile_picture_filename = Column(String(255), nullable=True)
+    profile_picture_mime_type = Column(String(100), nullable=True)
+
+    @property
+    def profile_picture_url(self) -> str | None:
+        return f"/users/{self.user_id}/profile-picture" if self.profile_picture_filename else None
 
     # --- Relationships (string targets: avoids circular imports across modules) ---
     user_roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")

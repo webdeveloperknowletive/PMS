@@ -4,18 +4,30 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
+from app.core.dependencies import get_current_user
 from app.modules.ai.meeting_summary import service
 from app.modules.ai.meeting_summary.schema import (
     AIMeetingSummaryCreate,
+    AIMeetingSummaryGenerationRequest,
     AIMeetingSummaryRead,
     AIMeetingSummaryUpdate,
 )
 from app.modules.ai.meeting_summary.permissions import can_generate, can_view_results
+from app.modules.users.model import User
 
 router = APIRouter(
     prefix="/ai/meeting-summaries",
     tags=["AI Meeting Summary"]
 )
+
+
+@router.post("/generate", response_model=AIMeetingSummaryRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(can_generate)])
+async def generate_meeting_summary_with_ai(
+    payload: AIMeetingSummaryGenerationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.generate_meeting_summary_with_ai(db, payload, created_by=current_user.user_id)
 
 
 @router.get(

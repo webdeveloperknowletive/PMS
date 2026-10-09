@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ForbiddenException
-from app.core.permissions import ROLE_ADMIN, is_admin
+from app.core.permissions import has_permission
 from app.modules.users.model import User
 
 
@@ -24,9 +24,9 @@ def can_manage_roles(
     Admin-only: create/update/delete roles and assign/revoke them.
     """
 
-    if not is_admin(db, current_user):
+    if not has_permission(db, current_user, "roles.manage"):
         raise ForbiddenException(
-            message=f"Requires the '{ROLE_ADMIN}' role"
+            message="Missing required permission: roles.manage"
         )
 
     return current_user

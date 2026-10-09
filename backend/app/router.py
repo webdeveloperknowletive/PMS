@@ -28,6 +28,7 @@ from app.modules.milestones.router import router as milestones_router
 from app.modules.calendar.router import router as calendar_router
 from app.modules.documentation.router import router as documentation_router
 from app.modules.notifications.router import router as notifications_router
+from app.modules.chat.router import router as chat_router
 from app.modules.reports.router import router as reports_router
 from app.modules.ai.sprint_planning.router import router as ai_sprint_planning_router
 from app.modules.ai.risk_prediction.router import router as ai_risk_prediction_router
@@ -69,6 +70,7 @@ api_router.include_router(calendar_router)
 
 api_router.include_router(documentation_router)
 api_router.include_router(notifications_router)
+api_router.include_router(chat_router)
 api_router.include_router(reports_router)
 
 # ==========================================================

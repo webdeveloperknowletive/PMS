@@ -7,6 +7,8 @@ from db.session import get_db
 from app.modules.milestones import service
 from app.modules.milestones.schema import MilestoneCreate, MilestoneRead, MilestoneUpdate
 from app.modules.milestones.permissions import can_manage_milestones, can_view_milestones
+from app.core.dependencies import get_current_user
+from app.modules.users.model import User
 
 router = APIRouter(
     prefix="/milestones",
@@ -49,9 +51,10 @@ async def get_milestone(
 )
 async def create_milestone(
     payload: MilestoneCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.create_milestone(db, payload)
+    return service.create_milestone(db, payload, actor=current_user)
 
 
 @router.put(
@@ -63,9 +66,10 @@ async def create_milestone(
 async def update_milestone(
     milestone_id: UUID,
     payload: MilestoneUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.update_milestone(db, milestone_id, payload)
+    return service.update_milestone(db, milestone_id, payload, actor=current_user)
 
 
 @router.delete(
@@ -75,6 +79,7 @@ async def update_milestone(
 )
 async def delete_milestone(
     milestone_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    service.delete_milestone(db, milestone_id)
+    service.delete_milestone(db, milestone_id, actor=current_user)

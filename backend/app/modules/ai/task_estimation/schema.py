@@ -33,6 +33,12 @@ class AITaskEstimationUpdate(BaseModel):
     ai_reasoning: str | None = None
 
 
+class AITaskEstimationGenerationRequest(BaseModel):
+    task_id: uuid.UUID
+    hourly_rate: Decimal | None = Field(None, ge=0)
+    prompt: str = ""
+
+
 class AITaskEstimationRead(AITaskEstimationBase):
     model_config = ConfigDict(from_attributes=True)
 

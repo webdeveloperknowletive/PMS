@@ -15,11 +15,7 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ForbiddenException
-from app.core.permissions import (
-    CONTRIBUTOR_ROLES,
-    DELIVERY_LEAD_ROLES,
-    user_has_any_role,
-)
+from app.core.permissions import has_permission
 from app.modules.users.model import User
 
 
@@ -32,10 +28,8 @@ def can_manage_tasks(
     delete a task.
     """
 
-    if not user_has_any_role(db, current_user, DELIVERY_LEAD_ROLES):
-        raise ForbiddenException(
-            message=f"Requires one of the following roles: {', '.join(DELIVERY_LEAD_ROLES)}"
-        )
+    if not has_permission(db, current_user, "tasks.manage"):
+        raise ForbiddenException(message="Missing required permission: tasks.manage")
 
     return current_user
 
@@ -50,12 +44,12 @@ def can_update_task(
     update a task assigned to them.
     """
 
-    if user_has_any_role(db, current_user, DELIVERY_LEAD_ROLES):
+    if has_permission(db, current_user, "tasks.manage"):
         return current_user
 
     if (
         task_assignee_id == current_user.user_id
-        and user_has_any_role(db, current_user, CONTRIBUTOR_ROLES)
+        and has_permission(db, current_user, "tasks.update_assigned")
     ):
         return current_user
 

@@ -1,6 +1,7 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, status
+from fastapi import APIRouter, Body, Depends, File, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from db.session import get_db
@@ -38,9 +39,10 @@ async def get_user(
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(can_manage_users)])
 async def create_user(
     payload: UserCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.create_user(db, payload)
+    return service.create_user(db, payload, actor=current_user)
 
 
 @router.put("/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK)
@@ -54,24 +56,26 @@ async def update_user(
     # nonexistent user reports 404, not a permission error.
     service.get_user(db, user_id)
     can_modify_user(target_user_id=user_id, current_user=current_user, db=db)
-    return service.update_user(db, user_id, payload)
+    return service.update_user(db, user_id, payload, actor=current_user)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(can_manage_users)])
 async def delete_user(
     user_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    service.delete_user(db, user_id)
+    service.delete_user(db, user_id, actor=current_user)
 
 
 @router.patch("/{user_id}/status", response_model=UserRead, status_code=status.HTTP_200_OK, dependencies=[Depends(can_manage_users)])
 async def update_user_status(
     user_id: UUID,
     is_active: bool = Body(..., embed=True),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.update_user_status(db, user_id, is_active)
+    return service.update_user_status(db, user_id, is_active, actor=current_user)
 
 
 @router.patch("/{user_id}/password", response_model=UserRead, status_code=status.HTTP_200_OK)
@@ -95,4 +99,35 @@ async def update_profile(
 ):
     service.get_user(db, user_id)
     can_modify_user(target_user_id=user_id, current_user=current_user, db=db)
-    return service.update_profile(db, user_id, payload)
+    return service.update_profile(db, user_id, payload, actor=current_user)
+
+
+@router.put("/{user_id}/profile-picture", response_model=UserRead)
+async def update_profile_picture(
+    user_id: UUID,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    can_modify_user(target_user_id=user_id, current_user=current_user, db=db)
+    return await service.update_profile_picture(db, user_id, file, actor=current_user)
+
+
+@router.delete("/{user_id}/profile-picture", response_model=UserRead)
+async def remove_profile_picture(
+    user_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    can_modify_user(target_user_id=user_id, current_user=current_user, db=db)
+    return service.remove_profile_picture(db, user_id, actor=current_user)
+
+
+@router.get("/{user_id}/profile-picture")
+async def get_profile_picture(
+    user_id: UUID,
+    _current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    path, mime_type = service.get_profile_picture_path(db, user_id)
+    return FileResponse(path, media_type=mime_type)

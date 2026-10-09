@@ -1,11 +1,9 @@
 """
 Constants for the roles module.
 
-`Role.role_name` is free-form in the schema, but the rest of the
-application (`app.core.dependencies.require_role`, `app.core.permissions`)
-only ever checks for this fixed set of names. Keeping them listed here
-lets `scripts/seed_db.py` and admin tooling seed exactly the roles the
-rest of the app expects.
+These names and descriptions are used only when the database is first
+initialized, to provide familiar starting roles. Authorization uses the
+permission grants stored for each role, and admins can create other roles.
 """
 
 ROLE_NAME_ADMIN = "Admin"

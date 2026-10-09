@@ -25,9 +25,10 @@ from app.modules.documentation.schema import DocumentCreate, DocumentUpdate
 def create_document(
     db: Session,
     payload: DocumentCreate,
+    actor: str,
 ) -> Document:
 
-    document = Document(**payload.model_dump())
+    document = Document(**payload.model_dump(), created_by=actor, updated_by=actor)
 
     db.add(document)
     db.commit()
@@ -105,6 +106,7 @@ def update_document(
     db: Session,
     document_id: UUID,
     payload: DocumentUpdate,
+    actor: str,
 ) -> Document | None:
 
     document = db.get(Document, document_id)
@@ -114,6 +116,7 @@ def update_document(
 
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(document, field, value)
+    document.updated_by = actor
 
     db.commit()
     db.refresh(document)
@@ -128,14 +131,15 @@ def update_document(
 def delete_document(
     db: Session,
     document_id: UUID,
-) -> bool:
+) -> Document | None:
 
     document = db.get(Document, document_id)
 
     if document is None:
-        return False
+        return None
 
+    deleted_document = document
     db.delete(document)
     db.commit()
 
-    return True
+    return deleted_document

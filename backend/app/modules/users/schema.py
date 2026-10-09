@@ -26,6 +26,7 @@ class UserRead(UserBase):
     user_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    profile_picture_url: str | None = None
 
 
 class UserInDB(UserRead):

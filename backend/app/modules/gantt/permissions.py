@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ForbiddenException
-from app.core.permissions import DELIVERY_LEAD_ROLES, user_has_any_role
+from app.core.permissions import has_permission
 from app.modules.users.model import User
 
 
@@ -24,10 +24,8 @@ def can_manage_schedule(
     delete a Gantt entry.
     """
 
-    if not user_has_any_role(db, current_user, DELIVERY_LEAD_ROLES):
-        raise ForbiddenException(
-            message=f"Requires one of the following roles: {', '.join(DELIVERY_LEAD_ROLES)}"
-        )
+    if not has_permission(db, current_user, "gantt.manage"):
+        raise ForbiddenException(message="Missing required permission: gantt.manage")
 
     return current_user
 

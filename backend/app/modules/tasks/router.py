@@ -25,9 +25,10 @@ router = APIRouter(
 async def get_tasks(
     skip: int = 0,
     limit: int = 100,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_tasks(db, skip=skip, limit=limit)
+    return service.get_tasks(db, current_user=current_user, skip=skip, limit=limit)
 
 
 @router.get(
@@ -38,9 +39,10 @@ async def get_tasks(
 )
 async def get_task(
     task_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_task(db, task_id)
+    return service.get_task(db, task_id, current_user=current_user)
 
 
 @router.post(
@@ -51,9 +53,10 @@ async def get_task(
 )
 async def create_task(
     payload: TaskCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.create_task(db, payload)
+    return service.create_task(db, payload, assigned_by=current_user)
 
 
 @router.put("/{task_id}", response_model=TaskRead, status_code=status.HTTP_200_OK)
@@ -68,8 +71,10 @@ async def update_task(
     # ownership check has to happen here, after the fetch.
     task = service.get_task(db, task_id)
     can_update_task(task_assignee_id=task.user_id, current_user=current_user, db=db)
+    if "user_id" in payload.model_fields_set and payload.user_id != task.user_id:
+        can_manage_tasks(current_user=current_user, db=db)
 
-    return service.update_task(db, task_id, payload)
+    return service.update_task(db, task_id, payload, assigned_by=current_user)
 
 
 @router.delete(
@@ -79,9 +84,10 @@ async def update_task(
 )
 async def delete_task(
     task_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    service.delete_task(db, task_id)
+    service.delete_task(db, task_id, deleted_by=current_user)
 
 
 @router.get(
@@ -92,6 +98,7 @@ async def delete_task(
 )
 async def get_subtasks(
     task_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_subtasks(db, task_id)
+    return service.get_subtasks(db, task_id, current_user=current_user)

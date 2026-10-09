@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.router import api_router
@@ -20,6 +20,29 @@ app = FastAPI(
     description=APP_DESCRIPTION,
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def log_user_changes(request: Request, call_next):
+    """Write authenticated create/update/delete requests to application.log."""
+    response = await call_next(request)
+    if (
+        request.method in {"POST", "PUT", "PATCH", "DELETE"}
+        and request.url.path.startswith(f"{API_V1_PREFIX}/")
+        and not request.url.path.startswith(f"{API_V1_PREFIX}/auth/")
+    ):
+        actor = getattr(request.state, "audit_actor", None)
+        if actor:
+            roles = ", ".join(getattr(request.state, "audit_roles", [])) or "User"
+            logger.info(
+                "AUDIT status=%s action=%s path=%s actor=%r roles=(%s)",
+                response.status_code,
+                request.method,
+                request.url.path,
+                actor,
+                roles,
+            )
+    return response
 
 register_exception_handlers(app)
 

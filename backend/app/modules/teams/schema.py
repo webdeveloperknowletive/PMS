@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class TeamLeadBase(BaseModel):
@@ -29,7 +29,15 @@ class TeamBase(BaseModel):
 
 
 class TeamCreate(TeamBase):
-    pass
+    member_user_ids: list[uuid.UUID] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_initial_members(self):
+        if len(self.member_user_ids) != len(set(self.member_user_ids)):
+            raise ValueError("Team members must be unique")
+        if len(self.member_user_ids) > self.max_members:
+            raise ValueError("Initial team members cannot exceed the team capacity")
+        return self
 
 
 class TeamUpdate(BaseModel):
@@ -46,6 +54,7 @@ class TeamRead(TeamBase):
     team_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    members: list["TeamMemberRead"] = Field(default_factory=list)
 
 
 class TeamMemberBase(BaseModel):
@@ -67,3 +76,6 @@ class TeamMemberRead(TeamMemberBase):
 
     member_id: uuid.UUID
     joined_at: date
+
+
+TeamRead.model_rebuild()

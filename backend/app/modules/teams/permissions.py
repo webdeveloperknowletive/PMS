@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ForbiddenException
-from app.core.permissions import MANAGEMENT_ROLES, ROLE_TEAM_LEAD, user_has_any_role
+from app.core.permissions import has_permission
 from app.modules.users.model import User
 
 
@@ -25,10 +25,8 @@ def can_manage_teams(
     promote a user to Team Lead.
     """
 
-    if not user_has_any_role(db, current_user, MANAGEMENT_ROLES):
-        raise ForbiddenException(
-            message=f"Requires one of the following roles: {', '.join(MANAGEMENT_ROLES)}"
-        )
+    if not has_permission(db, current_user, "teams.manage"):
+        raise ForbiddenException(message="Missing required permission: teams.manage")
 
     return current_user
 
@@ -43,13 +41,7 @@ def can_manage_team_membership(
     Team Lead of a given team may manage membership for that team only.
     """
 
-    if user_has_any_role(db, current_user, MANAGEMENT_ROLES):
-        return current_user
-
-    if (
-        current_user.user_id == team_lead_user_id
-        and user_has_any_role(db, current_user, (ROLE_TEAM_LEAD,))
-    ):
+    if has_permission(db, current_user, "teams.manage") or has_permission(db, current_user, "teams.members.manage"):
         return current_user
 
     raise ForbiddenException(

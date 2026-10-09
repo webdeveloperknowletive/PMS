@@ -30,6 +30,13 @@ class AIMeetingSummaryUpdate(BaseModel):
     attendees: list[Any] | None = None
 
 
+class AIMeetingSummaryGenerationRequest(BaseModel):
+    project_id: uuid.UUID
+    meeting_title: str = Field(..., max_length=255)
+    meeting_date: datetime
+    transcript: str
+
+
 class AIMeetingSummaryRead(AIMeetingSummaryBase):
     model_config = ConfigDict(from_attributes=True)
 

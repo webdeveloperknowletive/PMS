@@ -17,6 +17,8 @@ from sqlalchemy.orm import Session
 from app.modules.projects import repository
 from app.modules.projects.model import Project
 from app.modules.projects.schema import ProjectCreate, ProjectUpdate
+from app.modules.notifications.events import notify_users, project_recipient_ids, users_with_permissions
+from app.modules.users.model import User
 
 
 def get_projects(db: Session, skip: int = 0, limit: int = 100) -> list[Project]:
@@ -32,21 +34,40 @@ def get_project(db: Session, project_id: UUID) -> Project:
     return project
 
 
-def create_project(db: Session, payload: ProjectCreate) -> Project:
+def create_project(db: Session, payload: ProjectCreate, actor: User) -> Project:
     """Create a new project."""
-    return repository.create_project(db, payload)
+    project = repository.create_project(db, payload)
+    notify_users(
+        db, users_with_permissions(db, "projects.manage"), actor_id=actor.user_id,
+        project_id=project.project_id, title=f"Project created: {project.project_name}",
+        message=f"{actor.name} created a project.", notification_type="Project Created",
+    )
+    return project
 
 
-def update_project(db: Session, project_id: UUID, payload: ProjectUpdate) -> Project:
+def update_project(db: Session, project_id: UUID, payload: ProjectUpdate, actor: User) -> Project:
     """Update an existing project, or raise 404."""
     project = repository.update_project(db, project_id, payload)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    notify_users(
+        db, project_recipient_ids(db, project_id), actor_id=actor.user_id,
+        project_id=project_id, title=f"Project updated: {project.project_name}",
+        message=f"{actor.name} updated the project details.", notification_type="Project Updated",
+    )
     return project
 
 
-def delete_project(db: Session, project_id: UUID) -> None:
+def delete_project(db: Session, project_id: UUID, actor: User) -> None:
     """Delete a project, or raise 404."""
+    project = get_project(db, project_id)
+    project_name = project.project_name
+    recipients = project_recipient_ids(db, project_id)
     deleted = repository.delete_project(db, project_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    notify_users(
+        db, recipients, actor_id=actor.user_id, project_id=None,
+        title=f"Project deleted: {project_name}",
+        message=f"{actor.name} deleted this project.", notification_type="Project Deleted",
+    )

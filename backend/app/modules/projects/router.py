@@ -7,6 +7,8 @@ from db.session import get_db
 from app.modules.projects import service
 from app.modules.projects.schema import ProjectCreate, ProjectRead, ProjectUpdate
 from app.modules.projects.permissions import can_manage_projects, can_view_projects
+from app.core.dependencies import get_current_user
+from app.modules.users.model import User
 
 router = APIRouter(
     prefix="/projects",
@@ -49,9 +51,10 @@ async def get_project(
 )
 async def create_project(
     payload: ProjectCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.create_project(db, payload)
+    return service.create_project(db, payload, actor=current_user)
 
 
 @router.put(
@@ -63,9 +66,10 @@ async def create_project(
 async def update_project(
     project_id: UUID,
     payload: ProjectUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.update_project(db, project_id, payload)
+    return service.update_project(db, project_id, payload, actor=current_user)
 
 
 @router.delete(
@@ -75,6 +79,7 @@ async def update_project(
 )
 async def delete_project(
     project_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    service.delete_project(db, project_id)
+    service.delete_project(db, project_id, actor=current_user)

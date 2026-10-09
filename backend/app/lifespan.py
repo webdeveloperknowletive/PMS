@@ -30,6 +30,11 @@ from sqlalchemy import text
 from app.core.database import engine
 from app.core.logger import logger
 from app.core.config import APP_NAME
+from app.modules.roles.bootstrap import initialize_role_permissions
+from app.modules.documentation.bootstrap import ensure_document_resource_schema
+from app.modules.notifications.bootstrap import ensure_notification_settings
+from app.modules.users.bootstrap import ensure_user_profile_schema
+from app.modules.chat.bootstrap import ensure_chat_schema
 
 # ==========================================================
 # Lifespan Context Manager
@@ -48,6 +53,12 @@ async def lifespan(app: FastAPI):
     try:
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
+
+        initialize_role_permissions()
+        ensure_document_resource_schema()
+        ensure_notification_settings()
+        ensure_user_profile_schema()
+        ensure_chat_schema()
 
         logger.info("Database connection established.")
 

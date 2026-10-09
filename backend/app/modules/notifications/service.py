@@ -19,16 +19,9 @@ from app.modules.notifications.model import Notification
 from app.modules.notifications.schema import NotificationCreate, NotificationUpdate
 
 
-def get_notifications(db: Session, skip: int = 0, limit: int = 100) -> list[Notification]:
-    """
-    Get all notifications.
-
-    NOTE: still returns every user's notifications, not just the
-    caller's — there is no server-side user filter here (a known gap
-    flagged earlier in the project). The frontend is responsible for
-    filtering to the logged-in user itself until this is addressed.
-    """
-    return repository.get_notifications(db, skip=skip, limit=limit)
+def get_notifications(db: Session, user_id: UUID, skip: int = 0, limit: int = 100) -> list[Notification]:
+    """Return notifications owned by the signed-in user."""
+    return repository.get_notifications_by_user(db, user_id=user_id, skip=skip, limit=limit)
 
 
 def get_notification(db: Session, notification_id: UUID) -> Notification:
@@ -39,9 +32,9 @@ def get_notification(db: Session, notification_id: UUID) -> Notification:
     return notification
 
 
-def create_notification(db: Session, payload: NotificationCreate) -> Notification:
+def create_notification(db: Session, payload: NotificationCreate, *, commit: bool = True) -> Notification:
     """Create a new notification."""
-    return repository.create_notification(db, payload)
+    return repository.create_notification(db, payload, commit=commit)
 
 
 def update_notification(db: Session, notification_id: UUID, payload: NotificationUpdate) -> Notification:

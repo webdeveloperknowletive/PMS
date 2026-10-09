@@ -7,6 +7,8 @@ from db.session import get_db
 from app.modules.workflow import service
 from app.modules.workflow.schema import WorkflowCreate, WorkflowRead, WorkflowUpdate
 from app.modules.workflow.permissions import can_manage_workflows, can_view_workflows
+from app.core.dependencies import get_current_user
+from app.modules.users.model import User
 
 router = APIRouter(
     prefix="/workflows",
@@ -49,9 +51,10 @@ async def get_workflow(
 )
 async def create_workflow(
     payload: WorkflowCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.create_workflow(db, payload)
+    return service.create_workflow(db, payload, actor=current_user)
 
 
 @router.put(
@@ -63,9 +66,10 @@ async def create_workflow(
 async def update_workflow(
     workflow_id: UUID,
     payload: WorkflowUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.update_workflow(db, workflow_id, payload)
+    return service.update_workflow(db, workflow_id, payload, actor=current_user)
 
 
 @router.delete(
@@ -75,6 +79,7 @@ async def update_workflow(
 )
 async def delete_workflow(
     workflow_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    service.delete_workflow(db, workflow_id)
+    service.delete_workflow(db, workflow_id, actor=current_user)
