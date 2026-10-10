@@ -4,7 +4,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="w-full max-w-md">
         <div className="mb-6 flex items-center justify-center gap-3">
           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-white p-1 shadow-lg shadow-violet-950/20 ring-1 ring-white/50">
-            <img src="/sprintix-logo-hd.png?v=2" alt="SprintIX logo" className="h-full w-full rounded-xl object-contain" />
+            <img src="/sprintix-logo-hd.png?v=3" alt="SprintIX logo" className="h-full w-full rounded-xl object-contain" />
           </div>
           <div className="leading-tight">
             <p className="text-lg font-bold text-foreground">SprintIX</p>

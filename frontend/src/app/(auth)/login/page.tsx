@@ -38,9 +38,6 @@ export default function LoginPage() {
   return (
     <Card>
       <CardHeader>
-        <div className="mb-2 flex justify-center">
-          <img src="/sprintix-logo-hd.png?v=2" alt="SprintIX application logo" className="h-16 w-16 rounded-2xl object-contain shadow-sm" />
-        </div>
         <CardTitle>Welcome back</CardTitle>
         <CardDescription>Log in to your PMS account to continue.</CardDescription>
       </CardHeader>

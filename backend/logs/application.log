@@ -1330,3 +1330,7 @@
 2026-10-09 18:47:43,770 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=200 action=PATCH path=/api/v1/users/fe31d9ad-5e87-4de3-be66-58f3f2357367/profile actor='Saksham' roles=(Admin)
 2026-10-09 18:56:30,436 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=200 action=PUT path=/api/v1/chat/settings actor='Saksham' roles=(Admin)
 2026-10-09 18:57:48,559 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=200 action=PATCH path=/api/v1/users/fe31d9ad-5e87-4de3-be66-58f3f2357367/profile actor='Saksham' roles=(Admin)
+2026-10-10 00:29:35,638 | INFO     | ProjectManagementAPI | lifespan.py:51 | Starting Project Management System ...
+2026-10-10 00:29:36,126 | INFO     | ProjectManagementAPI | lifespan.py:63 | Database connection established.
+2026-10-10 11:01:59,104 | INFO     | ProjectManagementAPI | lifespan.py:51 | Starting Project Management System ...
+2026-10-10 11:01:59,603 | INFO     | ProjectManagementAPI | lifespan.py:63 | Database connection established.
