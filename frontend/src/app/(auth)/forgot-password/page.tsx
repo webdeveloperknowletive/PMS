@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <Card>
+      <Card className="mx-auto w-full max-w-md">
         <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent">
             <MailCheck className="h-6 w-6 text-primary" />
@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <Card>
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
         <CardTitle>Forgot your password?</CardTitle>
         <CardDescription>Enter your email and we&apos;ll send you a reset link.</CardDescription>

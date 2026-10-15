@@ -1,13 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import type { GanttTask } from "@/types/gantt";
@@ -118,23 +112,10 @@ export function GanttChart({
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <UserAvatar user={task?.user_id ? userMap.get(task.user_id) : null} showName={false} size="sm" />
-                {(onEdit || onDelete) && <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <MoreHorizontal className="h-3.5 w-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {onEdit && <DropdownMenuItem onClick={() => onEdit(entry)}>
-                      <Pencil />
-                      Edit
-                    </DropdownMenuItem>}
-                    {onDelete && <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(entry)}>
-                      <Trash2 />
-                      Remove
-                    </DropdownMenuItem>}
-                  </DropdownMenuContent>
-                </DropdownMenu>}
+                {(onEdit || onDelete) && <div className="flex items-center gap-1">
+                  {onEdit && <Button variant="outline" size="icon" className="h-7 w-7" aria-label="Edit scheduled task" title="Edit scheduled task" onClick={() => onEdit(entry)}><Pencil className="h-3.5 w-3.5" /></Button>}
+                  {onDelete && <Button variant="outline" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" aria-label="Remove scheduled task" title="Remove scheduled task" onClick={() => onDelete(entry)}><Trash2 className="h-3.5 w-3.5" /></Button>}
+                </div>}
               </div>
             </div>
           );

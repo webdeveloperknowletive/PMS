@@ -24,7 +24,8 @@ export default function SettingsPage() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const queryClient = useQueryClient();
-  const { isAdmin } = usePermissions();
+  const { permissionCodes } = usePermissions();
+  const can = (code: string) => permissionCodes.includes(code) || (code.startsWith("roles.") && permissionCodes.includes("roles.manage"));
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [reminderLeadMinutes, setReminderLeadMinutes] = useState("");
@@ -40,7 +41,7 @@ export default function SettingsPage() {
   const reminderSetting = useQuery({
     queryKey: ["meeting-reminder-setting"],
     queryFn: notificationSettingsApi.getMeetingReminder,
-    enabled: isAdmin,
+    enabled: can("notifications.settings.view"),
   });
   useEffect(() => {
     if (reminderSetting.data) setReminderLeadMinutes(String(reminderSetting.data.lead_minutes));
@@ -49,22 +50,22 @@ export default function SettingsPage() {
   const toastDurationSetting = useQuery({
     queryKey: ["notification-toast-duration"],
     queryFn: notificationSettingsApi.getToastDuration,
-    enabled: isAdmin,
+    enabled: can("notifications.settings.view"),
   });
   const notificationSoundSetting = useQuery({
     queryKey: ["notification-sound-setting"],
     queryFn: notificationSettingsApi.getSound,
-    enabled: !!user,
+    enabled: !!user && can("notifications.settings.view"),
   });
   const notificationVolumeSetting = useQuery({
     queryKey: ["notification-volume-setting", user?.user_id],
     queryFn: notificationSettingsApi.getVolume,
-    enabled: !!user,
+    enabled: !!user && can("notifications.personal_settings.view"),
   });
   const chatOrganizationSettings = useQuery({
     queryKey: ["chat-organization-settings"],
     queryFn: chatApi.organizationSettings,
-    enabled: isAdmin,
+    enabled: can("chat.organization_settings.view"),
   });
   useEffect(() => {
     if (toastDurationSetting.data) setToastDurationSeconds(String(toastDurationSetting.data.duration_seconds));
@@ -142,6 +143,7 @@ export default function SettingsPage() {
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
 
+
   const updateProfilePicture = useMutation({
     mutationFn: (file: File) => usersApi.uploadProfilePicture(user!.user_id, file),
     onSuccess: (updated) => {
@@ -206,7 +208,7 @@ export default function SettingsPage() {
         </Card>
 
         <div className="space-y-5">
-          {isAdmin && <Card className="border-violet-100">
+          {can("chat.organization_settings.view") && <Card className="border-violet-100">
             <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Music2 className="h-4 w-4 text-violet-600" /> Chat message sound</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm leading-6 text-slate-600">Admins choose the chat tone for the organization and set its maximum volume. Each user can lower the sound from Chat settings.</p>
@@ -217,26 +219,26 @@ export default function SettingsPage() {
                 </div>)}
               </div>
               <div className="space-y-2"><Label htmlFor="chat-master-volume">Organization chat volume limit: {chatMasterVolume}%</Label><input id="chat-master-volume" type="range" min={0} max={150} step={1} value={chatMasterVolume} onChange={(event) => setChatMasterVolume(Number(event.target.value))} className="w-full accent-violet-600" /><div className="flex justify-between text-[11px] text-slate-400"><span>Muted</span><span>Extra loud</span></div></div>
-              <Button onClick={() => updateChatOrganizationSettings.mutate()} disabled={updateChatOrganizationSettings.isPending || (chatSoundKey === chatOrganizationSettings.data?.sound_key && chatMasterVolume === chatOrganizationSettings.data?.master_volume_percent)}>{updateChatOrganizationSettings.isPending ? "Saving..." : "Save chat sound"}</Button>
+              {can("chat.organization_settings.update") && <Button onClick={() => updateChatOrganizationSettings.mutate()} disabled={updateChatOrganizationSettings.isPending || (chatSoundKey === chatOrganizationSettings.data?.sound_key && chatMasterVolume === chatOrganizationSettings.data?.master_volume_percent)}>{updateChatOrganizationSettings.isPending ? "Saving..." : "Save chat sound"}</Button>}
             </CardContent>
           </Card>}
-          {isAdmin && <Card className="border-violet-100">
+          {can("notifications.settings.view") && <Card className="border-violet-100">
             <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><BellRing className="h-4 w-4 text-violet-600" /> Meeting reminders</CardTitle></CardHeader>
             <CardContent>
               <p className="mb-4 text-sm leading-6 text-slate-600">Choose how many minutes before a meeting its reminder should appear. This setting applies only to meeting reminders.</p>
               <div className="space-y-2"><Label htmlFor="meeting-reminder-minutes">Remind before meeting (minutes)</Label><Input id="meeting-reminder-minutes" type="number" min={1} max={1440} value={reminderLeadMinutes} onChange={(event) => setReminderLeadMinutes(event.target.value)} disabled={reminderSetting.isLoading} /></div>
-              <Button className="mt-4" onClick={() => updateReminderSetting.mutate()} disabled={!reminderLeadMinutes || Number(reminderLeadMinutes) < 1 || Number(reminderLeadMinutes) > 1440 || Number(reminderLeadMinutes) === reminderSetting.data?.lead_minutes || updateReminderSetting.isPending}>{updateReminderSetting.isPending ? "Saving..." : "Save reminder time"}</Button>
+              {can("notifications.settings.update") && <Button className="mt-4" onClick={() => updateReminderSetting.mutate()} disabled={!reminderLeadMinutes || Number(reminderLeadMinutes) < 1 || Number(reminderLeadMinutes) > 1440 || Number(reminderLeadMinutes) === reminderSetting.data?.lead_minutes || updateReminderSetting.isPending}>{updateReminderSetting.isPending ? "Saving..." : "Save reminder time"}</Button>}
             </CardContent>
           </Card>}
-          {isAdmin && <Card className="border-violet-100">
+          {can("notifications.settings.view") && <Card className="border-violet-100">
             <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><BellRing className="h-4 w-4 text-violet-600" /> Notification popups</CardTitle></CardHeader>
             <CardContent>
               <p className="mb-4 text-sm leading-6 text-slate-600">Choose how many seconds a new notification popup stays visible. The notification itself remains in the Notifications page until it is marked as read.</p>
               <div className="space-y-2"><Label htmlFor="notification-popup-seconds">Show popup for (seconds)</Label><Input id="notification-popup-seconds" type="number" min={1} max={60} value={toastDurationSeconds} onChange={(event) => setToastDurationSeconds(event.target.value)} disabled={toastDurationSetting.isLoading} /></div>
-              <Button className="mt-4" onClick={() => updateToastDuration.mutate()} disabled={!toastDurationSeconds || Number(toastDurationSeconds) < 1 || Number(toastDurationSeconds) > 60 || Number(toastDurationSeconds) === toastDurationSetting.data?.duration_seconds || updateToastDuration.isPending}>{updateToastDuration.isPending ? "Saving..." : "Save popup time"}</Button>
+              {can("notifications.settings.update") && <Button className="mt-4" onClick={() => updateToastDuration.mutate()} disabled={!toastDurationSeconds || Number(toastDurationSeconds) < 1 || Number(toastDurationSeconds) > 60 || Number(toastDurationSeconds) === toastDurationSetting.data?.duration_seconds || updateToastDuration.isPending}>{updateToastDuration.isPending ? "Saving..." : "Save popup time"}</Button>}
             </CardContent>
           </Card>}
-          {isAdmin && <Card className="border-violet-100">
+          {can("notifications.settings.view") && <Card className="border-violet-100">
             <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Music2 className="h-4 w-4 text-violet-600" /> Workspace notification sound</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm leading-6 text-slate-600">Choose the sound everyone hears for new notifications. Team members can adjust only their own volume.</p>
@@ -249,13 +251,13 @@ export default function SettingsPage() {
                   <Button type="button" variant="outline" size="sm" onClick={() => playNotificationSound(sound.key, volumePercent)} aria-label={`Preview ${sound.name}`}>Play</Button>
                 </div>)}
               </div>
-              <Button onClick={() => updateNotificationSound.mutate()} disabled={selectedSoundKey === notificationSoundSetting.data?.sound_key || updateNotificationSound.isPending}>{updateNotificationSound.isPending ? "Saving..." : "Save workspace sound"}</Button>
+              {can("notifications.settings.update") && <Button onClick={() => updateNotificationSound.mutate()} disabled={selectedSoundKey === notificationSoundSetting.data?.sound_key || updateNotificationSound.isPending}>{updateNotificationSound.isPending ? "Saving..." : "Save workspace sound"}</Button>}
             </CardContent>
           </Card>}
-          <Card className="border-sky-100">
+          {can("notifications.personal_settings.view") && <Card className="border-sky-100">
             <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Volume2 className="h-4 w-4 text-sky-600" /> My notification volume</CardTitle></CardHeader>
             <CardContent>
-              <p className="mb-4 text-sm leading-6 text-slate-600">Set how loud notification sounds are for your account. This changes only your volume; the Admin chooses the sound.</p>
+              <p className="mb-4 text-sm leading-6 text-slate-600">Set how loud notification sounds are for your account. Workspace settings control the sound itself.</p>
               <div className="flex items-center gap-3">
                 <Volume2 className="h-4 w-4 shrink-0 text-slate-500" />
                 <input id="notification-volume" type="range" min={0} max={100} step={1} value={volumePercent} onChange={(event) => setVolumePercent(Number(event.target.value))} className="h-2 flex-1 cursor-pointer accent-violet-600" aria-label="Notification sound volume" />
@@ -264,10 +266,10 @@ export default function SettingsPage() {
               <div className="mt-1 flex justify-between pl-7 text-[11px] text-slate-400"><span>Muted</span><span>Full volume</span></div>
               <div className="mt-4 flex gap-2">
                 <Button variant="outline" onClick={() => playNotificationSound((notificationSoundSetting.data?.sound_key ?? "gentle_chime") as NotificationSoundKey, volumePercent)} disabled={volumePercent === 0}><Music2 className="h-4 w-4" /> Preview</Button>
-                <Button onClick={() => updateNotificationVolume.mutate()} disabled={volumePercent === notificationVolumeSetting.data?.volume_percent || updateNotificationVolume.isPending}>{updateNotificationVolume.isPending ? "Saving..." : "Save my volume"}</Button>
+                {can("notifications.personal_settings.update") && <Button onClick={() => updateNotificationVolume.mutate()} disabled={volumePercent === notificationVolumeSetting.data?.volume_percent || updateNotificationVolume.isPending}>{updateNotificationVolume.isPending ? "Saving..." : "Save my volume"}</Button>}
               </div>
             </CardContent>
-          </Card>
+          </Card>}
           <Card className="border-white/90">
             <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><LockKeyhole className="h-4 w-4 text-sky-600" /> Account security</CardTitle></CardHeader>
             <CardContent><p className="text-sm leading-6 text-slate-600">Use a unique password to protect your workspace. If you need to reset it, we’ll guide you through the recovery flow.</p><Button asChild variant="outline" className="mt-4"><a href="/forgot-password">Reset password <ArrowUpRight className="h-4 w-4" /></a></Button></CardContent>

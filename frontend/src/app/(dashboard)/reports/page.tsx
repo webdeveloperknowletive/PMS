@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, MoreHorizontal, Trash2, BarChart3, Search } from "lucide-react";
+import { Plus, Trash2, BarChart3, Search } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -13,12 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ReportFormDialog } from "@/components/modules/reports/report-form-dialog";
 import { useDeleteReport, useReports } from "@/hooks/queries/use-reports";
 import { useProjects } from "@/hooks/queries/use-projects";
@@ -44,6 +38,7 @@ export default function ReportsPage() {
   const [search, setSearch] = useState("");
   const [projectFilter, setProjectFilter] = useState(ALL);
   const [formatFilter, setFormatFilter] = useState(ALL);
+  const [dateFilter, setDateFilter] = useState<"all" | "week">("all");
 
   const [formOpen, setFormOpen] = useState(false);
   const [deletingReport, setDeletingReport] = useState<Report | null>(null);
@@ -54,6 +49,7 @@ export default function ReportsPage() {
     if (search && !r.report_name.toLowerCase().includes(search.toLowerCase())) return false;
     if (projectFilter !== ALL && r.project_id !== projectFilter) return false;
     if (formatFilter !== ALL && r.report_format !== formatFilter) return false;
+    if (dateFilter === "week" && new Date(r.generated_at).getTime() < Date.now() - 7 * 24 * 60 * 60 * 1000) return false;
     return true;
   });
 
@@ -64,6 +60,13 @@ export default function ReportsPage() {
     return reports?.filter((r) => new Date(r.generated_at) >= weekAgo).length ?? 0;
   })();
   const csvCount = reports?.filter((r) => r.report_format === "CSV").length ?? 0;
+  const showReportResults = (filter: "all" | "week" | "csv") => {
+    setSearch("");
+    setProjectFilter(ALL);
+    setDateFilter(filter === "week" ? "week" : "all");
+    setFormatFilter(filter === "csv" ? "CSV" : ALL);
+    requestAnimationFrame(() => document.getElementById("report-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const confirmDelete = async () => {
     if (!deletingReport) return;
@@ -88,24 +91,24 @@ export default function ReportsPage() {
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="p-4">
+        <button type="button" onClick={() => showReportResults("all")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Total Reports</p>
             <p className="mt-1 text-2xl font-semibold">{total}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showReportResults("week")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Generated This Week</p>
             <p className="mt-1 text-2xl font-semibold text-green-600">{thisWeek}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showReportResults("csv")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">CSV Exports</p>
             <p className="mt-1 text-2xl font-semibold text-blue-600">{csvCount}</p>
-          </CardContent>
-        </Card>
+          </div>
+        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -146,7 +149,7 @@ export default function ReportsPage() {
         </Select>
       </div>
 
-      <Card>
+      <Card id="report-results" className="scroll-mt-6">
         {isLoading ? (
           <CardContent className="space-y-3 p-5">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -195,22 +198,7 @@ export default function ReportsPage() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(r.generated_at)}</TableCell>
                   <TableCell>
-                    {canManageReports && <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => setDeletingReport(r)}
-                        >
-                          <Trash2 />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>}
+                    {canManageReports && <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete report" title="Delete report" onClick={() => setDeletingReport(r)}><Trash2 className="h-4 w-4" /></Button>}
                   </TableCell>
                 </TableRow>
               ))}

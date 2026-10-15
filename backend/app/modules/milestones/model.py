@@ -5,10 +5,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 from app.shared.mixins import CreatedAtMixin
 
 
-class Milestone(Base, CreatedAtMixin):
+class Milestone(Base, OrganizationScopedMixin, CreatedAtMixin):
     __tablename__ = "milestones"
 
     milestone_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

@@ -6,6 +6,7 @@ import { useCalendarEvents } from "@/hooks/queries/use-calendar";
 import { useAuthStore } from "@/store/auth-store";
 import { notificationSettingsApi, notificationsApi } from "@/lib/api/notifications";
 import { formatTime } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
 
 const POLL_INTERVAL_MS = 10_000;
 const STORAGE_KEY = "pms_reminded_events_v1";
@@ -36,23 +37,26 @@ function saveRemindedKeys(userId: string, keys: Set<string>) {
  */
 export function useEventReminders() {
   const user = useAuthStore((s) => s.user);
-  const { data: events } = useCalendarEvents();
+  const { permissionCodes } = usePermissions();
+  const calendarAccess = permissionCodes.includes("calendar.view");
+  const canViewReminderSettings = permissionCodes.includes("notifications.settings.view");
+  const { data: events } = useCalendarEvents(calendarAccess);
   const { data: reminderSetting } = useQuery({
     queryKey: ["meeting-reminder-setting"],
     queryFn: notificationSettingsApi.getMeetingReminder,
-    enabled: !!user,
+    enabled: !!user && calendarAccess && canViewReminderSettings,
     refetchInterval: 10_000,
   });
   const queryClient = useQueryClient();
   const remindedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!user || !reminderSetting) return;
+    if (!user) return;
     remindedRef.current = loadRemindedKeys(user.user_id);
 
     const checkReminders = async () => {
       const now = new Date();
-      const windowEnd = new Date(now.getTime() + reminderSetting.lead_minutes * 60_000);
+      const windowEnd = new Date(now.getTime() + (reminderSetting?.lead_minutes ?? 60) * 60_000);
 
       const due = (events ?? []).filter((e) => {
         if (e.organizer !== user.user_id) return false;

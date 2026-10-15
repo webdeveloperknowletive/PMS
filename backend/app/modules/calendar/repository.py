@@ -44,19 +44,32 @@ def create_calendar_event(
 def get_calendar_event(
     db: Session,
     event_id: UUID,
+    user_id: UUID,
 ) -> CalendarEvent | None:
-
-    return db.get(CalendarEvent, event_id)
+    return (
+        db.query(CalendarEvent)
+        .filter(
+            CalendarEvent.event_id == event_id,
+            (CalendarEvent.calendar_scope == "ORGANIZATION")
+            | ((CalendarEvent.calendar_scope == "PERSONAL") & (CalendarEvent.calendar_owner_id == user_id)),
+        )
+        .one_or_none()
+    )
 
 
 def get_calendar_events(
     db: Session,
+    user_id: UUID,
     skip: int = 0,
     limit: int = 100,
 ) -> list[CalendarEvent]:
 
     return (
         db.query(CalendarEvent)
+        .filter(
+            (CalendarEvent.calendar_scope == "ORGANIZATION")
+            | ((CalendarEvent.calendar_scope == "PERSONAL") & (CalendarEvent.calendar_owner_id == user_id))
+        )
         .order_by(CalendarEvent.start_datetime.asc())
         .offset(skip)
         .limit(limit)

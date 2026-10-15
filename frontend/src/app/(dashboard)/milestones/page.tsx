@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, MoreHorizontal, Pencil, Trash2, Flag, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Flag, Search } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -13,12 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { MilestoneStatusBadge, getMilestoneStatus, type DerivedMilestoneStatus } from "@/components/modules/milestones/milestone-status-badge";
 import { MilestoneFormDialog } from "@/components/modules/milestones/milestone-form-dialog";
 import { useDeleteMilestone, useMilestones, useUpdateMilestone } from "@/hooks/queries/use-milestones";
@@ -59,6 +53,13 @@ export default function MilestonesPage() {
   const overdue = milestones?.filter((m) => getMilestoneStatus(m) === "Overdue").length ?? 0;
   const upcoming = milestones?.filter((m) => getMilestoneStatus(m) === "Upcoming").length ?? 0;
 
+  const showMilestoneResults = (status: string) => {
+    setSearch("");
+    setProjectFilter(ALL);
+    setStatusFilter(status);
+    requestAnimationFrame(() => document.getElementById("milestone-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
   const openCreate = () => {
     setEditingMilestone(null);
     setFormOpen(true);
@@ -97,30 +98,30 @@ export default function MilestonesPage() {
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
+        <button type="button" onClick={() => showMilestoneResults(ALL)} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Total Milestones</p>
             <p className="mt-1 text-2xl font-semibold">{total}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showMilestoneResults("Completed")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Completed</p>
             <p className="mt-1 text-2xl font-semibold text-green-600">{completed}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showMilestoneResults("Upcoming")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Upcoming</p>
             <p className="mt-1 text-2xl font-semibold text-amber-600">{upcoming}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showMilestoneResults("Overdue")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Overdue</p>
             <p className="mt-1 text-2xl font-semibold text-red-600">{overdue}</p>
-          </CardContent>
-        </Card>
+          </div>
+        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -163,7 +164,7 @@ export default function MilestonesPage() {
         </Select>
       </div>
 
-      <Card>
+      <Card id="milestone-results" className="scroll-mt-6">
         {isLoading ? (
           <CardContent className="space-y-3 p-5">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -217,26 +218,10 @@ export default function MilestonesPage() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(m.due_date)}</TableCell>
                   <TableCell>
-                    {canManageMilestones && <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(m)}>
-                          <Pencil />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => setDeletingMilestone(m)}
-                        >
-                          <Trash2 />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>}
+                    {canManageMilestones && <div className="flex flex-nowrap items-center gap-1">
+                      <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit milestone" title="Edit milestone" onClick={() => openEdit(m)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete milestone" title="Delete milestone" onClick={() => setDeletingMilestone(m)}><Trash2 className="h-4 w-4" /></Button>
+                    </div>}
                   </TableCell>
                 </TableRow>
               ))}

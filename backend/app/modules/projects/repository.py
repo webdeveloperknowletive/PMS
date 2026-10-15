@@ -47,9 +47,12 @@ def create_project(
 def get_project(
     db: Session,
     project_id: UUID,
+    organization_id: UUID | None = None,
 ) -> Project | None:
-
-    return db.get(Project, project_id)
+    query = db.query(Project).filter(Project.project_id == project_id)
+    if organization_id is not None:
+        query = query.filter(Project.organization_id == organization_id)
+    return query.one_or_none()
 
 
 def get_project_by_name(
@@ -72,6 +75,39 @@ def get_projects(
 
     return (
         db.query(Project)
+        .order_by(Project.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_projects_for_organization(
+    db: Session,
+    organization_id: UUID,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Project]:
+    """Return every project within one organization, with explicit tenant scope."""
+    return (
+        db.query(Project)
+        .filter(Project.organization_id == organization_id)
+        .order_by(Project.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_projects_for_ids(
+    db: Session,
+    project_ids: set[UUID],
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Project]:
+    return (
+        db.query(Project)
+        .filter(Project.project_id.in_(project_ids))
         .order_by(Project.created_at.desc())
         .offset(skip)
         .limit(limit)

@@ -12,7 +12,8 @@ GanttTask, KanbanColumn, CalendarEvent (DateTime(timezone=True), server_default=
 so behavior is consistent whether a model uses the mixin or defines the column itself.
 """
 
-from sqlalchemy import Column, DateTime
+from sqlalchemy import Column, DateTime, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
 
@@ -31,4 +32,15 @@ class TimestampMixin:
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
+    )
+
+
+class OrganizationScopedMixin:
+    """Marks a database record as belonging to exactly one customer workspace."""
+
+    organization_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.organization_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )

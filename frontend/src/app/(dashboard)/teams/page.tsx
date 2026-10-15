@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, MoreHorizontal, Pencil, Trash2, Users, Search, UsersRound } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Search, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -14,21 +14,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { TeamFormDialog } from "@/components/modules/teams/team-form-dialog";
 import { TeamMembersDialog } from "@/components/modules/teams/team-members-dialog";
-import { useDeleteTeam, useTeamLeads, useTeams } from "@/hooks/queries/use-teams";
+import { useDeleteTeam, useTeamLeads, useTeams, useTeamMemberCandidates } from "@/hooks/queries/use-teams";
 import { useProjects } from "@/hooks/queries/use-projects";
 import { useUsers } from "@/hooks/queries/use-users";
+import { useTasks } from "@/hooks/queries/use-tasks";
 import { formatDate } from "@/lib/utils";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useAuthStore } from "@/store/auth-store";
 import type { Team } from "@/types/team";
+import { isDeveloperOrTester, isTeamLeadOnly, visibleMemberPost } from "@/lib/member-visibility";
 
 const ALL = "__all__";
 
@@ -38,28 +35,44 @@ const STATUS_COLOR: Record<string, string> = {
   ARCHIVED: "bg-slate-100 text-slate-400",
 };
 
-function TeamRosterPreview({ team, users }: { team: Team; users: { user_id: string; name: string }[] }) {
-  const userMap = new Map(users.map((user) => [user.user_id, user.name]));
-  const names = (team.members ?? []).map((member) => userMap.get(member.user_id)).filter(Boolean);
+type TeamRosterUser = { user_id: string; name: string; role_names?: string[] };
 
-  if (names.length === 0) return <span className="text-sm text-muted-foreground">No members</span>;
+function TeamRosterPreview({ team, users, assignedMembers = [] }: { team: Team; users: TeamRosterUser[]; assignedMembers?: string[] }) {
+  const userMap = new Map(users.map((user) => [user.user_id, user]));
+  const names = (team.members ?? []).map((member) => {
+    const user = userMap.get(member.user_id);
+    return user && isDeveloperOrTester(user) ? `${user.name} (${visibleMemberPost(user)})` : null;
+  }).filter((name): name is string => !!name);
+
+  const assignedTaskMembers = assignedMembers.filter((name) => !names.some((rosterName) => rosterName.startsWith(name)));
+  if (names.length === 0 && assignedTaskMembers.length === 0) return <span className="text-sm text-muted-foreground">No members</span>;
 
   const visibleNames = names.slice(0, 3);
   return (
-    <span className="block max-w-56 truncate text-sm" title={names.join(", ")}>
-      {visibleNames.join(", ")}{names.length > visibleNames.length ? ` +${names.length - visibleNames.length}` : ""}
-    </span>
+    <div className="max-w-56 space-y-1 text-sm" title={[...names, ...assignedTaskMembers.map((name) => `${name} (assigned to task)`)].join(", ")}>
+      {visibleNames.length > 0 && <span className="block truncate">{visibleNames.join(", ")}{names.length > visibleNames.length ? ` +${names.length - visibleNames.length}` : ""}</span>}
+      {assignedTaskMembers.length > 0 && <span className="block truncate text-[11px] text-indigo-700">Tasks: {assignedTaskMembers.join(", ")}</span>}
+    </div>
   );
 }
 
 export default function TeamsPage() {
-  const { data: teams, isLoading } = useTeams();
-  const { data: projects } = useProjects();
-  const { data: users } = useUsers();
-  const { data: teamLeads } = useTeamLeads();
+  const currentUser = useAuthStore((state) => state.user);
+  const { permissionCodes, canManageTeams } = usePermissions();
+  const canCreateTeam = permissionCodes.includes("teams.create") || ["teams.members.create", "teams.members.update", "teams.members.delete"].some((code) => permissionCodes.includes(code));
+  const canEditTeam = permissionCodes.includes("teams.update");
+  const canDeleteTeam = permissionCodes.includes("teams.delete");
+  const { data: teams, isLoading } = useTeams(permissionCodes.includes("teams.view"));
+  const { data: projects } = useProjects(undefined, permissionCodes.includes("projects.view"));
+  const { data: users } = useUsers(undefined, permissionCodes.includes("users.view"));
+  const { data: tasks = [] } = useTasks({ limit: 500 }, permissionCodes.includes("tasks.view"));
+  const canViewTeamMembers = ["teams.view", "teams.manage", "teams.members.view", "teams.members.manage", "teams.leads.view"].some((code) => permissionCodes.includes(code));
+  const { data: teamMemberCandidates = [] } = useTeamMemberCandidates(canViewTeamMembers);
+  // The API returns a user's own TeamLead record even without the global
+  // team-leads view permission, so the assigned lead can see their name here.
+  const { data: teamLeads } = useTeamLeads(!!currentUser || permissionCodes.includes("teams.leads.view"));
   const deleteMutation = useDeleteTeam();
-  const { canManageTeams, permissionCodes } = usePermissions();
-  const canManageMembership = canManageTeams || permissionCodes.includes("teams.members.manage");
+  const canManageMembership = canManageTeams || ["teams.members.create", "teams.members.update", "teams.members.delete"].some((code) => permissionCodes.includes(code));
 
   const [search, setSearch] = useState("");
   const [projectFilter, setProjectFilter] = useState(ALL);
@@ -71,7 +84,44 @@ export default function TeamsPage() {
   const [membersTeam, setMembersTeam] = useState<Team | null>(null);
 
   const projectMap = useMemo(() => new Map((projects ?? []).map((p) => [p.project_id, p])), [projects]);
-  const userMap = useMemo(() => new Map((users ?? []).map((u) => [u.user_id, u])), [users]);
+  const userMap = useMemo(() => {
+    const entries: [string, TeamRosterUser][] = [
+      ...teamMemberCandidates.map((member): [string, TeamRosterUser] => [member.user_id, {
+        user_id: member.user_id,
+        name: member.name,
+        role_names: member.role_names,
+      }]),
+      ...(users ?? []).map((user): [string, TeamRosterUser] => [user.user_id, {
+        user_id: user.user_id,
+        name: user.name,
+        role_names: user.role_names,
+      }]),
+    ];
+    return new Map(entries);
+  }, [teamMemberCandidates, users]);
+  const taskAssigneesByTeam = useMemo(() => {
+    const nameByUserId = new Map(userMap);
+    const teamsByProject = new Map<string, Team[]>();
+    for (const team of teams ?? []) {
+      const projectTeams = teamsByProject.get(team.project_id) ?? [];
+      teamsByProject.set(team.project_id, [...projectTeams, team]);
+    }
+    const result = new Map<string, string[]>();
+    for (const task of tasks) {
+      if (!task.user_id) continue;
+      const taskTeam = task.team_id
+        ? (teams ?? []).find((team) => team.team_id === task.team_id)
+        : (teamsByProject.get(task.project_id) ?? []).length === 1
+          ? teamsByProject.get(task.project_id)?.[0]
+          : undefined;
+      if (!taskTeam) continue;
+      const name = task.assignee_name || nameByUserId.get(task.user_id)?.name;
+      if (!name) continue;
+      const assigned = result.get(taskTeam.team_id) ?? [];
+      if (!assigned.includes(name)) result.set(taskTeam.team_id, [...assigned, name]);
+    }
+    return result;
+  }, [tasks, teams, userMap]);
   const leadMap = useMemo(() => new Map((teamLeads ?? []).map((l) => [l.team_lead_id, l])), [teamLeads]);
 
   const filtered = (teams ?? []).filter((t) => {
@@ -84,6 +134,13 @@ export default function TeamsPage() {
   const total = teams?.length ?? 0;
   const active = teams?.filter((t) => t.status === "ACTIVE").length ?? 0;
   const totalCapacity = teams?.reduce((sum, t) => sum + t.max_members, 0) ?? 0;
+
+  const showTeamResults = (status: string = ALL) => {
+    setSearch("");
+    setProjectFilter(ALL);
+    setStatusFilter(status);
+    requestAnimationFrame(() => document.getElementById("team-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const openCreate = () => {
     setEditingTeam(null);
@@ -109,31 +166,31 @@ export default function TeamsPage() {
       <PageHeader
         title="Teams"
         description="Manage your teams and collaborate effectively"
-        actions={canManageTeams ? <Button onClick={openCreate}>
+        actions={canCreateTeam ? <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />
             New Team
           </Button> : undefined}
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="p-4">
+        <button type="button" onClick={() => showTeamResults()} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Total Teams</p>
             <p className="mt-1 text-2xl font-semibold">{total}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showTeamResults("ACTIVE")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Active Teams</p>
             <p className="mt-1 text-2xl font-semibold text-green-600">{active}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showTeamResults()} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Total Capacity</p>
             <p className="mt-1 text-2xl font-semibold">{totalCapacity}</p>
-          </CardContent>
-        </Card>
+          </div>
+        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -174,7 +231,7 @@ export default function TeamsPage() {
         </Select>
       </div>
 
-      <Card>
+      <Card id="team-results" className="scroll-mt-6">
         {isLoading ? (
           <CardContent className="space-y-3 p-5">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -187,8 +244,8 @@ export default function TeamsPage() {
               icon={Users}
               title="No teams found"
               description="Try adjusting your filters, or create a new team."
-              actionLabel={canManageTeams ? "New Team" : undefined}
-              onAction={canManageTeams ? openCreate : undefined}
+              actionLabel={canCreateTeam ? "New Team" : undefined}
+              onAction={canCreateTeam ? openCreate : undefined}
             />
           </CardContent>
         ) : (
@@ -208,7 +265,10 @@ export default function TeamsPage() {
             <TableBody>
               {filtered.map((team) => {
                 const lead = leadMap.get(team.team_lead_id);
-                const leadUser = lead ? userMap.get(lead.user_id) : null;
+                const candidateLead = lead ? userMap.get(lead.user_id) : null;
+                const leadUser = lead?.user_id === currentUser?.user_id
+                  ? currentUser
+                  : candidateLead && isTeamLeadOnly(candidateLead) ? candidateLead : null;
 
                 return (
                   <TableRow key={team.team_id}>
@@ -225,7 +285,7 @@ export default function TeamsPage() {
                       <UserAvatar user={leadUser} />
                     </TableCell>
                     <TableCell>
-                      <TeamRosterPreview team={team} users={users ?? []} />
+                      <TeamRosterPreview team={team} users={Array.from(userMap.values())} assignedMembers={taskAssigneesByTeam.get(team.team_id)} />
                     </TableCell>
                     <TableCell>
                       <button
@@ -243,30 +303,11 @@ export default function TeamsPage() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDate(team.created_at)}</TableCell>
                     <TableCell>
-                      {canManageTeams && <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setMembersTeam(team)}>
-                            <UsersRound />
-                            Manage Members
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openEdit(team)}>
-                            <Pencil />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeletingTeam(team)}
-                          >
-                            <Trash2 />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>}
+                      {(canManageMembership || canEditTeam || canDeleteTeam) && <div className="flex flex-nowrap items-center gap-1">
+                        {canManageMembership && <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Manage team members" title="Manage team members" onClick={() => setMembersTeam(team)}><UsersRound className="h-4 w-4" /></Button>}
+                        {canEditTeam && <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit team" title="Edit team" onClick={() => openEdit(team)}><Pencil className="h-4 w-4" /></Button>}
+                        {canDeleteTeam && <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete team" title="Delete team" onClick={() => setDeletingTeam(team)}><Trash2 className="h-4 w-4" /></Button>}
+                      </div>}
                     </TableCell>
                   </TableRow>
                 );

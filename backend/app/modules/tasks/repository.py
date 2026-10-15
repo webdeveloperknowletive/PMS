@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.modules.tasks.model import Task
 from app.modules.tasks.schema import TaskCreate, TaskUpdate
 from app.modules.teams.model import Team, TeamLead, TeamMember
+from app.modules.projects.model import Project
 
 
 # ==========================================================
@@ -30,7 +31,9 @@ def create_task(
     commit: bool = True,
 ) -> Task:
 
-    task = Task(**payload.model_dump())
+    task_data = payload.model_dump(exclude={"kanban_column_id", "kanban_position"})
+    task_data["checklist_items"] = [item.model_dump(mode="json") for item in payload.checklist_items]
+    task = Task(**task_data)
 
     db.add(task)
     if commit:
@@ -84,19 +87,38 @@ def get_tasks_for_user(
     return query.order_by(Task.created_at.desc()).offset(skip).limit(limit).all()
 
 
+def get_tasks_by_project_ids(
+    db: Session,
+    project_ids: set[UUID],
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Task]:
+    if not project_ids:
+        return []
+    return db.query(Task).filter(Task.project_id.in_(project_ids)).order_by(
+        Task.created_at.desc()
+    ).offset(skip).limit(limit).all()
+
+
 def get_visible_project_ids(db: Session, user_id: UUID) -> set[UUID]:
+    project_ids = {
+        row[0]
+        for row in db.query(Project.project_id)
+        .filter(Project.project_manager_user_id == user_id)
+        .all()
+    }
     lead_ids = [
         row[0]
         for row in db.query(TeamLead.team_lead_id)
         .filter(TeamLead.user_id == user_id)
         .all()
     ]
-    project_ids = {
+    project_ids.update({
         row[0]
         for row in db.query(Team.project_id)
         .filter(Team.team_lead_id.in_(lead_ids))
         .all()
-    } if lead_ids else set()
+    } if lead_ids else set())
     project_ids.update(
         row[0]
         for row in db.query(Team.project_id)
@@ -225,7 +247,10 @@ def update_task(
     if task is None:
         return None
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    update_data = payload.model_dump(exclude_unset=True)
+    if "checklist_items" in update_data and payload.checklist_items is not None:
+        update_data["checklist_items"] = [item.model_dump(mode="json") for item in payload.checklist_items]
+    for field, value in update_data.items():
         setattr(task, field, value)
 
     if commit:

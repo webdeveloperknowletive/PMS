@@ -51,9 +51,12 @@ def can_modify_event(
 
 def can_view_calendar(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> User:
     """
-    Any authenticated user may view the calendar.
+    Calendar access is limited to users who can create or manage events.
     """
 
+    if not any(has_permission(db, current_user, code) for code in ("calendar.view", "calendar.create", "calendar.manage")):
+        raise ForbiddenException(message="You do not have access to the calendar")
     return current_user

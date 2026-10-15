@@ -32,6 +32,22 @@ async def get_documents(
 
 
 @router.get(
+    "/project/{project_id}",
+    response_model=list[DocumentRead],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(can_view_documents)],
+)
+async def get_project_documents(
+    project_id: UUID,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return service.get_documents_by_project(db, project_id, current_user.organization_id, skip=skip, limit=limit)
+
+
+@router.get(
     "/{document_id}",
     response_model=DocumentRead,
     status_code=status.HTTP_200_OK,

@@ -17,7 +17,10 @@ export function useCreateWorkflow() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: WorkflowCreate) => workflowApi.create(payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [KEY] }),
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: [KEY] }),
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] }),
+    ]),
   });
 }
 
@@ -25,7 +28,10 @@ export function useUpdateWorkflow() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: WorkflowUpdate }) => workflowApi.update(id, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [KEY] }),
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: [KEY] }),
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] }),
+    ]),
   });
 }
 
@@ -33,6 +39,9 @@ export function useDeleteWorkflow() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => workflowApi.remove(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [KEY] }),
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: [KEY] }),
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] }),
+    ]),
   });
 }

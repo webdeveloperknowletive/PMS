@@ -55,6 +55,12 @@ async def create_team_chat(payload: ChatGroupCreate, current_user: User = Depend
     return service.create_group(db, current_user, payload.name or "", payload.member_ids)
 
 
+@router.put("/conversations/{conversation_id}/members/{user_id}/admin", response_model=ChatConversationRead)
+async def promote_chat_group_admin(conversation_id: UUID, user_id: UUID,
+                                  current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return service.promote_group_admin(db, current_user, conversation_id, user_id)
+
+
 @router.get("/conversations/{conversation_id}/messages", response_model=list[ChatMessageRead])
 async def get_chat_messages(
     conversation_id: UUID,

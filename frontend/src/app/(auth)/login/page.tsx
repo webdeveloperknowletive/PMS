@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,6 +21,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const { login, isLoggingIn } = useAuth();
+  const [workspaceSlug, setWorkspaceSlug] = useState("");
   const {
     register,
     handleSubmit,
@@ -27,19 +29,33 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    setWorkspaceSlug(url.searchParams.get("workspace_slug") ?? "");
+
+    // Never leave credentials in the address bar, browser history, or referrer URLs.
+    const hadCredentials = url.searchParams.has("email") || url.searchParams.has("password");
+    if (hadCredentials) {
+      url.searchParams.delete("email");
+      url.searchParams.delete("password");
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, []);
+
   const onSubmit = async (values: LoginForm) => {
     try {
-      await login({ username: values.email, password: values.password });
+      const slug = new URLSearchParams(window.location.search).get("workspace_slug") ?? undefined;
+      await login({ username: values.email, password: values.password, workspace_slug: slug });
     } catch (err) {
       setError("root", { message: getApiErrorMessage(err) });
     }
   };
 
   return (
-    <Card>
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
-        <CardTitle>Welcome back</CardTitle>
-        <CardDescription>Log in to your PMS account to continue.</CardDescription>
+        <CardTitle>{workspaceSlug ? `Sign in to ${workspaceSlug}` : "Welcome back"}</CardTitle>
+        <CardDescription>{workspaceSlug ? "Use an account invited to this company workspace." : "Log in to your SprintIX account to continue."}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, MoreHorizontal, Pencil, Trash2, Workflow as WorkflowIcon, Search, Star, CircleCheck, CirclePause, Archive, Layers3 } from "lucide-react";
+import { Plus, Pencil, Trash2, Workflow as WorkflowIcon, Search, Star, CircleCheck, CirclePause, Archive, Layers3 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -14,17 +14,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { WorkflowFormDialog } from "@/components/modules/workflow/workflow-form-dialog";
 import { useDeleteWorkflow, useWorkflows } from "@/hooks/queries/use-workflows";
 import { useProjects } from "@/hooks/queries/use-projects";
 import { useTeamLeads } from "@/hooks/queries/use-teams";
 import { useUsers } from "@/hooks/queries/use-users";
+import { isTeamLeadOnly } from "@/lib/member-visibility";
 import { formatDate } from "@/lib/utils";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { Workflow } from "@/types/workflow";
@@ -77,6 +72,13 @@ export default function WorkflowPage() {
   const inactive = workflows?.filter((w) => w.status === "INACTIVE").length ?? 0;
   const archived = workflows?.filter((w) => w.status === "ARCHIVED").length ?? 0;
 
+  const showWorkflowResults = (status: string) => {
+    setSearch("");
+    setProjectFilter(ALL);
+    setStatusFilter(status);
+    requestAnimationFrame(() => document.getElementById("workflow-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
   const openCreate = () => {
     setEditingWorkflow(null);
     setFormOpen(true);
@@ -111,8 +113,9 @@ export default function WorkflowPage() {
         {METRICS.map((metric) => {
           const Icon = metric.icon;
           const value = metric.value === "total" ? total : metric.value === "active" ? active : metric.value === "inactive" ? inactive : archived;
-          return <Card key={metric.value} className="metric-card border-white/90">
-            <CardContent className="relative flex items-center justify-between gap-4 overflow-hidden p-5">
+          const status = metric.value === "total" ? ALL : metric.value.toUpperCase();
+          return <button type="button" key={metric.value} onClick={() => showWorkflowResults(status)} className="metric-card rounded-2xl border border-white/90 bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+            <div className="relative flex items-center justify-between gap-4 overflow-hidden p-5">
               <div className={`pointer-events-none absolute -right-8 -top-12 h-32 w-32 rounded-full bg-gradient-to-br ${metric.glow} to-transparent blur-2xl`} />
               <div className="relative">
                 <p className="text-xs font-semibold text-slate-500">{metric.label}</p>
@@ -120,8 +123,8 @@ export default function WorkflowPage() {
                 <p className="mt-1 text-[11px] text-slate-500">{metric.hint}</p>
               </div>
               <div className={`relative flex h-12 w-12 items-center justify-center rounded-2xl ${metric.color}`}><Icon className="h-5 w-5" /></div>
-            </CardContent>
-          </Card>;
+            </div>
+          </button>;
         })}
       </div>
 
@@ -163,7 +166,7 @@ export default function WorkflowPage() {
         </Select>
       </div>
 
-      <Card className="overflow-hidden border-white/90">
+      <Card id="workflow-results" className="scroll-mt-6 overflow-hidden border-white/90">
         {isLoading ? (
           <CardContent className="space-y-3 p-5">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -196,7 +199,8 @@ export default function WorkflowPage() {
             <TableBody>
               {filtered.map((w) => {
                 const lead = leadMap.get(w.team_lead_id);
-                const leadUser = lead ? userMap.get(lead.user_id) : null;
+                const candidateLead = lead ? userMap.get(lead.user_id) : null;
+                const leadUser = candidateLead && isTeamLeadOnly(candidateLead) ? candidateLead : null;
 
                 return (
                   <TableRow key={w.workflow_id}>
@@ -225,26 +229,10 @@ export default function WorkflowPage() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDate(w.updated_at)}</TableCell>
                     <TableCell>
-                      {canManageWorkflow && <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(w)}>
-                            <Pencil />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeletingWorkflow(w)}
-                          >
-                            <Trash2 />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>}
+                      {canManageWorkflow && <div className="flex flex-nowrap items-center gap-1">
+                        <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit workflow" title="Edit workflow" onClick={() => openEdit(w)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete workflow" title="Delete workflow" onClick={() => setDeletingWorkflow(w)}><Trash2 className="h-4 w-4" /></Button>
+                      </div>}
                     </TableCell>
                   </TableRow>
                 );

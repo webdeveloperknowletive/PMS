@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, MoreHorizontal, Pencil, Trash2, FolderKanban, Search } from "lucide-react";
+import Link from "next/link";
+import { Plus, Pencil, Trash2, FolderKanban, Search } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -20,12 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useDeleteProject, useProjects } from "@/hooks/queries/use-projects";
 import { usePermissions } from "@/hooks/use-permissions";
 import { formatDate } from "@/lib/utils";
@@ -41,9 +36,10 @@ export default function ProjectsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "ON_HOLD">("ALL");
 
   const filtered = (projects ?? []).filter((p) =>
-    p.project_name.toLowerCase().includes(search.toLowerCase())
+    p.project_name.toLowerCase().includes(search.toLowerCase()) && (statusFilter === "ALL" || p.status === statusFilter)
   );
 
   const total = projects?.length ?? 0;
@@ -72,6 +68,12 @@ export default function ProjectsPage() {
     }
   };
 
+  const showProjectResults = (status: typeof statusFilter) => {
+    setSearch("");
+    setStatusFilter(status);
+    requestAnimationFrame(() => document.getElementById("project-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -88,30 +90,16 @@ export default function ProjectsPage() {
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card>
+        {[{ key: "ALL" as const, label: "Total Projects", count: total, color: "text-slate-900" }, { key: "ACTIVE" as const, label: "Active Projects", count: active, color: "text-blue-600" }, { key: "COMPLETED" as const, label: "Completed", count: completed, color: "text-green-600" }, { key: "ON_HOLD" as const, label: "On Hold", count: onHold, color: "text-amber-600" }].map((stat) => (
+        <Card key={stat.key} className={`transition hover:border-violet-300 hover:shadow-sm ${statusFilter === stat.key ? "border-violet-400 ring-1 ring-violet-200" : ""}`}>
+          <button type="button" onClick={() => showProjectResults(stat.key)} className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total Projects</p>
-            <p className="mt-1 text-2xl font-semibold">{total}</p>
+            <p className="text-xs text-muted-foreground">{stat.label}</p>
+            <p className={`mt-1 text-2xl font-semibold ${stat.color}`}>{stat.count}</p>
           </CardContent>
+          </button>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Active Projects</p>
-            <p className="mt-1 text-2xl font-semibold text-blue-600">{active}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Completed</p>
-            <p className="mt-1 text-2xl font-semibold text-green-600">{completed}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">On Hold</p>
-            <p className="mt-1 text-2xl font-semibold text-amber-600">{onHold}</p>
-          </CardContent>
-        </Card>
+        ))}
       </div>
 
       <div className="relative max-w-sm">
@@ -124,7 +112,7 @@ export default function ProjectsPage() {
         />
       </div>
 
-      <Card>
+      <Card id="project-results" className="scroll-mt-6">
         {isLoading ? (
           <CardContent className="space-y-3 p-5">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -161,7 +149,7 @@ export default function ProjectsPage() {
                         <FolderKanban className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <p className="font-medium text-foreground">{project.project_name}</p>
+                        <Link href={`/projects/${project.project_id}`} className="font-medium text-foreground hover:text-violet-700 hover:underline">{project.project_name}</Link>
                         {project.description && (
                           <p className="line-clamp-1 max-w-xs text-xs text-muted-foreground">
                             {project.description}
@@ -177,26 +165,10 @@ export default function ProjectsPage() {
                   <TableCell className="text-sm text-muted-foreground">{formatDate(project.updated_at)}</TableCell>
                   {canManageProjects && (
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(project)}>
-                            <Pencil />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeletingProject(project)}
-                          >
-                            <Trash2 />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex flex-nowrap items-center gap-1">
+                          <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit project" title="Edit project" onClick={() => openEdit(project)}><Pencil className="h-4 w-4" /></Button>
+                          <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete project" title="Delete project" onClick={() => setDeletingProject(project)}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>

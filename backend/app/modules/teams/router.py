@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
@@ -10,32 +10,50 @@ from app.modules.teams.schema import (
     TeamCreate,
     TeamLeadCreate,
     TeamLeadRead,
+    TeamMemberCandidateRead,
     TeamMemberCreate,
     TeamMemberRead,
     TeamMemberUpdate,
     TeamRead,
     TeamUpdate,
 )
-from app.modules.teams.permissions import can_manage_team_membership, can_manage_teams, can_view_teams
+from app.modules.teams.permissions import can_create_team, can_manage_team_membership, can_manage_teams, can_view_teams
 from app.modules.users.model import User
 
 router = APIRouter(
     prefix="/teams",
-    tags=["Teams"]
+    tags=["Teams"],
+    dependencies=[Depends(can_view_teams)],
 )
 
 # ==========================================================
 # Team Leads
 # ==========================================================
 
-@router.get("/leads", response_model=list[TeamLeadRead], status_code=status.HTTP_200_OK)
-async def get_team_leads(
-    skip: int = 0,
-    limit: int = 100,
+@router.get("/member-candidates", response_model=list[TeamMemberCandidateRead], status_code=status.HTTP_200_OK)
+async def get_team_member_candidates(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_team_leads(db, skip=skip, limit=limit)
+    return service.get_team_member_candidates(db, current_user=current_user)
+
+
+@router.get("/{team_id}/available-members", response_model=list[TeamMemberCandidateRead], status_code=status.HTTP_200_OK)
+async def get_available_team_members(
+    team_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.get_available_team_members(db, team_id=team_id, current_user=current_user)
+
+@router.get("/leads", response_model=list[TeamLeadRead], status_code=status.HTTP_200_OK)
+async def get_team_leads(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.get_team_leads(db, current_user=current_user, skip=skip, limit=limit)
 
 
 @router.get("/leads/by-user/{user_id}", response_model=TeamLeadRead, status_code=status.HTTP_200_OK)
@@ -60,7 +78,6 @@ async def get_team_lead(
     "/leads",
     response_model=TeamLeadRead,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(can_manage_teams)],
 )
 async def create_team_lead(
     payload: TeamLeadCreate,
@@ -92,11 +109,12 @@ async def delete_team_lead(
     dependencies=[Depends(can_view_teams)],
 )
 async def get_teams(
-    skip: int = 0,
-    limit: int = 100,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_teams(db, skip=skip, limit=limit)
+    return service.get_teams(db, current_user, skip=skip, limit=limit)
 
 
 @router.get(
@@ -107,16 +125,17 @@ async def get_teams(
 )
 async def get_team(
     team_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_team(db, team_id)
+    return service.get_team(db, team_id, current_user=current_user)
 
 
 @router.post(
     "/",
     response_model=TeamRead,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(can_manage_teams)],
+    dependencies=[Depends(can_create_team)],
 )
 async def create_team(
     payload: TeamCreate,
@@ -166,9 +185,10 @@ async def delete_team(
 )
 async def get_team_members(
     team_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_team_members(db, team_id)
+    return service.get_team_members(db, team_id, current_user=current_user)
 
 
 @router.post("/{team_id}/members", response_model=TeamMemberRead, status_code=status.HTTP_201_CREATED)
@@ -178,7 +198,7 @@ async def add_team_member(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    team = service.get_team(db, team_id)
+    team = service.get_team(db, team_id, current_user=current_user)
     can_manage_team_membership(team_lead_user_id=team.team_lead.user_id, current_user=current_user, db=db)
     return service.add_team_member(db, team_id, payload, actor=current_user)
 
@@ -191,7 +211,7 @@ async def update_team_member(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    team = service.get_team(db, team_id)
+    team = service.get_team(db, team_id, current_user=current_user)
     can_manage_team_membership(team_lead_user_id=team.team_lead.user_id, current_user=current_user, db=db)
     return service.update_team_member(db, team_id, member_id, payload, actor=current_user)
 
@@ -203,6 +223,6 @@ async def remove_team_member(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    team = service.get_team(db, team_id)
+    team = service.get_team(db, team_id, current_user=current_user)
     can_manage_team_membership(team_lead_user_id=team.team_lead.user_id, current_user=current_user, db=db)
     service.remove_team_member(db, team_id, member_id, actor=current_user)

@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 # ==========================================================
@@ -69,6 +69,17 @@ class EmailVerificationTokenBase(BaseModel):
 
 class EmailVerificationTokenCreate(EmailVerificationTokenBase):
     pass
+
+
+class VerificationResendRequest(BaseModel):
+    email: EmailStr
+
+
+class VerificationResendRead(BaseModel):
+    success: bool = True
+    message: str
+    email_sent: bool = False
+    verification_url: str | None = None
 
 
 class EmailVerificationTokenUpdate(BaseModel):

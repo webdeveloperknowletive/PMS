@@ -1,9 +1,8 @@
-import type { User } from "./user";
-
 /** Body for POST /auth/login — sent as x-www-form-urlencoded (OAuth2PasswordRequestForm). */
 export interface LoginRequest {
   username: string; // this is the user's email — OAuth2PasswordRequestForm names it "username"
   password: string;
+  workspace_slug?: string;
 }
 
 /** Response from POST /auth/login */
@@ -19,16 +18,23 @@ export interface RefreshTokenResponse {
   token_type: "bearer";
 }
 
-/** Body for POST /auth/register — reuses users.schema.UserCreate */
+/** Public owner signup creates a company workspace as well as the first account. */
 export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
-  is_active?: boolean;
+  organization_name: string;
+  workspace_slug: string;
+  accepted_terms: boolean;
 }
 
-/** Response from POST /auth/register — reuses users.schema.UserRead */
-export type RegisterResponse = User;
+export interface RegisterResponse {
+  user_id: string;
+  organization: { organization_id: string; name: string; slug: string; status: string; plan_code: string; created_at: string };
+  verification_required: boolean;
+  verification_email_sent: boolean;
+  verification_url?: string | null;
+}
 
 export interface ForgotPasswordRequest {
   email: string;

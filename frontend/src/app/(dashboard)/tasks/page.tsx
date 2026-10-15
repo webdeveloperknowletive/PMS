@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, MoreHorizontal, Pencil, Trash2, CheckSquare, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckSquare, Search } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -18,15 +18,10 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useDeleteTask, useTasks } from "@/hooks/queries/use-tasks";
 import { useProjects } from "@/hooks/queries/use-projects";
 import { useUsers } from "@/hooks/queries/use-users";
+import { isDeveloperOrTester } from "@/lib/member-visibility";
 import { useAuthStore } from "@/store/auth-store";
 import { formatDate } from "@/lib/utils";
 import { getApiErrorMessage } from "@/lib/api/client";
@@ -86,6 +81,15 @@ export default function TasksPage() {
     tasks?.filter((t) => t.due_date && new Date(t.due_date) < new Date() && t.status !== "DONE").length ?? 0;
   const blocked = tasks?.filter((t) => t.status === "BLOCKED").length ?? 0;
 
+  const showTaskResults = (status: string, taskTab: "all" | "mine" | "overdue" = "all") => {
+    setSearch("");
+    setProjectFilter(ALL);
+    setPriorityFilter(ALL);
+    setStatusFilter(status);
+    setTab(taskTab);
+    requestAnimationFrame(() => document.getElementById("task-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
   const openCreate = () => {
     setEditingTask(null);
     setFormOpen(true);
@@ -119,42 +123,42 @@ export default function TasksPage() {
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <Card>
-          <CardContent className="p-4">
+        <button type="button" onClick={() => showTaskResults(ALL)} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Total Tasks</p>
             <p className="mt-1 text-2xl font-semibold">{total}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showTaskResults("DONE")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Completed</p>
             <p className="mt-1 text-2xl font-semibold text-green-600">{completed}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showTaskResults("IN_PROGRESS")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">In Progress</p>
             <p className="mt-1 text-2xl font-semibold text-blue-600">{inProgress}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showTaskResults("TODO")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">To Do</p>
             <p className="mt-1 text-2xl font-semibold text-slate-600">{todo}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showTaskResults(ALL, "overdue")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Overdue</p>
             <p className="mt-1 text-2xl font-semibold text-red-600">{overdue}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showTaskResults("BLOCKED")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Blocked</p>
             <p className="mt-1 text-2xl font-semibold text-red-500">{blocked}</p>
-          </CardContent>
-        </Card>
+          </div>
+        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -219,7 +223,7 @@ export default function TasksPage() {
         </TabsList>
       </Tabs>
 
-      <Card>
+      <Card id="task-results" className="scroll-mt-6">
         {isLoading ? (
           <CardContent className="space-y-3 p-5">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -253,7 +257,12 @@ export default function TasksPage() {
             <TableBody>
               {filtered.map((task) => {
                 const project = projectMap.get(task.project_id);
-                const assignee = task.user_id ? userMap.get(task.user_id) : null;
+                const candidateAssignee = task.user_id ? userMap.get(task.user_id) : null;
+                const assignee = candidateAssignee && isDeveloperOrTester(candidateAssignee)
+                  ? candidateAssignee
+                  : task.user_id && task.assignee_name
+                    ? { user_id: task.user_id, name: task.assignee_name }
+                    : null;
                 const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== "DONE";
                 const canEdit = !!currentUser && canUpdateTask(task.user_id, currentUser.user_id, permissionCodes);
                 const canDelete = canManageTasks;
@@ -289,26 +298,10 @@ export default function TasksPage() {
                     </TableCell>
                     <TableCell>
                       {(canEdit || canDelete) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {canEdit && <DropdownMenuItem onClick={() => openEdit(task)}>
-                            <Pencil />
-                            Edit
-                          </DropdownMenuItem>}
-                          {canDelete && <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeletingTask(task)}
-                          >
-                            <Trash2 />
-                            Delete
-                          </DropdownMenuItem>}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex flex-nowrap items-center gap-1">
+                        {canEdit && <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit task" title="Edit task" onClick={() => openEdit(task)}><Pencil className="h-4 w-4" /></Button>}
+                        {canDelete && <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete task" title="Delete task" onClick={() => setDeletingTask(task)}><Trash2 className="h-4 w-4" /></Button>}
+                      </div>
                       )}
                     </TableCell>
                   </TableRow>

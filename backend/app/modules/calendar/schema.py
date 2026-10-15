@@ -13,11 +13,18 @@ class CalendarEventBase(BaseModel):
     start_datetime: datetime
     end_datetime: datetime
     location: str | None = Field(None, max_length=255)
+    calendar_scope: str = Field("ORGANIZATION", pattern="^(ORGANIZATION|PERSONAL)$")
+    calendar_owner_id: uuid.UUID | None = None
+    related_task_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
     def _check_datetime_range(self):
         if self.end_datetime < self.start_datetime:
             raise ValueError("end_datetime must be on or after start_datetime")
+        if self.calendar_scope == "PERSONAL" and self.calendar_owner_id is None:
+            raise ValueError("Personal calendar events need an owner")
+        if self.calendar_scope == "ORGANIZATION" and self.calendar_owner_id is not None:
+            raise ValueError("Organization calendar events cannot have a personal owner")
         return self
 
 
@@ -39,3 +46,4 @@ class CalendarEventRead(CalendarEventBase):
 
     event_id: uuid.UUID
     created_at: datetime
+    is_automatic: bool = False

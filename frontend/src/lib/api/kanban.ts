@@ -64,6 +64,10 @@ export const kanbanApi = {
     const { data } = await apiClient.patch<KanbanTask>(`/kanban/tasks/${placementId}/move`, payload);
     return data;
   },
+  approveTaskReview: async (taskId: string): Promise<KanbanTask> => {
+    const { data } = await apiClient.post<KanbanTask>(`/kanban/tasks/${taskId}/approve-review`);
+    return data;
+  },
   deleteTaskPlacement: async (placementId: string): Promise<void> => {
     await apiClient.delete(`/kanban/tasks/${placementId}`);
   },

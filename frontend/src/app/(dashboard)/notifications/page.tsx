@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Bell, Check, MoreHorizontal, Trash2 } from "lucide-react";
+import { Bell, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -9,12 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   useDeleteNotification,
   useMarkNotificationRead,
@@ -48,17 +42,21 @@ export default function NotificationsPage() {
   const markRead = useMarkNotificationRead();
   const deleteMutation = useDeleteNotification();
 
-  const [tab, setTab] = useState<"all" | "unread">("all");
+  const [tab, setTab] = useState<"all" | "unread" | "read">("all");
 
   const sorted = useMemo(
     () => [...(notifications ?? [])].sort((a, b) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime()),
     [notifications]
   );
-  const filtered = tab === "unread" ? sorted.filter((n) => !n.is_read) : sorted;
+  const filtered = tab === "unread" ? sorted.filter((n) => !n.is_read) : tab === "read" ? sorted.filter((n) => n.is_read) : sorted;
   const grouped = useMemo(() => groupByDay(filtered), [filtered]);
 
   const total = notifications?.length ?? 0;
   const unread = notifications?.filter((n) => !n.is_read).length ?? 0;
+  const showNotificationResults = (selectedTab: typeof tab) => {
+    setTab(selectedTab);
+    requestAnimationFrame(() => document.getElementById("notification-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const handleToggleRead = async (n: Notification) => {
     try {
@@ -101,34 +99,35 @@ export default function NotificationsPage() {
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="p-4">
+        <button type="button" onClick={() => showNotificationResults("all")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Total</p>
             <p className="mt-1 text-2xl font-semibold">{total}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showNotificationResults("unread")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Unread</p>
             <p className="mt-1 text-2xl font-semibold text-primary">{unread}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </div>
+        </button>
+        <button type="button" onClick={() => showNotificationResults("read")} className="metric-card rounded-2xl border border-border bg-card text-left transition hover:border-violet-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <div className="p-4">
             <p className="text-xs text-muted-foreground">Read</p>
             <p className="mt-1 text-2xl font-semibold text-muted-foreground">{total - unread}</p>
-          </CardContent>
-        </Card>
+          </div>
+        </button>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="unread">Unread {unread > 0 && `(${unread})`}</TabsTrigger>
+          <TabsTrigger value="read">Read</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      <Card>
+      <Card id="notification-results" className="scroll-mt-6">
         {isLoading ? (
           <CardContent className="space-y-3 p-5">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -170,26 +169,10 @@ export default function NotificationsPage() {
                         </p>
                       </div>
                     </button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleToggleRead(n)}>
-                          <Check />
-                          Mark as {n.is_read ? "unread" : "read"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => handleDelete(n)}
-                        >
-                          <Trash2 />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button variant="outline" size="icon" className="h-8 w-8" aria-label={`Mark notification ${n.is_read ? "unread" : "read"}`} title={`Mark ${n.is_read ? "unread" : "read"}`} onClick={() => handleToggleRead(n)}><Check className="h-4 w-4" /></Button>
+                      <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete notification" title="Delete notification" onClick={() => handleDelete(n)}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
                   </div>
                 ))}
               </div>

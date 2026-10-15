@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, File, UploadFile, status
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -8,8 +8,10 @@ from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.modules.users import service
 from app.modules.users.model import User
-from app.modules.users.schema import UserCreate, UserRead, UserUpdate
+from app.modules.users.schema import UserRead, UserUpdate
 from app.modules.users.permissions import can_manage_users, can_modify_user
+from app.core.permissions import has_permission, is_system_role_assigned, require_any_permission
+from app.core.exceptions import ForbiddenException
 
 router = APIRouter(
     prefix="/users",
@@ -17,14 +19,18 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=list[UserRead], status_code=status.HTTP_200_OK)
+@router.get("/", response_model=list[UserRead], status_code=status.HTTP_200_OK,
+            dependencies=[Depends(require_any_permission("users.manage", "teams.manage", "teams.members.manage", "tasks.manage"))])
 async def get_users(
-    skip: int = 0,
-    limit: int = 100,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_users(db, skip=skip, limit=limit)
+    return service.get_users(
+        db, skip=skip, limit=limit,
+        include_super_admin=is_system_role_assigned(db, current_user),
+    )
 
 
 @router.get("/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK)
@@ -33,16 +39,19 @@ async def get_user(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_user(db, user_id)
+    if current_user.user_id != user_id and not any(has_permission(db, current_user, code) for code in (
+        "users.manage", "teams.manage", "teams.members.manage", "tasks.manage"
+    )):
+        raise ForbiddenException(message="You may only view your own user profile")
+    target = service.get_user(db, user_id)
+    if target.user_id != current_user.user_id and not is_system_role_assigned(db, current_user) and is_system_role_assigned(db, target):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return target
 
 
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(can_manage_users)])
-async def create_user(
-    payload: UserCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    return service.create_user(db, payload, actor=current_user)
+async def create_user():
+    raise HTTPException(status_code=410, detail="Invite employees from Organization → People so they set their own password and accept their assigned role.")
 
 
 @router.put("/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK)
@@ -129,5 +138,8 @@ async def get_profile_picture(
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    target = service.get_user(db, user_id)
+    if target.user_id != _current_user.user_id and not is_system_role_assigned(db, _current_user) and is_system_role_assigned(db, target):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     path, mime_type = service.get_profile_picture_path(db, user_id)
     return FileResponse(path, media_type=mime_type)

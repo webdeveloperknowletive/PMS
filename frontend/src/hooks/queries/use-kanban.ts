@@ -7,17 +7,21 @@ import type { KanbanColumnCreate, KanbanTaskMovePayload } from "@/types/kanban";
 const COLUMNS_KEY = "kanban-columns";
 const PLACEMENTS_KEY = "kanban-tasks";
 
-export function useKanbanColumns() {
+export function useKanbanColumns(enabled = true) {
   return useQuery({
     queryKey: [COLUMNS_KEY],
     queryFn: () => kanbanApi.listColumns(),
+    enabled,
   });
 }
 
-export function useKanbanTaskPlacements() {
+export function useKanbanTaskPlacements(enabled = true) {
   return useQuery({
     queryKey: [PLACEMENTS_KEY],
     queryFn: () => kanbanApi.listTasks(),
+    enabled,
+    refetchInterval: 2_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -52,7 +56,32 @@ export function useMoveKanbanTask() {
   return useMutation({
     mutationFn: ({ placementId, payload }: { placementId: string; payload: KanbanTaskMovePayload }) =>
       kanbanApi.moveTask(placementId, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [PLACEMENTS_KEY] }),
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: [PLACEMENTS_KEY] }),
+      queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+      queryClient.invalidateQueries({ queryKey: ["task-work-times"] }),
+      queryClient.invalidateQueries({ queryKey: ["task-work-sessions"] }),
+      queryClient.invalidateQueries({ queryKey: ["gantt-tasks"] }),
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] }),
+      queryClient.invalidateQueries({ queryKey: ["team-available-members"] }),
+    ]),
+  });
+}
+
+export function useApproveKanbanReview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (taskId: string) => kanbanApi.approveTaskReview(taskId),
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: [PLACEMENTS_KEY] }),
+      queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+      queryClient.invalidateQueries({ queryKey: ["task-work-times"] }),
+      queryClient.invalidateQueries({ queryKey: ["task-work-sessions"] }),
+      queryClient.invalidateQueries({ queryKey: ["gantt-tasks"] }),
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] }),
+      queryClient.invalidateQueries({ queryKey: ["team-available-members"] }),
+      queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+    ]),
   });
 }
 

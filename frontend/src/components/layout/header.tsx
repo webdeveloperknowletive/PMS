@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Search, LogOut, UserRound, ChevronDown, Menu, ArrowUpRight, Command } from "lucide-react";
+import { Bell, Search, LogOut, UserRound, ChevronDown, Menu, ArrowUpRight, Command, Home } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useQuery } from "@tanstack/react-query";
 import { notificationSettingsApi, notificationsApi } from "@/lib/api/notifications";
 import { NOTIFICATIONS_KEY } from "@/hooks/queries/use-notifications";
@@ -19,6 +20,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { enableNotificationSound, playNotificationSound } from "@/lib/notification-sound";
 import { chatApi } from "@/lib/api/chat";
+import { canAccessModule } from "@/lib/permissions";
 
 const DESTINATIONS = [
   { label: "Dashboard", description: "Your project overview", href: "/dashboard", group: "Workspace" },
@@ -40,12 +42,15 @@ const DESTINATIONS = [
   { label: "AI Meeting Summary", description: "Meeting notes and actions", href: "/ai/meeting-summary", group: "AI Studio" },
   { label: "Roles & Permissions", description: "Access management", href: "/roles", group: "Administration" },
   { label: "Users", description: "People directory", href: "/users", group: "Administration" },
+  { label: "Organization", description: "Workspace and trial settings", href: "/organization", group: "Administration" },
   { label: "Settings", description: "Your profile and preferences", href: "/settings", group: "Account" },
 ];
 
 export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { roleNames, permissionCodes, isLoading: rolesLoading } = usePermissions();
+  const displayedRole = roleNames.length ? roleNames.join(", ") : rolesLoading ? "Loading role..." : "No role assigned";
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [chatWindowOpen, setChatWindowOpen] = useState(false);
@@ -60,6 +65,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { data: notifications } = useQuery({
     queryKey: [NOTIFICATIONS_KEY, user?.user_id],
     queryFn: () => notificationsApi.list({ limit: 500 }),
+    // The API returns only the signed-in user's personal notification feed.
     enabled: !!user,
     refetchInterval: 1_500,
     select: (data) => data.filter((n) => !n.is_read && n.user_id === user?.user_id),
@@ -67,30 +73,30 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { data: toastDurationSetting } = useQuery({
     queryKey: ["notification-toast-duration"],
     queryFn: notificationSettingsApi.getToastDuration,
-    enabled: !!user,
+    enabled: !!user && permissionCodes.includes("notifications.settings.view"),
   });
   const { data: notificationSoundSetting } = useQuery({
     queryKey: ["notification-sound-setting"],
     queryFn: notificationSettingsApi.getSound,
-    enabled: !!user,
+    enabled: !!user && permissionCodes.includes("notifications.settings.view"),
     refetchInterval: 30_000,
   });
   const { data: notificationVolumeSetting } = useQuery({
     queryKey: ["notification-volume-setting", user?.user_id],
     queryFn: notificationSettingsApi.getVolume,
-    enabled: !!user,
+    enabled: !!user && permissionCodes.includes("notifications.personal_settings.view"),
     refetchInterval: 30_000,
   });
   const { data: chatSettings } = useQuery({
     queryKey: ["chat-settings", user?.user_id],
     queryFn: chatApi.settings,
-    enabled: !!user,
+    enabled: !!user && permissionCodes.includes("chat.settings.view"),
     refetchInterval: 30_000,
   });
   const { data: chatOrganizationSettings } = useQuery({
     queryKey: ["chat-organization-settings"],
     queryFn: chatApi.organizationSettings,
-    enabled: !!user,
+    enabled: !!user && permissionCodes.includes("chat.organization_settings.view"),
     refetchInterval: 30_000,
   });
   const unreadCount = notifications?.length ?? 0;
@@ -131,8 +137,8 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   }, [notifications, notificationSoundSetting, notificationVolumeSetting, chatSettings, chatOrganizationSettings, toastDurationSetting, user, chatWindowOpen]);
   const destinations = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return DESTINATIONS.filter((item) => !query || `${item.label} ${item.description} ${item.group}`.toLowerCase().includes(query));
-  }, [search]);
+    return DESTINATIONS.filter((item) => canAccessModule(item.href, permissionCodes) && (!query || `${item.label} ${item.description} ${item.group}`.toLowerCase().includes(query)));
+  }, [search, permissionCodes]);
 
   useEffect(() => {
     window.addEventListener("pointerdown", enableNotificationSound, { once: true });
@@ -164,6 +170,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           <Button variant="ghost" size="icon" aria-label="Open navigation" className="shrink-0 lg:hidden" onClick={onMenuClick}>
             <Menu className="h-5 w-5" />
           </Button>
+          <Link href="/dashboard" aria-label="Go to home dashboard" title="Home" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <Home className="h-[18px] w-[18px]" />
+          </Link>
           <button type="button" onClick={() => setSearchOpen(true)} className="group flex h-10 w-full max-w-[540px] items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 text-left text-sm text-slate-500 shadow-inner shadow-white transition hover:border-violet-200 hover:bg-white hover:shadow-sm">
             <Search className="h-4 w-4 text-slate-400 group-hover:text-violet-500" />
             <span className="flex-1 truncate">Search anything in SprintIX...</span>
@@ -171,29 +180,28 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </button>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
-          <Link href="/notifications" aria-label={`${unreadCount} unread notifications`} className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-slate-500 transition hover:border-violet-100 hover:bg-violet-50 hover:text-violet-700">
-            <Bell className="h-[18px] w-[18px]" />
-            {unreadCount > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border-2 border-white bg-rose-500 ring-2 ring-rose-100" />}
-          </Link>
-          <div className="hidden h-8 w-px bg-slate-200 sm:block" />
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 rounded-xl p-1.5 outline-none transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-violet-300">
               <UserAvatar user={user} showName={false} size="md" />
               <div className="hidden max-w-40 text-left leading-tight md:block">
                 <p className="truncate text-[13px] font-semibold text-slate-800">{user?.name ?? "Loading..."}</p>
-                <p className="mt-1 truncate text-[11px] text-slate-500">{user?.email ?? ""}</p>
+                <p className="mt-1 truncate text-[11px] font-bold text-violet-700" title={displayedRole}>{displayedRole}</p>
               </div>
               <ChevronDown className="hidden h-4 w-4 text-slate-400 md:block" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2">
-              <DropdownMenuLabel className="px-3 py-2"><span className="block text-sm font-semibold">{user?.name}</span><span className="mt-1 block truncate text-xs font-normal text-muted-foreground">{user?.email}</span></DropdownMenuLabel>
+              <DropdownMenuLabel className="px-3 py-2"><span className="block text-sm font-semibold">{user?.name}</span><span className="mt-1 block truncate text-xs font-bold text-violet-700">{displayedRole}</span><span className="mt-1 block truncate text-xs font-normal text-muted-foreground">{user?.email}</span></DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild><Link href="/settings"><UserRound /> Profile & settings <ArrowUpRight className="ml-auto h-3.5 w-3.5" /></Link></DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => logout()} className="text-destructive focus:text-destructive"><LogOut /> Log out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Link href="/notifications" aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"} title="Notifications" className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <Bell className="h-[18px] w-[18px]" />
+            {unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-rose-500 px-1 text-[9px] font-bold leading-none text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}
+          </Link>
         </div>
       </header>
 

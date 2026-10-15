@@ -1,14 +1,15 @@
 import uuid
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, PrimaryKeyConstraint, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 
 
-class Notification(Base):
+class Notification(Base, OrganizationScopedMixin):
     __tablename__ = "notifications"
 
     notification_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -28,14 +29,15 @@ class Notification(Base):
         return f"<Notification {self.title} user_id={self.user_id}>"
 
 
-class NotificationSetting(Base):
+class NotificationSetting(Base, OrganizationScopedMixin):
     __tablename__ = "notification_settings"
+    __table_args__ = (PrimaryKeyConstraint("organization_id", "setting_key", name="pk_notification_settings_org_key"),)
 
-    setting_key = Column(String(100), primary_key=True)
+    setting_key = Column(String(100), nullable=False)
     setting_value = Column(String(255), nullable=False)
 
 
-class NotificationUserSetting(Base):
+class NotificationUserSetting(Base, OrganizationScopedMixin):
     __tablename__ = "notification_user_settings"
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True)

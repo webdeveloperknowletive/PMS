@@ -30,11 +30,13 @@ export function DocumentFormDialog({
   onOpenChange,
   document,
   resourceType,
+  defaultProjectId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   document?: Document | null;
   resourceType: ResourceType;
+  defaultProjectId?: string;
 }) {
   const isEditing = !!document;
   const { data: projects } = useProjects();
@@ -46,7 +48,7 @@ export function DocumentFormDialog({
   const isSaving = createMutation.isPending || uploadMutation.isPending || replaceMutation.isPending || updateMutation.isPending;
   const { register, handleSubmit, control, reset, setError, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { project_id: "", title: "", version: "1.0", file_url: "" },
+    defaultValues: { project_id: defaultProjectId ?? "", title: "", version: "1.0", file_url: "" },
   });
 
   useEffect(() => {
@@ -54,9 +56,9 @@ export function DocumentFormDialog({
       setFile(null);
       reset(document
         ? { project_id: document.project_id, title: document.title, version: document.version, file_url: document.file_url ?? "" }
-        : { project_id: "", title: "", version: "1.0", file_url: "" });
+        : { project_id: defaultProjectId ?? "", title: "", version: "1.0", file_url: "" });
     }
-  }, [open, document, reset]);
+  }, [open, document, defaultProjectId, reset]);
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -118,7 +120,7 @@ export function DocumentFormDialog({
           <div className="space-y-1.5">
             <Label>Project</Label>
             <Controller control={control} name="project_id" render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange} disabled={isEditing}>
+              <Select value={field.value} onValueChange={field.onChange} disabled={isEditing || !!defaultProjectId}>
                 <SelectTrigger><SelectValue placeholder="Select project" /></SelectTrigger>
                 <SelectContent>{(projects ?? []).map((project) => <SelectItem key={project.project_id} value={project.project_id}>{project.project_name}</SelectItem>)}</SelectContent>
               </Select>

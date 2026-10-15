@@ -13,6 +13,7 @@ export interface RoleUpdate {
 export interface Role extends RoleBase {
   role_id: string;
   created_at: string;
+  is_system: boolean;
 }
 
 export interface Permission {

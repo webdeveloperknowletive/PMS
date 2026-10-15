@@ -110,3 +110,4 @@ export const PROJECT_STATUS_COLOR: Record<string, string> = {
 };
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+export const WORKSPACE_DOMAIN = process.env.NEXT_PUBLIC_WORKSPACE_DOMAIN ?? "localhost:3000";

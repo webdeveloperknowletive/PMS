@@ -25,6 +25,7 @@ import { useCreateWorkflow, useUpdateWorkflow } from "@/hooks/queries/use-workfl
 import { useProjects } from "@/hooks/queries/use-projects";
 import { useTeamLeads, usePromoteToTeamLead } from "@/hooks/queries/use-teams";
 import { useUsers } from "@/hooks/queries/use-users";
+import { isTeamLeadOnly } from "@/lib/member-visibility";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { Workflow } from "@/types/workflow";
 
@@ -216,9 +217,9 @@ export function WorkflowFormDialog({
                     <SelectValue placeholder="Select owner" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(users ?? []).map((u) => (
+                    {(users ?? []).filter(isTeamLeadOnly).map((u) => (
                       <SelectItem key={u.user_id} value={u.user_id}>
-                        {u.name}
+                        {u.name} (Team Lead)
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -227,7 +228,7 @@ export function WorkflowFormDialog({
             />
             {errors.lead_user_id && <p className="text-xs text-destructive">{errors.lead_user_id.message}</p>}
             <p className="text-xs text-muted-foreground">
-              Workflows are owned by a team lead — the selected user is promoted automatically if needed.
+              Any active workspace user can be selected as the workflow lead.
             </p>
           </div>
 

@@ -5,10 +5,11 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 from app.shared.mixins import TimestampMixin
 
 
-class AISprintPlan(Base, TimestampMixin):
+class AISprintPlan(Base, OrganizationScopedMixin, TimestampMixin):
     __tablename__ = "ai_sprint_plans"
 
     sprint_plan_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

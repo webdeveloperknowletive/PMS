@@ -61,7 +61,7 @@ apiClient.interceptors.response.use(
     }
 
     // Don't try to refresh when the failing call *is* the auth endpoints.
-    const publicAuthEndpoints = ["/auth/login", "/auth/refresh-token", "/auth/forgot-password", "/auth/reset-password", "/auth/verify-email"];
+    const publicAuthEndpoints = ["/auth/login", "/auth/refresh-token", "/auth/forgot-password", "/auth/reset-password", "/auth/verify-email", "/auth/resend-verification", "/organizations/register", "/organizations/invitations/accept"];
     if (publicAuthEndpoints.some((endpoint) => originalRequest.url?.includes(endpoint))) {
       return Promise.reject(error);
     }
@@ -89,7 +89,11 @@ apiClient.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const { data } = await axios.post(`${API_URL}/auth/refresh-token`, { refresh_token: refreshToken });
+      const { data } = await axios.post(
+        `${API_URL}/auth/refresh-token`,
+        { refresh_token: refreshToken },
+        { timeout: 10_000 },
+      );
       tokenStorage.setTokens(data.access_token);
       flushQueue(null, data.access_token);
       originalRequest.headers.Authorization = `Bearer ${data.access_token}`;

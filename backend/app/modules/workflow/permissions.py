@@ -24,7 +24,7 @@ def can_manage_workflows(
     a workflow.
     """
 
-    if not has_permission(db, current_user, "workflow.manage"):
+    if not any(has_permission(db, current_user, code) for code in ("workflow.view", "workflow.manage")):
         raise ForbiddenException(message="Missing required permission: workflow.manage")
 
     return current_user
@@ -32,9 +32,12 @@ def can_manage_workflows(
 
 def can_view_workflows(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> User:
     """
-    Any authenticated user may read workflow data.
+    Workflow access requires workflow management permission.
     """
 
+    if not has_permission(db, current_user, "workflow.manage"):
+        raise ForbiddenException(message="You do not have access to workflows")
     return current_user

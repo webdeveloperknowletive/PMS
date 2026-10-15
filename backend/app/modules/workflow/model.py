@@ -5,10 +5,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 from app.shared.mixins import TimestampMixin
 
 
-class Workflow(Base, TimestampMixin):
+class Workflow(Base, OrganizationScopedMixin, TimestampMixin):
     __tablename__ = "workflows"
 
     workflow_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

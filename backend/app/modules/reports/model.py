@@ -6,9 +6,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 
 
-class Report(Base):
+class Report(Base, OrganizationScopedMixin):
     __tablename__ = "reports"
     __table_args__ = (
         CheckConstraint("report_format IN ('PDF', 'Excel', 'CSV')", name="ck_reports_report_format"),

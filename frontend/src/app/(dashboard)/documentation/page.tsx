@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, ExternalLink, FileText, Github, HardDrive, MoreHorizontal, Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
+import { Download, ExternalLink, FileText, Github, HardDrive, Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { DocumentFormDialog } from "@/components/modules/documentation/document-form-dialog";
 import { useDeleteDocument, useDocuments } from "@/hooks/queries/use-documents";
 import { documentsApi } from "@/lib/api/documents";
@@ -73,13 +72,10 @@ function ResourceSection({
               ) : doc.resource_type !== "FILE" && doc.file_url ? (
                 <Button asChild size="sm" variant="outline"><a href={doc.file_url} target="_blank" rel="noopener noreferrer">Open link<ExternalLink className="h-4 w-4" /></a></Button>
               ) : doc.resource_type === "FILE" ? <span className="text-xs text-slate-400">No file uploaded</span> : null}
-              {(canEdit || canDelete) && <DropdownMenu>
-                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={`Actions for ${doc.title}`}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {canEdit && <DropdownMenuItem onClick={() => onEdit(doc)}><Pencil />Edit</DropdownMenuItem>}
-                  {canDelete && <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(doc)}><Trash2 />Delete</DropdownMenuItem>}
-                </DropdownMenuContent>
-              </DropdownMenu>}
+              {(canEdit || canDelete) && <div className="flex items-center gap-1">
+                {canEdit && <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit resource" title="Edit resource" onClick={() => onEdit(doc)}><Pencil className="h-4 w-4" /></Button>}
+                {canDelete && <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete resource" title="Delete resource" onClick={() => onDelete(doc)}><Trash2 className="h-4 w-4" /></Button>}
+              </div>}
             </div>
           </div>
         ))}

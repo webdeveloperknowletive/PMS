@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { Sparkles } from "lucide-react";
+import Link from "next/link";
+import { Home, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function PageHeader({
   title,
@@ -19,7 +21,12 @@ export function PageHeader({
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-[28px]">{title}</h1>
         {description && <p className="mt-1.5 max-w-2xl text-sm text-slate-600">{description}</p>}
       </div>
-      {actions && <div className="relative z-10 flex shrink-0 items-center gap-2">{actions}</div>}
+      <div className="relative z-10 flex shrink-0 items-center gap-2">
+        <Button asChild variant="outline" size="sm" aria-label="Go to home dashboard">
+          <Link href="/dashboard"><Home className="h-4 w-4" /> Home</Link>
+        </Button>
+        {actions}
+      </div>
     </div>
   );
 }

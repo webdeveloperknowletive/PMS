@@ -22,12 +22,16 @@ import { getApiErrorMessage } from "@/lib/api/client";
 import type { User } from "@/types/user";
 
 const createSchema = z.object({
-  name: z.string().min(2, "Name is required"),
+  name: z.string().trim().min(2, "Name must have at least 2 characters").max(150, "Name must be 150 characters or fewer"),
   email: z.string().email("Enter a valid email"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(1, "Re-enter your password"),
+}).refine((values) => values.password === values.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 const editSchema = z.object({
-  name: z.string().min(2, "Name is required"),
+  name: z.string().trim().min(2, "Name must have at least 2 characters").max(150, "Name must be 150 characters or fewer"),
   email: z.string().email("Enter a valid email"),
   password: z.string().optional(),
 });
@@ -55,12 +59,12 @@ export function UserFormDialog({
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(isEditing ? editSchema : createSchema) as never,
-    defaultValues: { name: "", email: "", password: "" },
+    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 
   useEffect(() => {
     if (open) {
-      reset(user ? { name: user.name, email: user.email, password: "" } : { name: "", email: "", password: "" });
+      reset(user ? { name: user.name, email: user.email, password: "", confirmPassword: "" } : { name: "", email: "", password: "", confirmPassword: "" });
     }
   }, [open, user, reset]);
 
@@ -103,10 +107,17 @@ export function UserFormDialog({
           </div>
 
           {!isEditing && (
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
-              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" placeholder="••••••••" autoComplete="new-password" required minLength={8} {...register("password")} />
+                {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword">Re-enter password</Label>
+                <Input id="confirmPassword" type="password" autoComplete="new-password" required minLength={8} {...register("confirmPassword")} />
+                {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
+              </div>
             </div>
           )}
 

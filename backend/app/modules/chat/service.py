@@ -7,9 +7,10 @@ from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import exists, or_
 from sqlalchemy.orm import Session
 
-from app.core.permissions import has_permission
+from app.core.permissions import has_permission, is_system_role_assigned
 from app.modules.chat.model import ChatConversation, ChatConversationFavorite, ChatConversationMember, ChatMessage, ChatMessageReaction, ChatUserSetting
 from app.modules.notifications.model import Notification, NotificationSetting
+from app.modules.notifications.repository import get_notification_setting
 from app.modules.roles.model import Role, UserRole
 from app.modules.teams.model import Team, TeamLead, TeamMember
 from app.modules.users.model import User
@@ -33,7 +34,10 @@ def _contact(db: Session, user: User) -> dict:
 
 
 def contacts(db: Session, current_user: User) -> list[dict]:
-    users = db.query(User).filter(User.is_active.is_(True), User.user_id != current_user.user_id).order_by(User.name).all()
+    query = db.query(User).filter(User.is_active.is_(True), User.user_id != current_user.user_id)
+    if not is_system_role_assigned(db, current_user):
+        query = query.filter(~User.user_roles.any(UserRole.role.has(Role.is_system.is_(True))))
+    users = query.order_by(User.name).all()
     return [_contact(db, user) for user in users]
 
 
@@ -137,6 +141,10 @@ def list_conversations(db: Session, current_user: User) -> list[dict]:
             continue
         ids = _effective_member_ids(db, conversation)
         member_users = db.query(User).filter(User.user_id.in_(ids), User.is_active.is_(True)).order_by(User.name).all() if ids else []
+        group_admin_ids = {row[0] for row in db.query(ChatConversationMember.user_id).filter(
+            ChatConversationMember.conversation_id == conversation.conversation_id,
+            ChatConversationMember.is_group_admin.is_(True),
+        ).all()}
         last_message = db.query(ChatMessage).filter(ChatMessage.conversation_id == conversation.conversation_id) \
             .order_by(ChatMessage.sent_at.desc()).first()
         member = db.get(ChatConversationMember, (conversation.conversation_id, current_user.user_id))
@@ -167,7 +175,13 @@ def list_conversations(db: Session, current_user: User) -> list[dict]:
             "team_id": conversation.team_id,
             "team_name": team.team_name if team else None,
             "member_count": len(ids),
-            "members": [_contact(db, member_user) for member_user in member_users],
+            "members": [
+                {**_contact(db, member_user), "is_group_admin": (
+                    conversation.conversation_type in {"GROUP", "TEAM"}
+                    and (member_user.user_id == conversation.created_by or member_user.user_id in group_admin_ids)
+                )}
+                for member_user in member_users
+            ],
             "unread_count": unread_count,
             "is_favorite": conversation.conversation_id in favorite_ids,
             "last_message": _message_read(db, last_message, current_user.user_id) if last_message else None,
@@ -182,6 +196,8 @@ def open_direct(db: Session, current_user: User, other_user_id: UUID) -> dict:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Choose another organization member.")
     other = db.query(User).filter(User.user_id == other_user_id, User.is_active.is_(True)).first()
     if other is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization member not found.")
+    if not is_system_role_assigned(db, current_user) and is_system_role_assigned(db, other):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization member not found.")
     low_id, high_id = sorted((str(current_user.user_id), str(other_user_id)))
     direct_key = f"{low_id}:{high_id}"
@@ -217,7 +233,7 @@ def create_team_group(db: Session, current_user: User, team_id: UUID) -> dict:
     )
     db.add(conversation)
     db.flush()
-    db.add(ChatConversationMember(conversation_id=conversation.conversation_id, user_id=current_user.user_id, last_read_at=_now()))
+    db.add(ChatConversationMember(conversation_id=conversation.conversation_id, user_id=current_user.user_id, last_read_at=_now(), is_group_admin=True))
     recipients = _team_member_ids(db, team.team_id) - {current_user.user_id}
     if recipients:
         settings = {row.user_id: row.notifications_enabled for row in db.query(ChatUserSetting).filter(
@@ -260,6 +276,7 @@ def create_group(db: Session, current_user: User, name: str, member_ids: list[UU
         conversation_id=conversation.conversation_id,
         user_id=user_id,
         last_read_at=now if user_id == current_user.user_id else None,
+        is_group_admin=user_id == current_user.user_id,
     ) for user_id in requested_ids)
     recipients = requested_ids - {current_user.user_id}
     settings = {row.user_id: row.notifications_enabled for row in db.query(ChatUserSetting).filter(
@@ -275,6 +292,24 @@ def create_group(db: Session, current_user: User, name: str, member_ids: list[UU
     ) for user_id in recipients if settings.get(user_id, True))
     db.commit()
     return next(row for row in list_conversations(db, current_user) if row["conversation_id"] == conversation.conversation_id)
+
+
+def promote_group_admin(db: Session, current_user: User, conversation_id: UUID, target_user_id: UUID) -> dict:
+    conversation = _conversation(db, conversation_id)
+    if conversation.conversation_type != "GROUP" or conversation.team_id is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Group admins can only be added to a chat group.")
+    if not _is_member(db, conversation, current_user.user_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not a member of this group.")
+    requester = db.get(ChatConversationMember, (conversation_id, current_user.user_id))
+    if conversation.created_by != current_user.user_id and not (requester and requester.is_group_admin):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only a group admin can add another group admin.")
+    target = db.get(ChatConversationMember, (conversation_id, target_user_id))
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="That user is not a member of this group.")
+    if not target.is_group_admin:
+        target.is_group_admin = True
+        db.commit()
+    return next(row for row in list_conversations(db, current_user) if row["conversation_id"] == conversation_id)
 
 
 def get_messages(db: Session, current_user: User, conversation_id: UUID, limit: int = 100) -> list[dict]:
@@ -463,8 +498,8 @@ def update_favorite(db: Session, current_user: User, conversation_id: UUID, is_f
 
 
 def get_organization_settings(db: Session) -> dict:
-    sound = db.get(NotificationSetting, "chat_sound_key")
-    volume = db.get(NotificationSetting, "chat_master_volume_percent")
+    sound = get_notification_setting(db, "chat_sound_key")
+    volume = get_notification_setting(db, "chat_master_volume_percent")
     return {"sound_key": sound.setting_value if sound else "double_ping",
             "master_volume_percent": int(volume.setting_value) if volume else 100}
 
@@ -472,7 +507,7 @@ def get_organization_settings(db: Session) -> dict:
 def update_organization_settings(db: Session, sound_key: str, master_volume_percent: int) -> dict:
     values = {"chat_sound_key": sound_key, "chat_master_volume_percent": str(master_volume_percent)}
     for key, value in values.items():
-        setting = db.get(NotificationSetting, key)
+        setting = get_notification_setting(db, key)
         if setting is None:
             db.add(NotificationSetting(setting_key=key, setting_value=value))
         else:

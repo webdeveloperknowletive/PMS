@@ -23,9 +23,6 @@ export function useAuth() {
 
   const registerMutation = useMutation({
     mutationFn: (payload: RegisterRequest) => authApi.register(payload),
-    onSuccess: () => {
-      router.push("/login");
-    },
   });
 
   const logout = async () => {

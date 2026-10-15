@@ -15,9 +15,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { useAddTeamMember, useRemoveTeamMember, useTeamMembers } from "@/hooks/queries/use-teams";
-import { useUsers } from "@/hooks/queries/use-users";
+import { useTeamMemberCandidates } from "@/hooks/queries/use-teams";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { Team } from "@/types/team";
+import { isDeveloperOrTester, visibleMemberPost } from "@/lib/member-visibility";
 
 export function TeamMembersDialog({
   open,
@@ -31,7 +32,8 @@ export function TeamMembersDialog({
   canManage: boolean;
 }) {
   const { data: members, isLoading } = useTeamMembers(team?.team_id);
-  const { data: users } = useUsers();
+  // Team Leads may manage their assigned roster without the broader users.view grant.
+  const { data: users = [] } = useTeamMemberCandidates(open);
   const addMember = useAddTeamMember();
   const removeMember = useRemoveTeamMember();
 
@@ -41,8 +43,12 @@ export function TeamMembersDialog({
   if (!team) return null;
 
   const memberUserIds = new Set((members ?? []).map((m) => m.user_id));
-  const availableUsers = (users ?? []).filter((u) => !memberUserIds.has(u.user_id));
   const userMap = new Map((users ?? []).map((u) => [u.user_id, u]));
+  const availableUsers = (users ?? []).filter((u) => isDeveloperOrTester(u) && !memberUserIds.has(u.user_id));
+  const visibleMembers = (members ?? []).filter((member) => {
+    const user = userMap.get(member.user_id);
+    return !!user && isDeveloperOrTester(user);
+  });
   const atCapacity = (members?.length ?? 0) >= team.max_members;
 
   const handleAdd = async () => {
@@ -91,7 +97,7 @@ export function TeamMembersDialog({
                 <SelectContent>
                   {availableUsers.map((u) => (
                     <SelectItem key={u.user_id} value={u.user_id}>
-                      {u.name}
+                      {u.name} ({visibleMemberPost(u)})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -117,15 +123,18 @@ export function TeamMembersDialog({
         <div className="space-y-1">
           {isLoading ? (
             <p className="py-6 text-center text-sm text-muted-foreground">Loading members...</p>
-          ) : members?.length === 0 ? (
+          ) : visibleMembers.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">No members yet.</p>
           ) : (
-            members?.map((m) => {
+            visibleMembers.map((m) => {
               const user = userMap.get(m.user_id);
               return (
                 <div key={m.member_id} className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-muted/50">
                   <div className="flex items-center gap-2">
-                    <UserAvatar user={user} />
+                    <UserAvatar user={user} showName={false} />
+                    <span className="text-sm text-foreground">
+                      {user ? `${user.name} (${visibleMemberPost(user)})` : "Member"}
+                    </span>
                     {m.responsibility && <span className="text-xs text-muted-foreground">— {m.responsibility}</span>}
                   </div>
                   {canManage && <Button

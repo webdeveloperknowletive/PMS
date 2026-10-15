@@ -11,7 +11,7 @@ npm run dev
 ```
 
 Backend must be running with CORS allowing this app's origin (see `backend/app/core/config.py`).
-Default expected backend URL: `http://localhost:8000/api/v1`.
+Default expected backend URL: `http://localhost:8001/api/v1`.
 
 ## What this mirrors from the backend
 

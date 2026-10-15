@@ -17,6 +17,9 @@ venv/
 *.log
 backend/logs/
 
+# Local database backups can contain customer data and must never be committed.
+backend/backups/
+
 # Frontend dependencies and generated files
 node_modules/
 .next/

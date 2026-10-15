@@ -19,6 +19,15 @@ class TeamLeadRead(TeamLeadBase):
     created_at: datetime
 
 
+class TeamMemberCandidateRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: uuid.UUID
+    name: str
+    is_active: bool
+    role_names: list[str] = Field(default_factory=list)
+
+
 class TeamBase(BaseModel):
     project_id: uuid.UUID
     team_lead_id: uuid.UUID

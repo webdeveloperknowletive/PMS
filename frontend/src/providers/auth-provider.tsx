@@ -12,14 +12,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function bootstrap() {
-      const token = tokenStorage.getAccessToken();
-      if (!token) {
-        setInitializing(false);
-        return;
-      }
       try {
-        const user = await authApi.getMe();
-        setUser(user);
+        if (tokenStorage.getAccessToken()) {
+          const user = await authApi.getMe();
+          setUser(user);
+        }
       } catch {
         tokenStorage.clear();
         setUser(null);

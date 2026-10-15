@@ -57,12 +57,14 @@ export function EventFormDialog({
   event,
   defaultProjectId,
   defaultDate,
+  calendarScope = "ORGANIZATION",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   event?: CalendarEvent | null;
   defaultProjectId?: string;
   defaultDate?: string; // "YYYY-MM-DD", used when creating from clicking a day cell
+  calendarScope?: "PERSONAL" | "ORGANIZATION";
 }) {
   const isEditing = !!event;
   const { data: projects } = useProjects();
@@ -138,6 +140,10 @@ export function EventFormDialog({
       start_datetime: new Date(`${values.date}T${values.start_time}:00`).toISOString(),
       end_datetime: new Date(`${values.date}T${values.end_time}:00`).toISOString(),
       location: values.location || null,
+      ...(isEditing ? {} : {
+        calendar_scope: calendarScope,
+        calendar_owner_id: calendarScope === "PERSONAL" ? currentUser?.user_id ?? null : null,
+      }),
     };
     try {
       if (isEditing && event) {

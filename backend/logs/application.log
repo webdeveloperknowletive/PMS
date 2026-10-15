@@ -1334,3 +1334,611 @@
 2026-10-10 00:29:36,126 | INFO     | ProjectManagementAPI | lifespan.py:63 | Database connection established.
 2026-10-10 11:01:59,104 | INFO     | ProjectManagementAPI | lifespan.py:51 | Starting Project Management System ...
 2026-10-10 11:01:59,603 | INFO     | ProjectManagementAPI | lifespan.py:63 | Database connection established.
+2026-10-10 12:28:33,538 | INFO     | ProjectManagementAPI | lifespan.py:51 | Starting Project Management System ...
+2026-10-10 12:28:33,866 | INFO     | ProjectManagementAPI | lifespan.py:63 | Database connection established.
+2026-10-10 12:44:59,113 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=201 action=POST path=/api/v1/chat/groups actor='Saksham' roles=(Admin)
+2026-10-10 12:45:14,559 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=200 action=POST path=/api/v1/chat/direct/fe31d9ad-5e87-4de3-be66-58f3f2357367 actor='Saksham' roles=(Admin)
+2026-10-10 12:45:25,419 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=200 action=POST path=/api/v1/chat/direct/fe31d9ad-5e87-4de3-be66-58f3f2357367 actor='Saksham' roles=(Admin)
+2026-10-10 12:48:07,091 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=200 action=PUT path=/api/v1/chat/conversations/225758b1-730b-4a4c-b52b-e7646bfb2eba/favorite actor='Saksham' roles=(Admin)
+2026-10-10 12:48:11,576 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=200 action=PUT path=/api/v1/chat/conversations/225758b1-730b-4a4c-b52b-e7646bfb2eba/favorite actor='Saksham' roles=(Admin)
+2026-10-10 12:52:16,901 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=200 action=PUT path=/api/v1/chat/settings actor='Saksham' roles=(Admin)
+2026-10-10 12:55:05,437 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=200 action=PUT path=/api/v1/chat/settings/organization actor='Saksham' roles=(Admin)
+2026-10-10 13:05:36,623 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=201 action=POST path=/api/v1/teams/ actor='Saksham' roles=(Admin)
+2026-10-10 13:06:14,350 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=200 action=PUT path=/api/v1/teams/eccd56fb-e6fd-434d-849d-fb28e1ea3ca8 actor='Saksham' roles=(Admin)
+2026-10-10 13:17:03,171 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=201 action=POST path=/api/v1/chat/conversations/225758b1-730b-4a4c-b52b-e7646bfb2eba/messages actor='Saksham' roles=(Admin)
+2026-10-10 13:17:49,502 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=200 action=POST path=/api/v1/chat/conversations/225758b1-730b-4a4c-b52b-e7646bfb2eba/messages/7e4d5faf-6813-4d73-8ca1-4438dbf9381b/reactions actor='Saksham' roles=(Admin)
+2026-10-10 13:52:27,780 | INFO     | ProjectManagementAPI | main.py:37 | AUDIT status=201 action=POST path=/api/v1/documents/upload actor='Saksham' roles=(Admin)
+2026-10-10 14:01:51,437 | INFO     | ProjectManagementAPI | lifespan.py:51 | Starting Project Management System ...
+2026-10-10 14:01:51,822 | INFO     | ProjectManagementAPI | lifespan.py:63 | Database connection established.
+2026-10-10 16:29:23,946 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-10 16:29:24,357 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-10 16:32:39,707 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-10 16:32:39,939 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-10 16:51:04,306 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/register organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-10 16:54:59,640 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/organizations/current organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-10 17:01:53,019 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=POST path=/api/v1/organizations/invitations organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-10 17:02:02,377 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=POST path=/api/v1/organizations/invitations organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-10 17:07:18,661 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=POST path=/api/v1/organizations/invitations organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-10 17:07:45,631 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=POST path=/api/v1/organizations/invitations organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-10 17:12:37,277 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-10 17:13:37,673 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Durgesh' roles=(Admin)
+2026-10-10 17:36:31,582 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=POST path=/api/v1/organizations/invitations organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-10 17:39:31,228 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=POST path=/api/v1/organizations/invitations/c5ac6e85-3196-4aa6-b270-2d2267656fe3/resend organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-10 17:39:52,435 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=DELETE path=/api/v1/organizations/invitations/c5ac6e85-3196-4aa6-b270-2d2267656fe3 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-10 17:43:20,008 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-10 17:43:20,352 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-10 17:51:37,394 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Durgesh' roles=(Admin)
+2026-10-10 17:54:45,974 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-10 17:54:46,218 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-10 18:01:41,338 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-10 18:01:41,604 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-10 18:12:11,473 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-10 18:12:11,851 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-10 18:20:51,118 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-10 18:21:18,177 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:22:06,485 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:23:11,938 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:26:30,771 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Durgesh' roles=(Admin)
+2026-10-10 18:27:00,191 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Amay' roles=(Developer)
+2026-10-10 18:28:33,452 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/teams/leads organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:28:33,624 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/teams/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:32:28,931 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/teams/leads organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:32:29,046 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/workflows/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:33:31,817 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:33:31,860 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:33:31,895 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:33:31,926 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:34:05,633 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:34:05,700 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/tasks organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:35:09,460 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:35:09,491 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:35:09,527 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:35:09,558 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:35:23,856 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:35:23,898 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/tasks organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:35:41,151 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/8746ed7b-323e-40c8-88ff-ba7880d9166b organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:38:31,684 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/8746ed7b-323e-40c8-88ff-ba7880d9166b organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:38:44,172 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/kanban/tasks/03ced69f-6f92-4443-9143-2bf1c3c43cef/move organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:38:44,228 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/8746ed7b-323e-40c8-88ff-ba7880d9166b organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:45:45,395 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:45:45,437 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/tasks organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:49:28,235 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:50:47,063 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:50:47,095 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:50:47,134 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:50:47,160 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/columns organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:51:06,669 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:51:06,710 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/tasks organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 18:51:26,138 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/59677368-041b-466e-aa6d-f25fead7c115 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 19:06:02,209 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 19:06:02,250 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/kanban/tasks organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 19:06:12,368 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/92df5348-cb00-4b74-b979-c466ea2b95e2 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-10 19:07:03,111 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/notifications/00362ffd-f0ab-40bd-b1ec-7b7dc770223c organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-12 10:55:21,999 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-12 10:55:22,344 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-12 13:23:09,180 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/92df5348-cb00-4b74-b979-c466ea2b95e2 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 13:53:23,719 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/59677368-041b-466e-aa6d-f25fead7c115 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-12 13:53:26,676 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/59677368-041b-466e-aa6d-f25fead7c115 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Saksham' roles=(Workspace Owner)
+2026-10-12 15:58:55,477 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-12 15:58:56,192 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-12 16:01:26,063 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/start organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:01:48,467 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/59677368-041b-466e-aa6d-f25fead7c115 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:02:10,970 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/kanban/tasks/35a03316-0e42-41ab-9979-b44543788452/move organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:02:11,070 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/59677368-041b-466e-aa6d-f25fead7c115 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:02:15,701 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/kanban/tasks/35a03316-0e42-41ab-9979-b44543788452/move organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:02:15,816 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/59677368-041b-466e-aa6d-f25fead7c115 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:02:20,649 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/kanban/tasks/35a03316-0e42-41ab-9979-b44543788452/move organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:02:20,740 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/59677368-041b-466e-aa6d-f25fead7c115 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:20:43,914 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/stop organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:21:17,502 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/kanban/tasks/35a03316-0e42-41ab-9979-b44543788452/move organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:21:17,699 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/59677368-041b-466e-aa6d-f25fead7c115 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:21:20,646 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/start organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:21:27,611 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/kanban/tasks/35a03316-0e42-41ab-9979-b44543788452/move organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:21:27,721 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/59677368-041b-466e-aa6d-f25fead7c115 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:24:48,720 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/tasks/59677368-041b-466e-aa6d-f25fead7c115 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:26:25,873 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-12 16:27:33,600 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/0ec457e8-7279-4d11-89dc-ee00d20a93c6 organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Amay' roles=(Developer)
+2026-10-12 16:27:58,867 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/start organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Amay' roles=(Developer)
+2026-10-12 16:39:27,504 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/kanban/tasks/5fdf7f2a-383a-4456-aa50-1d278e5d72db/move organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Amay' roles=(Developer)
+2026-10-12 16:39:33,769 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/kanban/tasks/5fdf7f2a-383a-4456-aa50-1d278e5d72db/move organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Amay' roles=(Developer)
+2026-10-12 16:39:36,794 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/stop organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Amay' roles=(Developer)
+2026-10-12 16:40:36,458 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/start organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Amay' roles=(Developer)
+2026-10-12 16:47:09,377 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-12 16:47:09,829 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-12 16:49:10,852 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/kanban/tasks/5fdf7f2a-383a-4456-aa50-1d278e5d72db/move organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Amay' roles=(Developer)
+2026-10-12 16:52:27,337 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-12 16:52:27,337 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-12 16:52:30,543 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-12 16:52:30,818 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-12 16:52:38,921 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-12 16:52:38,923 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-12 16:52:42,671 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-12 16:52:42,949 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-12 16:53:17,970 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-12 16:53:18,317 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-12 17:41:51,289 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=87e400af-a91b-4b52-8992-608c880b9770 actor='Aman' roles=(Project Manager)
+2026-10-13 12:57:35,625 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 12:57:36,212 | ERROR    | ProjectManagementAPI | lifespan.py:65 | Database connection failed: (raised as a result of Query-invoked autoflush; consider using a session.no_autoflush block if this flush is occurring prematurely)
+(psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "uq_role_permission"
+DETAIL:  Key (role_id, permission_id)=(cd53c463-a319-418b-a33f-530b98bfc745, 27b8db82-d3a2-45c7-9e59-fb15ece45fe9) already exists.
+
+[SQL: INSERT INTO role_permissions (role_permission_id, role_id, permission_id, organization_id) VALUES (%(role_permission_id__0)s::UUID, %(role_id__0)s::UUID, %(permission_id__0)s::UUID, %(organization_id__0)s::UUID), (%(role_permission_id__1)s::UUID, %(r ... 3514 characters truncated ... n_id__31)s::UUID, %(role_id__31)s::UUID, %(permission_id__31)s::UUID, %(organization_id__31)s::UUID)]
+[parameters: {'role_id__0': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__0': UUID('27b8db82-d3a2-45c7-9e59-fb15ece45fe9'), 'organization_id__0': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__0': UUID('f38e37ba-fcf8-4184-914c-f4fb50f6de05'), 'role_id__1': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__1': UUID('43713696-8c02-4bde-8aef-eff5b61b9bae'), 'organization_id__1': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__1': UUID('1b7eb0ad-61cd-4fd5-b0a6-611da8e4aa83'), 'role_id__2': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__2': UUID('3a7dd6dc-6507-41d8-9b46-e48c7a98ef11'), 'organization_id__2': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__2': UUID('5360a28c-fc90-4f73-b18a-af5de9ec8606'), 'role_id__3': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__3': UUID('c5bd35d6-c7d1-4479-9471-e241fd16b2be'), 'organization_id__3': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__3': UUID('3431395e-285a-4161-aa82-438ecd629c69'), 'role_id__4': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__4': UUID('49546a3d-d0ba-4bee-84d7-208e2847d34c'), 'organization_id__4': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__4': UUID('f14dafdb-1085-4616-8033-8c97e2a8dd1a'), 'role_id__5': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__5': UUID('a2c4efd5-4125-4c2f-9ea6-1188bca4bf84'), 'organization_id__5': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__5': UUID('f134349f-fb97-47f1-9b83-424085e955c8'), 'role_id__6': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__6': UUID('cb37b56f-f1a8-43a6-9878-fdc89061d327'), 'organization_id__6': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__6': UUID('acd6b67d-49d3-4c1a-a989-ff6b462d5ea6'), 'role_id__7': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__7': UUID('6015d41f-5a27-4455-ad5a-324a35f72aba'), 'organization_id__7': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__7': UUID('30b15672-31c3-414f-8613-480c253d9fe1'), 'role_id__8': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__8': UUID('f4fcfe47-0a99-4b40-9c53-f593bf450240'), 'organization_id__8': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__8': UUID('84c034ed-3f5a-43e3-82fe-faf7919d749d'), 'role_id__9': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__9': UUID('b00eece0-7e8c-46df-8067-f05625eba721'), 'organization_id__9': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__9': UUID('b80b0d96-c3c5-4725-af45-23977b267867'), 'role_id__10': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__10': UUID('8fd8cf00-4b36-4fad-a7f5-946f5a3d9f5e'), 'organization_id__10': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__10': UUID('488d1bec-c2b6-440e-83a2-c04c665d12c2'), 'role_id__11': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__11': UUID('12e48db7-f532-4733-849d-a6e01cb755e1'), 'organization_id__11': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__11': UUID('9ae3c6f8-9e06-4cfa-8e6e-f207888d8aaf'), 'role_id__12': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__12': UUID('48385f93-c751-4b28-bd1d-4a356a055613') ... 28 parameters truncated ... 'organization_id__19': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__19': UUID('eb7827be-638e-4fba-b615-1b429472c5fa'), 'role_id__20': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__20': UUID('0bf88eab-0c21-4177-a9a2-7126c9d60b32'), 'organization_id__20': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__20': UUID('5b019baa-de11-4b6c-b31a-572a944d6ef4'), 'role_id__21': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__21': UUID('c8d3d36e-39dd-4b36-9cd5-4b34c7df2cdb'), 'organization_id__21': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__21': UUID('0fb8170c-667c-4930-a856-0ad1d587640a'), 'role_id__22': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__22': UUID('46ae9f92-a749-4647-b901-36fe9d39a1e7'), 'organization_id__22': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__22': UUID('5a56bc45-2b23-4f12-bab8-2e00565d7379'), 'role_id__23': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__23': UUID('5f3d394b-0a5f-4860-850f-73c145fda349'), 'organization_id__23': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__23': UUID('4e2dce6a-06c0-4e0b-9a11-4238a0ea8c53'), 'role_id__24': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__24': UUID('690cd3cc-6fcb-4aa0-9c6d-19413d81555a'), 'organization_id__24': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__24': UUID('f0135441-d776-4b4f-9cfe-ad544a333b9a'), 'role_id__25': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__25': UUID('f16d03bd-c6e7-4eb7-b0ef-88500c9fdf43'), 'organization_id__25': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__25': UUID('611149e7-7b26-4334-8aab-e6f8d336d1ac'), 'role_id__26': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__26': UUID('544d1f2e-9b59-4990-bda4-fa2d57467689'), 'organization_id__26': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__26': UUID('202ed148-6497-40d4-be85-b90d0fb8d22f'), 'role_id__27': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__27': UUID('1b597f7b-ea31-4561-a1b9-8ecfa68663c1'), 'organization_id__27': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__27': UUID('06eff4db-3b74-4478-ae83-c792219ab2c3'), 'role_id__28': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__28': UUID('4356d433-3ca0-4339-a380-bc73a0e01490'), 'organization_id__28': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__28': UUID('9d5cf548-2b71-42dc-bda3-7583c6913759'), 'role_id__29': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__29': UUID('0ca203e2-c701-431e-9b55-5caf3c791772'), 'organization_id__29': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__29': UUID('51d5ca70-689e-4b45-83bf-7150f043c21f'), 'role_id__30': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__30': UUID('9d76864a-dbed-489a-8736-2f53881f2556'), 'organization_id__30': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__30': UUID('bbfe893e-e518-4c87-8907-8a04c0ae20a5'), 'role_id__31': UUID('cd53c463-a319-418b-a33f-530b98bfc745'), 'permission_id__31': UUID('f79e5979-dd38-4156-858a-aa0c899dc9fe'), 'organization_id__31': UUID('91c7e6d1-03bd-46eb-ae8d-11f8ebaaea88'), 'role_permission_id__31': UUID('7c37802b-5ec2-4aea-8ea7-1a07960358b8')}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-10-13 12:58:05,096 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 12:58:05,684 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 12:58:14,005 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 12:58:14,621 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 14:25:39,956 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 14:25:40,857 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 15:00:45,489 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/register organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Saksham Lanjewar' roles=(Super Admin)
+2026-10-13 15:04:23,654 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Saksham Lanjewar' roles=(Super Admin)
+2026-10-13 15:05:14,115 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 15:08:48,854 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 15:09:26,861 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Amay' roles=(Project Manager)
+2026-10-13 15:28:31,873 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 15:29:05,607 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Akash' roles=(Portfolio Manager)
+2026-10-13 15:30:18,081 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 15:31:19,266 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Lokesh' roles=(Program Manager)
+2026-10-13 15:34:00,313 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Lokesh' roles=(Program Manager)
+2026-10-13 15:34:05,612 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Lokesh' roles=(Program Manager)
+2026-10-13 15:34:54,014 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 15:35:33,742 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aman' roles=(Scrum Master)
+2026-10-13 15:37:41,503 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 15:38:15,863 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-13 15:39:49,688 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 15:40:13,778 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-13 15:44:58,195 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/users/fc147e36-884b-4628-9b39-97aef4243210/profile organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 15:45:36,787 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/users/73127d36-f67c-4380-9ade-409e1bef0e83/profile organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 15:46:08,543 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 15:46:48,347 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Yash' roles=(Project Manager)
+2026-10-13 15:49:24,509 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 15:49:57,833 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Mahesh' roles=(Developer)
+2026-10-13 16:22:04,922 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=410 action=POST path=/api/v1/users/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Saksham Lanjewar' roles=(Super Admin)
+2026-10-13 16:22:13,958 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=410 action=POST path=/api/v1/users/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Saksham Lanjewar' roles=(Super Admin)
+2026-10-13 18:07:49,089 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-13 18:07:49,140 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-13 18:08:02,727 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:08:04,494 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 18:08:08,229 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:08:08,661 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 18:08:58,299 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-13 18:08:58,367 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-13 18:09:02,025 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:09:02,464 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 18:09:05,331 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:09:05,757 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 18:18:11,978 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-13 18:18:11,995 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-13 18:18:18,603 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:18:19,159 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 18:51:01,313 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-13 18:51:01,355 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-13 18:51:05,596 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:51:06,098 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 18:51:42,516 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-13 18:51:42,541 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-13 18:51:45,756 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:51:46,112 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 18:51:48,745 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:51:49,098 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 18:52:18,954 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-13 18:52:18,954 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-13 18:52:21,706 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:52:22,188 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 18:52:51,865 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-13 18:52:51,865 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-13 18:52:54,654 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:52:55,103 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 18:52:57,795 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:52:58,221 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 18:56:03,085 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-13 18:56:03,090 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-13 18:56:07,273 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 18:56:07,667 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 19:01:57,816 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-13 19:01:57,879 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-13 19:02:07,619 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 19:02:08,235 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 19:02:11,504 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-13 19:02:11,905 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-13 19:29:37,460 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 19:30:58,880 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/calendar/events/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-13 19:36:25,941 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/chat/direct/fc147e36-884b-4628-9b39-97aef4243210 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 11:07:41,583 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 11:07:42,252 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 11:43:22,804 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 11:43:23,298 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 11:46:14,571 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 11:46:14,571 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 11:46:18,659 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 11:46:19,282 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 11:46:59,990 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 11:46:59,990 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 11:47:03,580 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 11:47:04,133 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 11:48:30,093 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 11:48:30,094 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 11:48:36,136 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 11:48:37,416 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 11:49:39,113 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 11:49:39,930 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 11:52:45,269 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 11:52:45,293 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 11:52:48,868 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 11:52:49,535 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 11:53:55,303 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 11:53:55,303 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 11:53:58,035 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 11:53:58,383 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 12:30:01,260 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 12:30:01,275 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 12:30:04,801 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 12:30:05,291 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 12:33:56,854 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 12:33:56,856 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 12:33:59,134 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 12:33:59,455 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 12:34:01,691 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 12:34:02,017 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 12:53:52,883 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 12:53:53,421 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 13:02:51,941 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 13:02:52,529 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 13:17:24,198 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 13:17:24,769 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 13:18:23,392 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 13:18:23,937 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 13:21:45,757 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/88b01cba-cae4-49b6-8e76-687ab23fa126 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Amay' roles=(Project Manager)
+2026-10-14 14:07:50,040 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 14:07:50,280 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 14:55:03,630 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 14:55:04,083 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 14:58:16,287 | INFO     | ProjectManagementAPI | main.py:83 | Root API called.
+2026-10-14 14:59:16,435 | INFO     | ProjectManagementAPI | main.py:83 | Root API called.
+2026-10-14 15:01:02,300 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 15:01:02,881 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 15:07:01,834 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 15:07:02,384 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 15:08:41,539 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 15:10:41,556 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=POST path=/api/v1/teams/leads organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Yash' roles=(Project Manager)
+2026-10-14 15:10:47,185 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=POST path=/api/v1/teams/leads organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Yash' roles=(Project Manager)
+2026-10-14 15:20:46,139 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 15:20:46,615 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 15:21:50,831 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 15:21:51,244 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 15:25:50,770 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PATCH path=/api/v1/users/cff8f367-a112-4216-9fac-b2e53aabb638/profile organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 15:26:04,261 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PATCH path=/api/v1/users/cff8f367-a112-4216-9fac-b2e53aabb638/profile organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 15:26:43,323 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/users/cff8f367-a112-4216-9fac-b2e53aabb638/profile organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Saksham Lanjewar' roles=(Super Admin)
+2026-10-14 15:27:22,278 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Saksham Lanjewar' roles=(Super Admin)
+2026-10-14 15:31:33,478 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 15:31:33,970 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 15:33:53,790 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Saksham Lanjewar' roles=(Super Admin)
+2026-10-14 15:33:59,482 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Saksham Lanjewar' roles=(Super Admin)
+2026-10-14 15:34:12,419 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/organizations/invitations/5a2a6f7d-e53a-49c4-ba8f-0fffb5ca39b9/resend organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Saksham Lanjewar' roles=(Super Admin)
+2026-10-14 15:35:20,820 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-14 15:38:05,012 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 15:44:03,192 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 16:12:37,077 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 16:12:38,687 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 16:14:50,677 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 16:14:51,630 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 16:15:59,035 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 16:15:59,039 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 16:16:05,620 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 16:16:06,470 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 16:18:04,483 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 16:18:04,484 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 16:18:08,203 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 16:18:09,051 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 16:23:36,009 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/projects/707398aa-ceaa-4884-8fd8-81cf036301c7 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Yash' roles=(Project Manager)
+2026-10-14 16:23:39,392 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/projects/e162aa52-caa4-4c4a-a980-1dbf6e195081 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Yash' roles=(Project Manager)
+2026-10-14 16:23:42,142 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/projects/d7960fe1-5092-441e-bfe6-5553066d3943 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Yash' roles=(Project Manager)
+2026-10-14 16:24:09,726 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=404 action=DELETE path=/api/v1/projects/d7960fe1-5092-441e-bfe6-5553066d3943 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Yash' roles=(Project Manager)
+2026-10-14 16:24:11,210 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=404 action=DELETE path=/api/v1/projects/d7960fe1-5092-441e-bfe6-5553066d3943 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Yash' roles=(Project Manager)
+2026-10-14 16:24:12,491 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=404 action=DELETE path=/api/v1/projects/d7960fe1-5092-441e-bfe6-5553066d3943 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Yash' roles=(Project Manager)
+2026-10-14 16:24:45,665 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/projects/5a5d2cbe-99d9-4b65-8c32-fe8365b35134 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 16:25:39,364 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/4979791f-21cc-4fa9-af9c-f2c95c7f4ced organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 16:25:39,554 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/4979791f-21cc-4fa9-af9c-f2c95c7f4ced/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 16:38:42,355 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 16:38:42,496 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 16:40:34,528 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/4979791f-21cc-4fa9-af9c-f2c95c7f4ced organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 16:40:34,705 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/4979791f-21cc-4fa9-af9c-f2c95c7f4ced/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 16:41:17,450 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 16:49:26,969 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 16:49:26,974 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 16:49:30,651 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 16:49:31,367 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 16:58:55,559 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 17:28:05,608 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 17:28:05,732 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 17:28:52,291 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 17:28:52,402 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 17:29:35,752 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 17:29:35,871 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 17:39:18,680 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=409 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 17:39:27,242 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 17:40:12,460 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/organizations/invitations/accept organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Ashsish' roles=(Developer)
+2026-10-14 17:44:28,382 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 17:44:28,392 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 17:44:32,237 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 17:44:32,970 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 17:44:40,117 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0aca7a6e-a5d3-408e-9309-6c59d0b780e5 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-14 17:44:46,825 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0aca7a6e-a5d3-408e-9309-6c59d0b780e5 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-14 17:44:59,539 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 17:44:59,541 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 17:45:02,762 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 17:45:03,208 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 17:57:32,954 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 17:57:32,956 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 17:57:35,346 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 17:57:35,710 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 17:57:38,238 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 17:57:38,617 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 17:57:59,305 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 17:57:59,306 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 17:58:01,476 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 17:58:01,968 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 17:58:04,388 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 17:58:04,777 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 17:59:40,730 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 17:59:40,733 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 17:59:43,854 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 17:59:44,345 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 17:59:46,581 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 17:59:46,952 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:12:21,982 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 18:12:21,984 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 18:12:24,857 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:12:25,385 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:12:27,795 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:12:28,294 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:12:53,807 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 18:12:53,809 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 18:13:00,517 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:13:01,019 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:13:03,483 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:13:03,802 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:17:28,954 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 18:17:28,954 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 18:17:31,719 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:17:32,193 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:17:34,344 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:17:34,675 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:20:24,937 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 18:20:24,938 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 18:20:32,592 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:20:33,910 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:22:36,089 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 18:22:36,092 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 18:22:39,030 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:22:39,354 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:22:41,846 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:22:42,162 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:23:45,779 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/teams/leads organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-14 18:26:14,508 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 18:26:14,513 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 18:26:16,787 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:26:17,128 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:26:41,687 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/teams/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-14 18:27:57,905 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-14 18:29:16,882 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/e264837b-edce-4d79-933f-d8ee3202c51d organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 18:29:16,933 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/e264837b-edce-4d79-933f-d8ee3202c51d/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-14 18:29:54,551 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/tasks/work-sessions/start organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-14 18:30:00,330 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/tasks/work-sessions/start organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-14 18:30:48,914 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/tasks/work-sessions/start organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-14 18:32:13,813 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PUT path=/api/v1/tasks/245b19ef-a64d-45db-a2a1-02296c96cc46 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-14 18:32:14,329 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PUT path=/api/v1/tasks/245b19ef-a64d-45db-a2a1-02296c96cc46 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-14 18:32:15,455 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PUT path=/api/v1/tasks/245b19ef-a64d-45db-a2a1-02296c96cc46 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-14 18:34:34,310 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 18:34:34,311 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 18:34:36,954 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:34:37,370 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:55:23,235 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 18:55:23,245 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 18:55:25,716 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:55:26,331 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 18:55:28,566 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 18:55:29,024 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 19:28:22,145 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/start organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-14 21:51:55,593 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 21:51:55,624 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 22:49:20,778 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 22:49:22,432 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 22:49:33,009 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 22:49:33,563 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 22:50:48,274 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 22:50:48,275 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 22:50:52,036 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 22:50:52,455 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 22:50:57,018 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 22:50:57,464 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 22:51:59,593 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 22:51:59,593 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 22:52:02,539 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 22:52:03,007 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 22:52:08,072 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 22:52:08,530 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 22:53:11,421 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 22:53:11,421 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 22:53:14,332 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 22:53:14,785 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 22:53:17,815 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 22:53:18,302 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 22:53:18,815 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 22:53:19,224 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 22:54:05,160 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PATCH path=/api/v1/kanban/tasks/59e4ae91-0b83-479a-8ee1-7599afa3004d/move organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-14 22:54:10,786 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 22:54:10,786 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 22:54:13,633 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 22:54:14,016 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 22:54:37,869 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 22:54:38,320 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 23:02:23,542 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PUT path=/api/v1/tasks/245b19ef-a64d-45db-a2a1-02296c96cc46 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-14 23:02:29,277 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PUT path=/api/v1/tasks/245b19ef-a64d-45db-a2a1-02296c96cc46 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-14 23:04:11,355 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-14 23:04:11,357 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-14 23:04:24,215 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 23:04:25,026 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 23:05:24,312 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-14 23:05:24,759 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-14 23:09:00,056 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-14 23:10:27,483 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/start organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Ashsish' roles=(Developer)
+2026-10-14 23:10:48,115 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PUT path=/api/v1/tasks/0e9040fe-cc6a-45ec-824b-c38669dedd38 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Ashsish' roles=(Developer)
+2026-10-14 23:10:53,165 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PUT path=/api/v1/tasks/0e9040fe-cc6a-45ec-824b-c38669dedd38 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Ashsish' roles=(Developer)
+2026-10-14 23:10:56,783 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PATCH path=/api/v1/kanban/tasks/aaf6c69d-de5f-43a9-a101-2e8636c3f26c/move organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Ashsish' roles=(Developer)
+2026-10-14 23:35:38,650 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PATCH path=/api/v1/kanban/tasks/aaf6c69d-de5f-43a9-a101-2e8636c3f26c/move organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Ashsish' roles=(Developer)
+2026-10-14 23:45:38,805 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PATCH path=/api/v1/kanban/tasks/aaf6c69d-de5f-43a9-a101-2e8636c3f26c/move organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Ashsish' roles=(Developer)
+2026-10-14 23:46:52,138 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PATCH path=/api/v1/kanban/tasks/aaf6c69d-de5f-43a9-a101-2e8636c3f26c/move organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-14 23:48:41,641 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PATCH path=/api/v1/kanban/tasks/aaf6c69d-de5f-43a9-a101-2e8636c3f26c/move organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 08:27:15,772 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 08:27:16,689 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 08:38:21,133 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 08:38:21,691 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 08:47:56,868 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 08:47:57,360 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 08:50:37,559 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 08:50:38,066 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 08:52:05,089 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 08:52:05,581 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 08:54:27,617 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/tasks/245b19ef-a64d-45db-a2a1-02296c96cc46/comments organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-15 08:57:11,402 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 08:57:11,823 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 08:57:11,831 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-15 08:57:11,831 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-15 08:57:40,325 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 08:57:40,945 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 11:14:40,622 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 11:14:41,022 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 11:31:18,109 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/tasks/0e9040fe-cc6a-45ec-824b-c38669dedd38 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 11:45:14,157 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/e264837b-edce-4d79-933f-d8ee3202c51d organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 11:45:14,209 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/e264837b-edce-4d79-933f-d8ee3202c51d/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 11:51:31,725 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 11:51:32,238 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 11:57:20,136 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/teams/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 11:57:41,107 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 11:58:48,561 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 11:58:48,718 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 11:59:46,632 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 11:59:46,735 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 12:00:30,375 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/kanban/columns organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:00:30,388 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/kanban/columns organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:00:30,402 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/kanban/columns organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:00:30,423 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/kanban/columns organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:04:17,315 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:04:22,481 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:04:28,725 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:04:34,651 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:04:40,447 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:08:34,905 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 12:08:35,026 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 12:09:41,979 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:09:47,119 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:09:49,641 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:09:56,026 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:10:01,627 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:10:12,265 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/c0c7ea32-685d-4ece-bb51-b0de77caa504 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:16:40,108 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 12:16:40,654 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 12:19:26,844 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:20:13,970 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 12:20:14,087 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 12:20:55,090 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:21:00,238 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:22:44,505 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:23:08,866 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-15 12:23:08,872 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-15 12:23:11,876 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 12:23:12,313 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 12:23:33,686 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/start organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Mahesh' roles=(Developer)
+2026-10-15 12:23:40,321 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PATCH path=/api/v1/kanban/tasks/68da9920-20eb-4482-8f29-d034b3cb8728/move organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Mahesh' roles=(Developer)
+2026-10-15 12:24:13,440 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/kanban/tasks/e65f34ba-d6b5-468a-a1ed-f942b7305092/approve-review organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:24:27,967 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/kanban/tasks/e65f34ba-d6b5-468a-a1ed-f942b7305092/approve-review organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:24:59,157 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/kanban/tasks/e65f34ba-d6b5-468a-a1ed-f942b7305092/approve-review organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:26:35,972 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-15 12:26:35,995 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-15 12:26:39,350 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 12:26:39,680 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 12:29:49,307 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-15 12:29:49,309 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-15 12:29:52,010 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 12:29:52,351 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 12:30:14,560 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-15 12:30:14,562 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-15 12:30:17,133 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 12:30:17,471 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 12:30:56,940 | INFO     | ProjectManagementAPI | lifespan.py:74 | Shutting down Project Management System ...
+2026-10-15 12:30:56,943 | INFO     | ProjectManagementAPI | lifespan.py:78 | Database connections closed.
+2026-10-15 12:30:59,545 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 12:30:59,932 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 12:31:02,431 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 12:31:02,764 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 12:32:58,977 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 12:32:59,349 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 12:49:27,940 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/teams/0fc5be87-0481-4e44-8880-c0e53bb30ddb organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 12:49:31,331 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/teams/c0c7ea32-685d-4ece-bb51-b0de77caa504 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 13:09:55,274 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 13:09:55,653 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 13:26:36,069 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 13:26:36,866 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 13:31:38,130 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/kanban/tasks/0e9040fe-cc6a-45ec-824b-c38669dedd38/approve-review organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 13:31:42,253 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/kanban/tasks/245b19ef-a64d-45db-a2a1-02296c96cc46/approve-review organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 13:37:17,944 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/teams/0aca7a6e-a5d3-408e-9309-6c59d0b780e5 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 13:59:06,489 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 13:59:06,889 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 14:20:09,378 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 14:20:09,451 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/notifications/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 14:20:09,477 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/notifications/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 14:21:09,299 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=POST path=/api/v1/notifications/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 14:25:34,006 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 14:25:34,433 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 14:26:59,827 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/4979791f-21cc-4fa9-af9c-f2c95c7f4ced organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 14:27:00,035 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/4979791f-21cc-4fa9-af9c-f2c95c7f4ced/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 14:28:33,287 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PUT path=/api/v1/teams/e1d116a6-28d3-4164-a592-48fd54b9bdd2 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 14:28:39,474 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PUT path=/api/v1/teams/e1d116a6-28d3-4164-a592-48fd54b9bdd2 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 14:30:27,337 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 14:30:27,898 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 14:31:16,642 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/teams/e1d116a6-28d3-4164-a592-48fd54b9bdd2 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 14:35:45,161 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/teams/e1d116a6-28d3-4164-a592-48fd54b9bdd2 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 14:35:45,241 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/teams/e1d116a6-28d3-4164-a592-48fd54b9bdd2/members organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 14:35:45,346 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/teams/e1d116a6-28d3-4164-a592-48fd54b9bdd2/members organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 14:45:04,648 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 14:45:42,061 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 14:46:11,691 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/start organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Mahesh' roles=(Developer)
+2026-10-15 14:47:46,514 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/start organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Ashsish' roles=(Developer)
+2026-10-15 14:51:53,498 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PATCH path=/api/v1/kanban/tasks/a5872cf2-03f4-4c2e-a9b3-0d12e7b4b2fd/move organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Mahesh' roles=(Developer)
+2026-10-15 15:45:33,848 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/tasks/97f4ecaf-63fe-404e-9696-8fe471efd65c organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 15:45:37,038 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/tasks/d5f85bd4-294b-4941-8bd2-365291f527c5 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 15:46:19,442 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/tasks/0e9040fe-cc6a-45ec-824b-c38669dedd38 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Amay' roles=(Project Manager)
+2026-10-15 15:46:20,717 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=DELETE path=/api/v1/tasks/0e9040fe-cc6a-45ec-824b-c38669dedd38 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Amay' roles=(Project Manager)
+2026-10-15 15:46:56,875 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/tasks/0e9040fe-cc6a-45ec-824b-c38669dedd38 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 15:47:00,473 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/tasks/245b19ef-a64d-45db-a2a1-02296c96cc46 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 15:47:07,059 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/teams/375eabe3-a5a2-434d-9593-98232a63e883 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 15:47:47,824 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/teams/e1d116a6-28d3-4164-a592-48fd54b9bdd2 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Sakshi' roles=(Team Lead)
+2026-10-15 15:48:06,850 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/projects/3a8c51f6-8f6e-429f-a451-8f06a3bad282 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Yash' roles=(Project Manager)
+2026-10-15 15:48:09,571 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/projects/a3f5d444-3c32-4e12-a14c-e9e36d6d93d0 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Yash' roles=(Project Manager)
+2026-10-15 15:48:26,549 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=204 action=DELETE path=/api/v1/projects/f54162aa-6d30-4a58-a539-3d282c00cb1f organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Amay' roles=(Project Manager)
+2026-10-15 16:08:17,202 | INFO     | ProjectManagementAPI | main.py:83 | Root API called.
+2026-10-15 16:12:27,361 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 16:16:02,041 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/teams/639d7bd4-d61c-4e34-a0b1-6c98d86c0b1e organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 16:16:02,199 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/teams/639d7bd4-d61c-4e34-a0b1-6c98d86c0b1e/members organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 16:16:02,345 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/teams/639d7bd4-d61c-4e34-a0b1-6c98d86c0b1e/members organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 16:17:29,321 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 16:17:29,668 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 16:19:01,241 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 16:19:21,892 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/tasks/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 16:20:03,289 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/start organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-15 16:20:55,792 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/tasks/work-sessions/start organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Ashsish' roles=(Developer)
+2026-10-15 16:21:14,285 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PATCH path=/api/v1/kanban/tasks/8b41b410-652c-40b3-bb92-f284124898ea/move organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Ashsish' roles=(Developer)
+2026-10-15 16:22:10,887 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/kanban/tasks/1d844d14-5690-4fdb-a284-c2177f6359e2/approve-review organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 16:23:29,990 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=403 action=PATCH path=/api/v1/kanban/tasks/abcf128d-cfc6-4e6f-b678-20c02fc2c3f5/move organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Aayush' roles=(Developer)
+2026-10-15 16:23:55,799 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=POST path=/api/v1/kanban/tasks/e5dd8d02-0ba3-4a54-8a38-9d76104e370c/approve-review organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Parth' roles=(Team Lead)
+2026-10-15 16:42:12,789 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 16:42:12,922 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/d3b784ad-8ad9-47be-83b5-87dff05422a2/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 16:42:37,764 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964 organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 16:42:37,882 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/209097a4-468c-474b-9ccd-2b95a20ae964/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 16:42:54,720 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/e264837b-edce-4d79-933f-d8ee3202c51d organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 16:42:54,763 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=200 action=PUT path=/api/v1/roles/e264837b-edce-4d79-933f-d8ee3202c51d/permissions organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)
+2026-10-15 16:53:46,784 | INFO     | ProjectManagementAPI | lifespan.py:48 | Starting Project Management System ...
+2026-10-15 16:53:47,559 | INFO     | ProjectManagementAPI | lifespan.py:62 | Database connection established.
+2026-10-15 17:01:59,753 | INFO     | ProjectManagementAPI | main.py:40 | AUDIT status=201 action=POST path=/api/v1/projects/ organization_id=cc815577-5fc2-4f76-8ba8-2492345877db actor='Durgesh' roles=(Admin)

@@ -6,11 +6,13 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, FolderKanban, CheckSquare, Users, Flag, Calendar, FileText,
   KanbanSquare, GanttChartSquare, BarChart3, Sparkles, ListChecks, ShieldAlert,
-  FileStack, MessageSquareText, Bell, ShieldCheck, UserCog, Settings, Workflow,
+  FileStack, MessageSquareText, Bell, ShieldCheck, UserCog, Settings, Workflow, Building2,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useIsAdmin } from "@/hooks/use-is-admin";
+import { cn, formatDate } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useCurrentOrganization } from "@/hooks/queries/use-organizations";
+import { canAccessModule } from "@/lib/permissions";
 
 const CORE_MODULES = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -38,6 +40,7 @@ const ADMIN_MODULES = [
   { label: "Roles & Permissions", href: "/roles", icon: ShieldCheck },
   { label: "Users", href: "/users", icon: UserCog },
 ];
+const ORGANIZATION_MODULE = { label: "Organization", href: "/organization", icon: Building2 };
 
 function NavLink({ href, label, icon: Icon, onClick }: {
   href: string; label: string; icon: LucideIcon; onClick?: () => void;
@@ -64,8 +67,11 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
-  const { isAdmin } = useIsAdmin();
+  const permissions = usePermissions();
+  const { canManageOrganization } = permissions;
+  const { data: organization } = useCurrentOrganization();
   const close = () => onClose?.();
+  const canOpen = (href: string) => canAccessModule(href, permissions.permissionCodes);
 
   return (
     <>
@@ -90,22 +96,26 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
         <nav className="scrollbar-thin flex-1 overflow-y-auto px-3 pb-5 pt-3">
           <div className="space-y-1"><NavLink {...CORE_MODULES[0]} onClick={close} /></div>
           <SectionLabel>Workspace</SectionLabel>
-          <div className="space-y-1">{CORE_MODULES.slice(1).map((item) => <NavLink key={item.href} {...item} onClick={close} />)}</div>
-          <SectionLabel>AI Studio</SectionLabel>
-          <div className="space-y-1">{AI_MODULES.map((item) => <NavLink key={item.href} {...item} onClick={close} />)}</div>
+          <div className="space-y-1">{CORE_MODULES.slice(1).filter((item) => canOpen(item.href)).map((item) => <NavLink key={item.href} {...item} onClick={close} />)}</div>
+          {AI_MODULES.some((item) => canOpen(item.href)) && <><SectionLabel>AI Studio</SectionLabel>
+          <div className="space-y-1">{AI_MODULES.filter((item) => canOpen(item.href)).map((item) => <NavLink key={item.href} {...item} onClick={close} />)}</div></>}
           <SectionLabel>Updates</SectionLabel>
           <div className="space-y-1"><NavLink href="/notifications" label="Notifications" icon={Bell} onClick={close} /></div>
-          {isAdmin && <>
+          {ADMIN_MODULES.some((item) => canOpen(item.href)) && <>
             <SectionLabel>Administration</SectionLabel>
-            <div className="space-y-1">{ADMIN_MODULES.map((item) => <NavLink key={item.href} {...item} onClick={close} />)}</div>
+            <div className="space-y-1">{ADMIN_MODULES.filter((item) => canOpen(item.href)).map((item) => <NavLink key={item.href} {...item} onClick={close} />)}</div>
+          </>}
+          {canManageOrganization && <>
+            <SectionLabel>Workspace settings</SectionLabel>
+            <div className="space-y-1"><NavLink {...ORGANIZATION_MODULE} onClick={close} /></div>
           </>}
         </nav>
 
         <div className="shrink-0 border-t border-white/[0.07] p-3">
           <NavLink href="/settings" label="Settings" icon={Settings} onClick={close} />
-          <div className="mt-3 flex items-center gap-3 rounded-xl bg-white/[0.045] px-3 py-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-xs font-bold text-white">IX</div>
-            <div className="min-w-0"><p className="truncate text-xs font-semibold text-slate-200">Your team, in sync</p><p className="mt-0.5 text-[10px] text-slate-500">Plan · Track · Deliver</p></div>
+          <div className="mt-3 flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.06] px-3 py-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-xs font-bold text-white">{organization?.name?.slice(0, 2).toUpperCase() ?? "IX"}</div>
+            <div className="min-w-0"><p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">Your workspace</p><p className="truncate text-sm font-semibold text-white" title={organization?.name}>{organization?.name ?? "Loading organization…"}</p></div>
           </div>
         </div>
       </aside>

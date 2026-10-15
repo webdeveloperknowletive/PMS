@@ -49,9 +49,12 @@ def can_move_task(
 
 def can_view_board(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> User:
     """
-    Any authenticated user may view the Kanban board.
+    Require board management or task movement access.
     """
 
+    if not any(has_permission(db, current_user, code) for code in ("kanban.view", "kanban.manage", "kanban.move")):
+        raise ForbiddenException(message="You do not have access to Kanban boards")
     return current_user

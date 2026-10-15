@@ -6,9 +6,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 
 
-class KanbanColumn(Base):
+class KanbanColumn(Base, OrganizationScopedMixin):
     __tablename__ = "kanban_columns"
     __table_args__ = (UniqueConstraint("project_id", "position", name="uq_kanban_columns_project_position"),)
 
@@ -26,7 +27,7 @@ class KanbanColumn(Base):
         return f"<KanbanColumn {self.column_name}>"
 
 
-class KanbanTask(Base):
+class KanbanTask(Base, OrganizationScopedMixin):
     """Maps a task to a Kanban board column; a task occupies exactly one slot."""
 
     __tablename__ = "kanban_tasks"
@@ -41,7 +42,7 @@ class KanbanTask(Base):
     column_id = Column(UUID(as_uuid=True), ForeignKey("kanban_columns.column_id", ondelete="CASCADE"), nullable=False, index=True)
     position = Column(Integer, nullable=False)
     moved_by = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True, index=True)
-    moved_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    moved_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
     task = relationship("Task", back_populates="kanban_entry")
     column = relationship("KanbanColumn", back_populates="tasks")

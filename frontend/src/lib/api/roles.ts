@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import { createCrudApi } from "./crud-factory";
 import type { Permission, Role, RoleCreate, RoleUpdate, UserRole, UserRoleCreate } from "@/types/role";
+import type { User } from "@/types/user";
 
 const base = createCrudApi<Role, RoleCreate, RoleUpdate>("/roles", "role_id");
 
@@ -9,6 +10,8 @@ export const rolesApi = {
 
   getPermissions: async (): Promise<Permission[]> => (await apiClient.get<Permission[]>("/roles/permissions")).data,
   getMyPermissions: async (): Promise<string[]> => (await apiClient.get<string[]>("/roles/me/permissions")).data,
+  getAllRoleAssignments: async (): Promise<{ user: User; roles: UserRole[] }[]> =>
+    (await apiClient.get<{ user: User; roles: UserRole[] }[]>("/roles/assignments", { params: { limit: 10000 } })).data,
   getRolePermissions: async (roleId: string): Promise<Permission[]> => (await apiClient.get<Permission[]>(`/roles/${roleId}/permissions`)).data,
   setRolePermissions: async (roleId: string, permissionIds: string[]): Promise<Permission[]> =>
     (await apiClient.put<Permission[]>(`/roles/${roleId}/permissions`, { permission_ids: permissionIds })).data,

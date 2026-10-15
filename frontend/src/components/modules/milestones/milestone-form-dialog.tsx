@@ -27,7 +27,7 @@ import type { Milestone } from "@/types/milestone";
 
 const schema = z.object({
   project_id: z.string().min(1, "Project is required"),
-  title: z.string().min(2, "Title is required"),
+  title: z.string().trim().min(2, "Title must have at least 2 characters").max(200, "Title must be 200 characters or fewer"),
   description: z.string().optional(),
   due_date: z.string().min(1, "Due date is required"),
   is_completed: z.boolean(),
@@ -114,7 +114,7 @@ export function MilestoneFormDialog({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" placeholder="e.g. Beta Release" {...register("title")} />
+            <Input id="title" placeholder="e.g. Beta Release" required maxLength={200} aria-invalid={!!errors.title} {...register("title")} />
             {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
           </div>
 
@@ -148,7 +148,7 @@ export function MilestoneFormDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="due_date">Due date</Label>
-            <Input id="due_date" type="date" {...register("due_date")} />
+            <Input id="due_date" type="date" required aria-invalid={!!errors.due_date} {...register("due_date")} />
             {errors.due_date && <p className="text-xs text-destructive">{errors.due_date.message}</p>}
           </div>
 

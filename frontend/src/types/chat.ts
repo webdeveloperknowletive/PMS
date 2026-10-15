@@ -4,6 +4,7 @@ export interface ChatContact {
   email: string;
   profile_picture_url?: string | null;
   roles: string[];
+  is_group_admin?: boolean;
 }
 
 export interface ChatMessage {

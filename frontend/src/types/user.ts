@@ -2,6 +2,7 @@ export interface UserBase {
   name: string;
   email: string;
   is_active: boolean;
+  is_email_verified?: boolean;
 }
 
 export interface UserCreate extends UserBase {
@@ -19,4 +20,6 @@ export interface User extends UserBase {
   created_at: string;
   updated_at: string;
   profile_picture_url?: string | null;
+  organization_id?: string;
+  role_names?: string[];
 }

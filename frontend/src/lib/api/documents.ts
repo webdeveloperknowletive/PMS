@@ -6,6 +6,10 @@ const crud = createCrudApi<Document, DocumentCreate, DocumentUpdate>("/documents
 
 export const documentsApi = {
   ...crud,
+  getProjectDocuments: async (projectId: string, params?: { skip?: number; limit?: number }): Promise<Document[]> => {
+    const { data } = await apiClient.get<Document[]>(`/documents/project/${projectId}`, { params });
+    return data;
+  },
   upload: async (payload: { project_id: string; title: string; version: string; file: File }) => {
     const body = new FormData();
     body.append("project_id", payload.project_id);

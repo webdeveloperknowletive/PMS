@@ -5,11 +5,12 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 from app.shared.mixins import CreatedAtMixin
 from sqlalchemy.sql import func
 
 
-class Document(Base, CreatedAtMixin):
+class Document(Base, OrganizationScopedMixin, CreatedAtMixin):
     __tablename__ = "documents"
 
     document_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

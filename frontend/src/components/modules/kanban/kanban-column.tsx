@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { KanbanCard } from "./kanban-card";
 import type { KanbanColumn as KanbanColumnType } from "@/types/kanban";
 import type { Task } from "@/types/task";
+import type { TaskWorkTime } from "@/types/task";
 import type { User } from "@/types/user";
 
 export interface KanbanCardData {
@@ -19,9 +20,22 @@ export function KanbanColumn({
   canAddTask,
   canMoveTask,
   canEditTask,
+  canEditCard,
   canDeleteTask,
+  showEdgeMoveHandles,
+  onOpenTaskDetails,
+  onStartWork,
+  onApproveReview,
+  approvingReviewTaskId,
+  approvedReviewTaskIds,
   onEditTask,
   onDeleteTask,
+  onToggleChecklist,
+  canStartWork,
+  canApproveReview,
+  activeTaskIds,
+  taskWorkTimes,
+  clockNow,
 }: {
   column: KanbanColumnType;
   cards: KanbanCardData[];
@@ -30,12 +44,28 @@ export function KanbanColumn({
   canAddTask: boolean;
   canMoveTask: boolean;
   canEditTask: (task: Task) => boolean;
-  canDeleteTask: boolean;
-  onEditTask: (task: Task) => void;
-  onDeleteTask: (task: Task) => void;
+  canEditCard?: (task: Task) => boolean;
+  canDeleteTask?: boolean;
+  showEdgeMoveHandles?: boolean;
+  onOpenTaskDetails?: (task: Task) => void;
+  onStartWork?: (task: Task) => void;
+  onApproveReview?: (task: Task) => void;
+  approvingReviewTaskId?: string | null;
+  approvedReviewTaskIds?: Set<string>;
+  onEditTask?: (task: Task) => void;
+  onDeleteTask?: (task: Task) => void;
+  onToggleChecklist?: (task: Task, itemId: string) => void;
+  canStartWork?: (task: Task) => boolean;
+  canApproveReview?: (task: Task) => boolean;
+  activeTaskIds?: Set<string>;
+  taskWorkTimes?: Map<string, TaskWorkTime>;
+  clockNow?: number;
 }) {
+  const isDoneColumn = ["done", "complete", "completed"].includes(column.column_name.trim().toLowerCase());
+  const isReviewColumn = ["in review", "in-review", "review"].includes(column.column_name.trim().toLowerCase());
+
   return (
-    <div className="flex w-72 shrink-0 flex-col rounded-xl bg-secondary/50">
+    <div className="flex h-full min-h-[22rem] w-72 shrink-0 flex-col rounded-xl bg-secondary/50">
       <div className="flex items-center justify-between px-3 py-3">
         <div className="flex items-center gap-2">
           <span
@@ -68,14 +98,26 @@ export function KanbanColumn({
               <KanbanCard
                 key={card.placementId}
                 task={card.task}
-                assignee={card.task.user_id ? userMap.get(card.task.user_id) : null}
+                assignee={card.task.user_id
+                  ? userMap.get(card.task.user_id) ?? (card.task.assignee_name ? { user_id: card.task.user_id, name: card.task.assignee_name } : null)
+                  : null}
                 placementId={card.placementId}
                 index={index}
                 canEdit={canEditTask(card.task)}
+                canEditTask={canEditCard?.(card.task) ?? false}
+                canDeleteTask={canDeleteTask ?? false}
                 canMove={canMoveTask}
-                canDelete={canDeleteTask}
+                showEdgeMoveHandles={showEdgeMoveHandles}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
+                onOpenDetails={onOpenTaskDetails}
+                onStartWork={!isDoneColumn && canStartWork?.(card.task) ? onStartWork : undefined}
+                onApproveReview={onApproveReview && card.task.status !== "DONE" && !isDoneColumn && !approvedReviewTaskIds?.has(card.task.task_id) && (card.task.status === "IN_REVIEW" || isReviewColumn) && canApproveReview?.(card.task) ? onApproveReview : undefined}
+                isApprovingReview={approvingReviewTaskId === card.task.task_id}
+                onToggleChecklist={onToggleChecklist}
+                isInWorkSession={activeTaskIds?.has(card.task.task_id)}
+                workTime={taskWorkTimes?.get(card.task.task_id)}
+                clockNow={clockNow}
               />
             ))}
             {provided.placeholder}

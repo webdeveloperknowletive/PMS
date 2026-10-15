@@ -32,9 +32,12 @@ def can_manage_schedule(
 
 def can_view_schedule(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> User:
     """
-    Any authenticated user may view the Gantt chart.
+    Require schedule or project delivery access to view project schedules.
     """
 
+    if not any(has_permission(db, current_user, code) for code in ("gantt.view", "gantt.manage", "projects.manage", "tasks.manage")):
+        raise ForbiddenException(message="You do not have access to project schedules")
     return current_user

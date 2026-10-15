@@ -12,6 +12,8 @@ export const chatApi = {
     (await apiClient.post<ChatConversation>("/chat/groups", { name, member_ids: memberIds })).data,
   updateFavorite: async (conversationId: string, isFavorite: boolean): Promise<{ is_favorite: boolean }> =>
     (await apiClient.put<{ is_favorite: boolean }>(`/chat/conversations/${conversationId}/favorite`, { is_favorite: isFavorite })).data,
+  promoteGroupAdmin: async (conversationId: string, userId: string): Promise<ChatConversation> =>
+    (await apiClient.put<ChatConversation>(`/chat/conversations/${conversationId}/members/${userId}/admin`)).data,
   messages: async (conversationId: string): Promise<ChatMessage[]> =>
     (await apiClient.get<ChatMessage[]>(`/chat/conversations/${conversationId}/messages`)).data,
   sendMessage: async (conversationId: string, body: string, replyToMessageId?: string): Promise<ChatMessage> =>

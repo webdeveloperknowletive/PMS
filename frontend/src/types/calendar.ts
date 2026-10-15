@@ -7,6 +7,10 @@ export interface CalendarEventBase {
   start_datetime: string; // ISO datetime
   end_datetime: string; // ISO datetime, must be >= start_datetime
   location?: string | null;
+  calendar_scope?: "PERSONAL" | "ORGANIZATION";
+  calendar_owner_id?: string | null;
+  related_task_id?: string | null;
+  is_automatic?: boolean;
 }
 
 export interface CalendarEventCreate extends CalendarEventBase {}
@@ -23,4 +27,6 @@ export interface CalendarEventUpdate {
 export interface CalendarEvent extends CalendarEventBase {
   event_id: string;
   created_at: string;
+  calendar_scope: "PERSONAL" | "ORGANIZATION";
+  is_automatic: boolean;
 }

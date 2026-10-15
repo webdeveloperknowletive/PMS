@@ -6,6 +6,7 @@ import type {
   TeamLead,
   TeamLeadCreate,
   TeamMember,
+  TeamMemberCandidate,
   TeamMemberCreate,
   TeamMemberUpdate,
   TeamUpdate,
@@ -15,6 +16,18 @@ const base = createCrudApi<Team, TeamCreate, TeamUpdate>("/teams", "team_id");
 
 export const teamsApi = {
   ...base,
+
+  /** GET /teams/member-candidates — active Developers and Testers only. */
+  getMemberCandidates: async (): Promise<TeamMemberCandidate[]> => {
+    const { data } = await apiClient.get<TeamMemberCandidate[]>("/teams/member-candidates");
+    return data;
+  },
+
+  /** GET /teams/{team_id}/available-members — eligible and currently free. */
+  getAvailableMembers: async (teamId: string): Promise<TeamMemberCandidate[]> => {
+    const { data } = await apiClient.get<TeamMemberCandidate[]>(`/teams/${teamId}/available-members`);
+    return data;
+  },
 
   /** GET /teams/{team_id}/members */
   getMembers: async (teamId: string): Promise<TeamMember[]> => {

@@ -10,6 +10,7 @@ class ChatContactRead(BaseModel):
     email: str
     profile_picture_url: str | None = None
     roles: list[str]
+    is_group_admin: bool = False
 
 
 class ChatMessageCreate(BaseModel):

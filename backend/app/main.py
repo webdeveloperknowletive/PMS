@@ -12,6 +12,8 @@ from app.core.config import (
     APP_VERSION,
     APP_DESCRIPTION,
     API_V1_PREFIX,
+    ALLOW_ORIGINS,
+    WORKSPACE_ORIGIN_REGEX,
 )
 
 app = FastAPI(
@@ -34,11 +36,13 @@ async def log_user_changes(request: Request, call_next):
         actor = getattr(request.state, "audit_actor", None)
         if actor:
             roles = ", ".join(getattr(request.state, "audit_roles", [])) or "User"
+            organization_id = getattr(request.state, "audit_organization_id", "unknown")
             logger.info(
-                "AUDIT status=%s action=%s path=%s actor=%r roles=(%s)",
+                "AUDIT status=%s action=%s path=%s organization_id=%s actor=%r roles=(%s)",
                 response.status_code,
                 request.method,
                 request.url.path,
+                organization_id,
                 actor,
                 roles,
             )
@@ -52,7 +56,8 @@ register_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # Change in Production
+    allow_origins=ALLOW_ORIGINS,
+    allow_origin_regex=WORKSPACE_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

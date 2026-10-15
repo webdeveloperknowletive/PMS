@@ -1,4 +1,6 @@
 const KNOWN_TYPE_COLORS: Record<string, string> = {
+  Project: "#6366F1",
+  "Work activity": "#0EA5E9",
   Meeting: "#3B82F6",
   Deadline: "#EF4444",
   Milestone: "#F59E0B",

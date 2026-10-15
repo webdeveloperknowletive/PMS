@@ -23,7 +23,7 @@ def can_manage_reports(
     Admin / Project Manager / Team Lead only: generate or delete a report.
     """
 
-    if not has_permission(db, current_user, "reports.manage"):
+    if not any(has_permission(db, current_user, code) for code in ("reports.view", "reports.manage")):
         raise ForbiddenException(message="Missing required permission: reports.manage")
 
     return current_user
@@ -31,9 +31,12 @@ def can_manage_reports(
 
 def can_view_reports(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> User:
     """
-    Any authenticated user may read report data.
+    Report access requires report management permission.
     """
 
+    if not has_permission(db, current_user, "reports.manage"):
+        raise ForbiddenException(message="You do not have access to reports")
     return current_user

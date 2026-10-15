@@ -1,20 +1,23 @@
 import uuid
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 from app.shared.mixins import CreatedAtMixin
 
 
-class Role(Base, CreatedAtMixin):
+class Role(Base, OrganizationScopedMixin, CreatedAtMixin):
     __tablename__ = "roles"
+    __table_args__ = (UniqueConstraint("organization_id", "role_name", name="uq_roles_org_name"),)
 
     role_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    role_name = Column(String(100), nullable=False, unique=True)
+    role_name = Column(String(100), nullable=False)
     description = Column(String(255), nullable=True)
+    is_system = Column(Boolean, nullable=False, default=False, server_default="false")
 
     user_roles = relationship("UserRole", back_populates="role", cascade="all, delete-orphan")
     permission_links = relationship("RolePermission", back_populates="role", cascade="all, delete-orphan")
@@ -23,7 +26,7 @@ class Role(Base, CreatedAtMixin):
         return f"<Role {self.role_name}>"
 
 
-class UserRole(Base):
+class UserRole(Base, OrganizationScopedMixin):
     """Many-to-many bridge: users <-> roles."""
 
     __tablename__ = "user_role"
@@ -41,11 +44,12 @@ class UserRole(Base):
         return f"<UserRole user_id={self.user_id} role_id={self.role_id}>"
 
 
-class Permission(Base):
+class Permission(Base, OrganizationScopedMixin):
     __tablename__ = "permissions"
+    __table_args__ = (UniqueConstraint("organization_id", "code", name="uq_permissions_org_code"),)
 
     permission_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    code = Column(String(100), nullable=False, unique=True, index=True)
+    code = Column(String(100), nullable=False, index=True)
     name = Column(String(120), nullable=False)
     description = Column(String(255), nullable=False)
     category = Column(String(80), nullable=False)
@@ -53,7 +57,7 @@ class Permission(Base):
     role_links = relationship("RolePermission", back_populates="permission", cascade="all, delete-orphan")
 
 
-class RolePermission(Base):
+class RolePermission(Base, OrganizationScopedMixin):
     __tablename__ = "role_permissions"
     __table_args__ = (UniqueConstraint("role_id", "permission_id", name="uq_role_permission"),)
 

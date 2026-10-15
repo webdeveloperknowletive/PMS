@@ -60,9 +60,12 @@ def can_update_task(
 
 def can_view_tasks(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> User:
     """
-    Any authenticated user may read task data.
+    Require task delivery access to view task data.
     """
 
+    if not any(has_permission(db, current_user, code) for code in ("tasks.view", "tasks.team_view", "tasks.manage", "tasks.update", "tasks.update_assigned", "kanban.view", "kanban.move")):
+        raise ForbiddenException(message="You do not have access to tasks")
     return current_user

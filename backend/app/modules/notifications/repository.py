@@ -14,8 +14,12 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.modules.notifications.model import Notification
+from app.modules.notifications.model import Notification, NotificationSetting
 from app.modules.notifications.schema import NotificationCreate, NotificationUpdate
+
+
+def get_notification_setting(db: Session, key: str) -> NotificationSetting | None:
+    return db.query(NotificationSetting).filter(NotificationSetting.setting_key == key).one_or_none()
 
 
 # ==========================================================

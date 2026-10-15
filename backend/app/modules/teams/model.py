@@ -6,10 +6,11 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 from app.shared.mixins import CreatedAtMixin, TimestampMixin
 
 
-class TeamLead(Base, CreatedAtMixin):
+class TeamLead(Base, OrganizationScopedMixin, CreatedAtMixin):
     """One-to-one extension of users: only promoted users get a row here."""
 
     __tablename__ = "team_leads"
@@ -30,7 +31,7 @@ class TeamLead(Base, CreatedAtMixin):
         return f"<TeamLead user_id={self.user_id}>"
 
 
-class Team(Base, TimestampMixin):
+class Team(Base, OrganizationScopedMixin, TimestampMixin):
     __tablename__ = "teams"
 
     team_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -56,7 +57,7 @@ class Team(Base, TimestampMixin):
         return f"<Team {self.team_name}>"
 
 
-class TeamMember(Base):
+class TeamMember(Base, OrganizationScopedMixin):
     """Many-to-many bridge: users <-> teams."""
 
     __tablename__ = "team_members"

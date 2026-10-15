@@ -8,6 +8,7 @@ class UserBase(BaseModel):
     name: str = Field(..., max_length=150)
     email: EmailStr = Field(..., max_length=255)
     is_active: bool = True
+    is_email_verified: bool = True
 
 
 class UserCreate(UserBase):
@@ -27,6 +28,7 @@ class UserRead(UserBase):
     created_at: datetime
     updated_at: datetime
     profile_picture_url: str | None = None
+    role_names: list[str] = Field(default_factory=list)
 
 
 class UserInDB(UserRead):

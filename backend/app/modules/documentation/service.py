@@ -56,6 +56,11 @@ def get_documents(db: Session, skip: int = 0, limit: int = 100) -> list[Document
     return repository.get_documents(db, skip=skip, limit=limit)
 
 
+def get_documents_by_project(db: Session, project_id: UUID, organization_id: UUID, skip: int = 0, limit: int = 100) -> list[Document]:
+    """Get a project's documents (paginated)."""
+    return repository.get_documents_by_project(db, project_id, organization_id, skip=skip, limit=limit)
+
+
 def get_document(db: Session, document_id: UUID) -> Document:
     """Get a single document by ID, or raise 404."""
     document = repository.get_document(db, document_id)

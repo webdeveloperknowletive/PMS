@@ -32,9 +32,12 @@ def can_manage_milestones(
 
 def can_view_milestones(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> User:
     """
-    Any authenticated user may read milestone data.
+    Milestone access requires milestone or schedule permissions.
     """
 
+    if not any(has_permission(db, current_user, code) for code in ("milestones.view", "milestones.manage", "gantt.view", "gantt.manage")):
+        raise ForbiddenException(message="You do not have access to milestones")
     return current_user

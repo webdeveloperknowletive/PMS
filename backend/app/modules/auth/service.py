@@ -31,32 +31,34 @@ list on every request would defeat the point of using a JWT
 for the access token in the first place.
 """
 
-import logging
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
+from urllib.parse import quote
 
 import bcrypt
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
     SECRET_KEY,
 )
+from app.core.config import APP_ENV, PUBLIC_APP_URL, workspace_app_url
+from app.core.email import send_product_email
+from app.modules.auth.model import EmailVerificationToken
 from app.modules.auth import repository
+from app.modules.organizations.model import Organization
 from app.modules.auth.schema import (
-    EmailVerificationTokenCreate,
     LoginHistoryCreate,
     PasswordResetTokenCreate,
     RefreshTokenCreate,
 )
 from app.modules.users.model import User
-from app.modules.users.schema import UserCreate
-
-logger = logging.getLogger(__name__)
+from urllib.parse import quote
 
 REFRESH_TOKEN_EXPIRE_MINUTES = ACCESS_TOKEN_EXPIRE_MINUTES * 24 * 7
 RESET_TOKEN_EXPIRE_MINUTES = 30
@@ -141,54 +143,44 @@ def decode_token(
     return payload
 
 
+def resend_verification(db: Session, email: EmailStr) -> dict:
+    user = db.query(User).filter(User.email == str(email).lower()).one_or_none()
+    response = {"success": True, "message": "If that account needs verification, a new link has been sent.", "email_sent": False}
+    if user is None or user.is_email_verified:
+        return response
+
+    db.info["organization_id"] = user.organization_id
+    token, expiry = create_token(str(user.user_id), VERIFY_TOKEN_EXPIRE_MINUTES, "email_verification")
+    db.query(EmailVerificationToken).filter(
+        EmailVerificationToken.user_id == user.user_id,
+        EmailVerificationToken.is_used.is_(False),
+    ).update({EmailVerificationToken.is_used: True}, synchronize_session=False)
+    db.add(EmailVerificationToken(user_id=user.user_id, token=token, expires_at=expiry))
+    db.commit()
+    workspace_slug = db.query(Organization.slug).filter(
+        Organization.organization_id == user.organization_id
+    ).scalar()
+    verification_url = (
+        workspace_app_url(workspace_slug, "/verify-email", {"token": token})
+        if workspace_slug
+        else f"{PUBLIC_APP_URL.rstrip('/')}/verify-email?token={quote(token)}"
+    )
+    try:
+        response["email_sent"] = send_product_email(
+            user.email,
+            "Verify your SprintIX account",
+            f"Hello {user.name},\n\nVerify your SprintIX account:\n{verification_url}\n\nThis link expires in 24 hours.",
+        )
+    except HTTPException:
+        response["email_sent"] = False
+    if not response["email_sent"] and APP_ENV != "production":
+        response["verification_url"] = verification_url
+    return response
+
+
 # ---------------------------------------------------------------------
 # Auth Services
 # ---------------------------------------------------------------------
-
-def register(
-    db: Session,
-    payload: UserCreate,
-):
-
-    existing = (
-        db.query(User)
-        .filter(User.email == payload.email)
-        .first()
-    )
-
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered",
-        )
-
-    data = payload.model_dump(
-        exclude={"password"}
-    )
-
-    user = User(
-        **data,
-        password_hash=hash_password(payload.password),
-    )
-
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    # Issue + persist an email verification token so verify_email() is
-    # actually reachable — previously nothing ever created one at all.
-    # There's no email-sending integration yet, so for now the token is
-    # logged instead of emailed. Replace this logger.info() with a real
-    # email send once mail is wired up.
-    verify_token, verify_expiry = create_token(str(user.user_id), VERIFY_TOKEN_EXPIRE_MINUTES, "email_verification")
-    repository.create_email_verification_token(
-        db,
-        EmailVerificationTokenCreate(user_id=user.user_id, token=verify_token, expires_at=verify_expiry),
-    )
-    logger.info("Email verification token for %s: %s", user.email, verify_token)
-
-    return user
-
 
 def login(
     db: Session,
@@ -196,11 +188,12 @@ def login(
     password: str,
     ip_address: str | None = None,
     user_agent: str | None = None,
+    workspace_slug: str | None = None,
 ):
 
     user = (
         db.query(User)
-        .filter(User.email == email)
+        .filter(func.lower(User.email) == str(email).lower())
         .first()
     )
 
@@ -221,6 +214,25 @@ def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive",
         )
+
+    if not user.is_email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Verify your email before signing in.",
+        )
+
+    if workspace_slug:
+        workspace_matches = db.query(Organization.organization_id).filter(
+            Organization.organization_id == user.organization_id,
+            Organization.slug == workspace_slug.strip().lower(),
+        ).first()
+        if workspace_matches is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password for this workspace.",
+            )
+
+    db.info["organization_id"] = user.organization_id
 
     access_token, _ = create_token(
         str(user.user_id),
@@ -308,6 +320,8 @@ def refresh_token(
             detail="User not found",
         )
 
+    db.info["organization_id"] = user.organization_id
+
     # The JWT signature/expiry check above only proves the token was
     # legitimately issued at some point — it says nothing about whether
     # it's since been revoked. This is the actual revocation check.
@@ -337,7 +351,7 @@ def forgot_password(
 
     user = (
         db.query(User)
-        .filter(User.email == email)
+        .filter(func.lower(User.email) == str(email).lower())
         .first()
     )
 
@@ -348,6 +362,8 @@ def forgot_password(
             "success": True,
             "message": "If that email is registered, a reset link has been sent.",
         }
+
+    db.info["organization_id"] = user.organization_id
 
     reset_token_str, reset_expiry = create_token(
         str(user.user_id),
@@ -365,11 +381,24 @@ def forgot_password(
         ),
     )
 
-    return {
+    reset_url = f"{PUBLIC_APP_URL.rstrip('/')}/reset-password?token={quote(reset_token_str)}"
+    email_sent = False
+    try:
+        email_sent = send_product_email(
+            user.email,
+            "Reset your SprintIX password",
+            f"Hello {user.name},\n\nUse this link to set a new password:\n{reset_url}\n\nThis link expires in 30 minutes and works once.",
+        )
+    except HTTPException:
+        email_sent = False
+
+    response = {
         "success": True,
         "message": "If that email is registered, a reset link has been sent.",
-        "reset_token": reset_token_str,
     }
+    if not email_sent and APP_ENV != "production":
+        response["reset_token"] = reset_token_str
+    return response
 
 
 def reset_password(
@@ -393,6 +422,8 @@ def reset_password(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
+
+    db.info["organization_id"] = user.organization_id
 
     # This is the actual single-use enforcement — the JWT itself would
     # happily decode again after being used once, since it has no
@@ -446,6 +477,8 @@ def verify_email(
             detail="User not found",
         )
 
+    db.info["organization_id"] = user.organization_id
+
     stored = repository.get_email_verification_token_by_token(db, token)
     if stored is None or stored.is_used:
         raise HTTPException(
@@ -454,6 +487,7 @@ def verify_email(
         )
 
     user.is_active = True
+    user.is_email_verified = True
     db.commit()
 
     repository.mark_email_verification_token_used(db, stored.email_verification_token_id)
@@ -484,5 +518,7 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
+
+    db.info["organization_id"] = user.organization_id
 
     return user

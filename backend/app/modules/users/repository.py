@@ -12,8 +12,9 @@ Data-access layer for the User model.
 
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.modules.roles.model import Role, UserRole
 from app.modules.users.model import User
 from app.modules.users.schema import UserCreate, UserUpdate
 
@@ -51,7 +52,9 @@ def get_user(
     user_id: UUID,
 ) -> User | None:
 
-    return db.get(User, user_id)
+    return db.query(User).options(selectinload(User.user_roles).joinedload(UserRole.role)).filter(
+        User.user_id == user_id
+    ).one_or_none()
 
 
 def get_user_by_email(
@@ -70,10 +73,13 @@ def get_users(
     db: Session,
     skip: int = 0,
     limit: int = 100,
+    include_super_admin: bool = True,
 ) -> list[User]:
-
+    query = db.query(User).options(selectinload(User.user_roles).joinedload(UserRole.role))
+    if not include_super_admin:
+        query = query.filter(~User.user_roles.any(UserRole.role.has(Role.is_system.is_(True))))
     return (
-        db.query(User)
+        query
         .order_by(User.created_at.desc())
         .offset(skip)
         .limit(limit)

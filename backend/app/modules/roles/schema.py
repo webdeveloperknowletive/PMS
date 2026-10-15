@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
+from app.modules.users.schema import UserRead
 
 
 class RoleBase(BaseModel):
@@ -23,6 +24,7 @@ class RoleRead(RoleBase):
 
     role_id: uuid.UUID
     created_at: datetime
+    is_system: bool = False
 
 
 class UserRoleBase(BaseModel):
@@ -53,3 +55,8 @@ class PermissionRead(BaseModel):
 
 class RolePermissionsUpdate(BaseModel):
     permission_ids: list[uuid.UUID]
+
+
+class UserRoleAssignmentsRead(BaseModel):
+    user: UserRead
+    roles: list[UserRoleRead]

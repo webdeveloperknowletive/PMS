@@ -6,10 +6,11 @@ import type { CalendarEventCreate, CalendarEventUpdate } from "@/types/calendar"
 
 const KEY = "calendar-events";
 
-export function useCalendarEvents() {
+export function useCalendarEvents(enabled = true) {
   return useQuery({
     queryKey: [KEY],
     queryFn: () => calendarApi.list({ limit: 500 }),
+    enabled,
   });
 }
 

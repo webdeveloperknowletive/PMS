@@ -46,9 +46,12 @@ def can_delete_documents(
 
 def can_view_documents(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> User:
     """
-    Any authenticated user may read project documents.
+    Document access requires a document contribution permission.
     """
 
+    if not any(has_permission(db, current_user, code) for code in ("documents.view", "documents.upload", "documents.delete")):
+        raise ForbiddenException(message="You do not have access to project documents")
     return current_user

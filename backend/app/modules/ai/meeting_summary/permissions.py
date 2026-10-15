@@ -24,7 +24,7 @@ def can_generate(
     Admin / Project Manager / Team Lead only: generate a new AI meeting summary.
     """
 
-    if not has_permission(db, current_user, "ai.use"):
+    if not any(has_permission(db, current_user, code) for code in ("ai.view", "ai.use")):
         raise ForbiddenException(message="Missing required permission: ai.use")
 
     return current_user
@@ -32,9 +32,12 @@ def can_generate(
 
 def can_view_results(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> User:
     """
-    Any authenticated user may read AI-generated results.
+    AI results require the same access as AI generation.
     """
 
+    if not has_permission(db, current_user, "ai.use"):
+        raise ForbiddenException(message="You do not have access to AI tools")
     return current_user

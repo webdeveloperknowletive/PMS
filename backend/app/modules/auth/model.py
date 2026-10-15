@@ -6,13 +6,14 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 
 
 # ==========================================================
 # Refresh Tokens
 # ==========================================================
 
-class RefreshToken(Base):
+class RefreshToken(Base, OrganizationScopedMixin):
     __tablename__ = "refresh_tokens"
 
     refresh_token_id = Column(
@@ -61,7 +62,7 @@ class RefreshToken(Base):
 # Password Reset Tokens
 # ==========================================================
 
-class PasswordResetToken(Base):
+class PasswordResetToken(Base, OrganizationScopedMixin):
     __tablename__ = "password_reset_tokens"
 
     password_reset_token_id = Column(
@@ -110,7 +111,7 @@ class PasswordResetToken(Base):
 # Email Verification Tokens
 # ==========================================================
 
-class EmailVerificationToken(Base):
+class EmailVerificationToken(Base, OrganizationScopedMixin):
     __tablename__ = "email_verification_tokens"
 
     email_verification_token_id = Column(
@@ -159,7 +160,7 @@ class EmailVerificationToken(Base):
 # Login History
 # ==========================================================
 
-class LoginHistory(Base):
+class LoginHistory(Base, OrganizationScopedMixin):
     __tablename__ = "login_history"
 
     login_history_id = Column(

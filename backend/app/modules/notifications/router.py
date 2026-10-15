@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.modules.notifications import service
+from app.modules.notifications.repository import get_notification_setting
 from app.modules.notifications.schema import NotificationCreate, NotificationRead, NotificationUpdate
 from app.modules.notifications.permissions import can_access_notification, can_create_notification
 from app.modules.users.model import User
@@ -35,7 +36,7 @@ async def get_meeting_reminder_setting(
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    setting = db.get(NotificationSetting, "meeting_reminder_lead_minutes")
+    setting = get_notification_setting(db, "meeting_reminder_lead_minutes")
     return {"lead_minutes": int(setting.setting_value) if setting else 60}
 
 
@@ -45,7 +46,7 @@ async def update_meeting_reminder_setting(
     db: Session = Depends(get_db),
     _admin: User = Depends(can_manage_roles),
 ):
-    setting = db.get(NotificationSetting, "meeting_reminder_lead_minutes")
+    setting = get_notification_setting(db, "meeting_reminder_lead_minutes")
     if setting is None:
         setting = NotificationSetting(setting_key="meeting_reminder_lead_minutes", setting_value=str(payload.lead_minutes))
         db.add(setting)
@@ -60,7 +61,7 @@ async def get_toast_duration_setting(
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    setting = db.get(NotificationSetting, "toast_duration_seconds")
+    setting = get_notification_setting(db, "toast_duration_seconds")
     return {"duration_seconds": int(setting.setting_value) if setting else 8}
 
 
@@ -70,7 +71,7 @@ async def update_toast_duration_setting(
     db: Session = Depends(get_db),
     _admin: User = Depends(can_manage_roles),
 ):
-    setting = db.get(NotificationSetting, "toast_duration_seconds")
+    setting = get_notification_setting(db, "toast_duration_seconds")
     if setting is None:
         setting = NotificationSetting(setting_key="toast_duration_seconds", setting_value=str(payload.duration_seconds))
         db.add(setting)
@@ -85,7 +86,7 @@ async def get_notification_sound_setting(
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    setting = db.get(NotificationSetting, "notification_sound_key")
+    setting = get_notification_setting(db, "notification_sound_key")
     sound_key = setting.setting_value if setting else "gentle_chime"
     return {"sound_key": sound_key if sound_key in SOUND_KEYS else "gentle_chime"}
 
@@ -98,7 +99,7 @@ async def update_notification_sound_setting(
 ):
     if payload.sound_key not in SOUND_KEYS:
         raise HTTPException(status_code=422, detail="Choose one of the available notification sounds.")
-    setting = db.get(NotificationSetting, "notification_sound_key")
+    setting = get_notification_setting(db, "notification_sound_key")
     if setting is None:
         setting = NotificationSetting(setting_key="notification_sound_key", setting_value=payload.sound_key)
         db.add(setting)

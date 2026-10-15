@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -22,20 +22,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TASK_PRIORITIES, TASK_STATUSES, PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/constants";
 import { useCreateTask, useUpdateTask } from "@/hooks/queries/use-tasks";
 import { useProjects } from "@/hooks/queries/use-projects";
-import { useUsers } from "@/hooks/queries/use-users";
+import { useTeamMemberCandidates, useTeams } from "@/hooks/queries/use-teams";
+import { visibleMemberPostForRoleNames } from "@/lib/member-visibility";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { Task } from "@/types/task";
 
 const UNASSIGNED = "__unassigned__";
+const TASK_TYPES = ["EPIC", "STORY", "TASK", "BUG"] as const;
+const TASK_TYPE_VALUES = [...TASK_TYPES, "SUBTASK"] as const;
 
 const schema = z.object({
   project_id: z.string().min(1, "Project is required"),
-  task_name: z.string().min(2, "Task name is required"),
-  description: z.string().optional(),
+  task_name: z.string().trim().min(2, "Task name must have at least 2 characters").max(255, "Task name must be 255 characters or fewer"),
   status: z.enum(TASK_STATUSES),
   priority: z.enum(TASK_PRIORITIES),
+  task_type: z.enum(TASK_TYPE_VALUES),
   user_id: z.string().optional(),
-  due_date: z.string().optional(),
+  due_date: z.string().min(1, "Due date is required").refine((value) => {
+    const date = new Date(`${value}T00:00:00`);
+    return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }, "Enter a valid due date"),
+  checklist_items: z.array(z.object({
+    item_id: z.string(),
+    text: z.string(),
+    is_completed: z.boolean(),
+  })).default([]),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -54,8 +66,11 @@ export function TaskFormDialog({
   kanbanCardEdit?: boolean;
 }) {
   const isEditing = !!task;
+  const { permissionCodes } = usePermissions();
+  const canViewTeamMembers = ["teams.view", "teams.create", "teams.update", "teams.delete", "teams.manage", "teams.members.view", "teams.members.manage", "teams.leads.view"].some((code) => permissionCodes.includes(code));
   const { data: projects } = useProjects();
-  const { data: users } = useUsers();
+  const { data: teams = [] } = useTeams(canViewTeamMembers);
+  const { data: teamMemberCandidates = [] } = useTeamMemberCandidates(canViewTeamMembers);
   const createMutation = useCreateTask();
   const updateMutation = useUpdateTask();
   const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -65,6 +80,7 @@ export function TaskFormDialog({
     handleSubmit,
     control,
     reset,
+    setValue,
     setError,
     formState: { errors },
   } = useForm<FormValues>({
@@ -72,13 +88,32 @@ export function TaskFormDialog({
     defaultValues: {
       project_id: defaultProjectId ?? "",
       task_name: "",
-      description: "",
       status: "TODO",
       priority: "MEDIUM",
+      task_type: "TASK",
       user_id: UNASSIGNED,
       due_date: "",
+      checklist_items: [],
     },
   });
+  const selectedProjectId = useWatch({ control, name: "project_id" });
+  const selectedAssigneeId = useWatch({ control, name: "user_id" });
+  const projectTeams = teams.filter((team) => team.project_id === selectedProjectId);
+  const projectMemberIds = new Set(projectTeams.flatMap((team) => (team.members ?? []).map((member) => member.user_id)));
+  const assigneeOptions = teamMemberCandidates.filter((member) => projectMemberIds.has(member.user_id));
+  const assigneeTeam = projectTeams.find((team) => team.members?.some((member) => member.user_id === selectedAssigneeId));
+
+  useEffect(() => {
+    if (isEditing || selectedAssigneeId === UNASSIGNED || !selectedAssigneeId) return;
+    if (!assigneeOptions.some((member) => member.user_id === selectedAssigneeId)) {
+      setValue("user_id", UNASSIGNED);
+    }
+  }, [isEditing, selectedAssigneeId, assigneeOptions, setValue]);
+  const { fields: checklistFields, append: appendChecklist, remove: removeChecklist } = useFieldArray({
+    control,
+    name: "checklist_items",
+  });
+  const taskTypeOptions = task?.task_type === "SUBTASK" ? TASK_TYPE_VALUES : TASK_TYPES;
 
   useEffect(() => {
     if (open) {
@@ -87,38 +122,50 @@ export function TaskFormDialog({
           ? {
               project_id: task.project_id,
               task_name: task.task_name,
-              description: task.description ?? "",
               status: task.status,
               priority: task.priority,
+              task_type: task.task_type ?? "TASK",
               user_id: task.user_id ?? UNASSIGNED,
               due_date: task.due_date ?? "",
+              checklist_items: task.checklist_items ?? [],
             }
           : {
               project_id: defaultProjectId ?? "",
               task_name: "",
-              description: "",
               status: "TODO",
               priority: "MEDIUM",
+              task_type: "TASK",
               user_id: UNASSIGNED,
               due_date: "",
+              checklist_items: [],
             }
       );
     }
   }, [open, task, defaultProjectId, reset]);
 
   const onSubmit = async (values: FormValues) => {
-    const payload = {
-      ...values,
+    const selectedProject = projects?.find((project) => project.project_id === values.project_id);
+    if (selectedProject?.start_date && values.due_date < selectedProject.start_date) {
+      setError("due_date", { message: "Due date must be on or after the project start date" });
+      return;
+    }
+    const taskFields = {
+      task_name: values.task_name,
+      status: values.status,
+      priority: values.priority,
+      task_type: values.task_type,
       user_id: values.user_id === UNASSIGNED ? null : values.user_id,
       due_date: values.due_date || null,
-      description: values.description || null,
+      checklist_items: values.checklist_items
+        .map((item) => ({ ...item, text: item.text.trim() }))
+        .filter((item) => item.text.length > 0),
     };
     try {
       if (isEditing && task) {
-        await updateMutation.mutateAsync({ id: task.task_id, payload });
+        await updateMutation.mutateAsync({ id: task.task_id, payload: taskFields });
         toast.success("Task updated");
       } else {
-        await createMutation.mutateAsync(payload as never);
+        await createMutation.mutateAsync({ project_id: values.project_id, team_id: assigneeTeam?.team_id ?? null, ...taskFields });
         toast.success("Task created");
       }
       onOpenChange(false);
@@ -140,16 +187,22 @@ export function TaskFormDialog({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="task_name">Task name</Label>
-            <Input id="task_name" placeholder="Design homepage UI" {...register("task_name")} />
+            <Input id="task_name" placeholder="Design homepage UI" required maxLength={255} aria-invalid={!!errors.task_name} {...register("task_name")} />
             {errors.task_name && <p className="text-xs text-destructive">{errors.task_name.message}</p>}
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" placeholder="What needs to be done?" {...register("description")} />
+            <div className="space-y-1.5">
+              <Label>Work type</Label>
+              <Controller control={control} name="task_type" render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                  {taskTypeOptions.map((type) => <SelectItem key={type} value={type}>{type.charAt(0) + type.slice(1).toLowerCase()}</SelectItem>)}
+                </SelectContent></Select>
+              )} />
+            </div>
           </div>
 
-          {!kanbanCardEdit && <div className="space-y-1.5">
+          {!kanbanCardEdit && !defaultProjectId && <div className="space-y-1.5">
             <Label>Project</Label>
             <Controller
               control={control}
@@ -231,21 +284,63 @@ export function TaskFormDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
-                      {(users ?? []).map((u) => (
-                        <SelectItem key={u.user_id} value={u.user_id}>
-                          {u.name}
+                      {task?.user_id && !assigneeOptions.some((user) => user.user_id === task.user_id) && (
+                        <SelectItem value={task.user_id}>
+                          {task.assignee_name ?? "Assigned member"} (current assignee)
+                        </SelectItem>
+                      )}
+                      {assigneeOptions.map((user) => (
+                        <SelectItem key={user.user_id} value={user.user_id}>
+                          {user.name} ({visibleMemberPostForRoleNames(user.role_names)})
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 )}
               />
+              <p className="text-xs text-muted-foreground">Only members assigned to a team in the selected project are listed.</p>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="due_date">Due date</Label>
-              <Input id="due_date" type="date" {...register("due_date")} />
+              <Input id="due_date" type="date" required aria-invalid={!!errors.due_date} {...register("due_date")} />
+              {errors.due_date && <p className="text-xs text-destructive">{errors.due_date.message}</p>}
             </div>
+          </div>
+
+          <div className="space-y-2 rounded-lg border p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <Label>Task checklist</Label>
+                <p className="mt-0.5 text-xs text-muted-foreground">Checklist items appear on the assigned member’s task card.</p>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={() => appendChecklist({
+                item_id: crypto.randomUUID(),
+                text: "",
+                is_completed: false,
+              })}>
+                <Plus className="h-3.5 w-3.5" /> Add item
+              </Button>
+            </div>
+            {checklistFields.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No checklist items added.</p>
+            ) : checklistFields.map((item, index) => (
+              <div key={item.id} className="flex items-center gap-2">
+                <Controller
+                  control={control}
+                  name={`checklist_items.${index}.is_completed`}
+                  render={({ field }) => <Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} aria-label={`Mark checklist item ${index + 1} complete`} />}
+                />
+                <Input
+                  aria-label={`Checklist item ${index + 1}`}
+                  placeholder={`Checklist item ${index + 1}`}
+                  {...register(`checklist_items.${index}.text`)}
+                />
+                <Button type="button" size="icon" variant="ghost" aria-label={`Remove checklist item ${index + 1}`} onClick={() => removeChecklist(index)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
           </div>
 
           {errors.root && (

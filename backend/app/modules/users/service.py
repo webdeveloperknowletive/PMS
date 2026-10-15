@@ -23,6 +23,7 @@ from app.modules.users.model import User
 from app.modules.users.schema import UserCreate, UserUpdate
 from app.modules.notifications.events import notify_users, users_with_permissions
 from app.modules.notifications.events import project_recipient_ids
+from app.modules.roles.model import Role, UserRole
 from app.modules.teams.model import Team, TeamLead, TeamMember
 
 PROFILE_PICTURE_DIR = Path(__file__).resolve().parents[3] / "uploads" / "profile-pictures"
@@ -32,14 +33,27 @@ PROFILE_IMAGE_TYPES = {
 }
 
 
+def _protect_workspace_owner(db: Session, user_id: UUID) -> None:
+    """Keep the only account with workspace-owner access from being locked out."""
+    is_owner = db.query(UserRole.user_role_id).join(Role, Role.role_id == UserRole.role_id).filter(
+        UserRole.user_id == user_id,
+        Role.is_system.is_(True),
+    ).first()
+    if is_owner:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Transfer workspace ownership before deactivating or deleting its owner.",
+        )
+
+
 def _hash_password(plain_password: str) -> str:
     """Hash a user's password."""
     return bcrypt.hashpw(plain_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
-def get_users(db: Session, skip: int = 0, limit: int = 100) -> list[User]:
-    """Get all users (paginated)."""
-    return repository.get_users(db, skip=skip, limit=limit)
+def get_users(db: Session, skip: int = 0, limit: int = 100, include_super_admin: bool = True) -> list[User]:
+    """Get paginated users, optionally excluding Super Admin accounts."""
+    return repository.get_users(db, skip=skip, limit=limit, include_super_admin=include_super_admin)
 
 
 def get_user(db: Session, user_id: UUID) -> User:
@@ -68,6 +82,8 @@ def create_user(db: Session, payload: UserCreate, actor: User) -> User:
 
 def update_user(db: Session, user_id: UUID, payload: UserUpdate, actor: User) -> User:
     """Update an existing user, or raise 404."""
+    if payload.is_active is False:
+        _protect_workspace_owner(db, user_id)
     user = repository.update_user(db, user_id, payload)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -80,6 +96,7 @@ def update_user(db: Session, user_id: UUID, payload: UserUpdate, actor: User) ->
 def delete_user(db: Session, user_id: UUID, actor: User) -> None:
     """Delete a user, or raise 404."""
     user = get_user(db, user_id)
+    _protect_workspace_owner(db, user_id)
     deleted = repository.delete_user(db, user_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -90,6 +107,8 @@ def delete_user(db: Session, user_id: UUID, actor: User) -> None:
 
 def update_user_status(db: Session, user_id: UUID, is_active: bool, actor: User) -> User:
     """Activate or deactivate a user, or raise 404."""
+    if not is_active:
+        _protect_workspace_owner(db, user_id)
     user = repository.set_user_active_state(db, user_id, is_active)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

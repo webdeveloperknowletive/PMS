@@ -13,9 +13,13 @@ Add a new module here by importing its `router` and calling
 `app.main`.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from app.core.permissions import authorize_api_action
 
 from app.modules.auth.router import router as auth_router
+from app.modules.organizations.router import router as organizations_router
+from app.modules.organizations import model as organizations_model
 from app.modules.users.router import router as users_router
 from app.modules.roles.router import router as roles_router
 from app.modules.projects.router import router as projects_router
@@ -36,13 +40,14 @@ from app.modules.ai.doc_generator.router import router as ai_doc_generator_route
 from app.modules.ai.task_estimation.router import router as ai_task_estimation_router
 from app.modules.ai.meeting_summary.router import router as ai_meeting_summary_router
 
-api_router = APIRouter()
+api_router = APIRouter(dependencies=[Depends(authorize_api_action)])
 
 # ==========================================================
 # Core Modules
 # ==========================================================
 
 api_router.include_router(auth_router)
+api_router.include_router(organizations_router)
 api_router.include_router(users_router)
 api_router.include_router(roles_router)
 

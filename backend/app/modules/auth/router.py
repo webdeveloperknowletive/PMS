@@ -10,7 +10,7 @@ service.decode_token). This router is now a thin HTTP wrapper around
 that service, instead of re-implementing the same logic a second time.
 """
 
-from fastapi import APIRouter, Body, Depends, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
@@ -18,8 +18,9 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.modules.auth import service
+from app.modules.auth.schema import VerificationResendRead, VerificationResendRequest
 from app.modules.users.model import User
-from app.modules.users.schema import UserCreate, UserRead
+from app.modules.users.schema import UserRead
 
 router = APIRouter(
     prefix="/auth",
@@ -28,17 +29,18 @@ router = APIRouter(
 
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-async def register(
-    payload: UserCreate,
-    db: Session = Depends(get_db),
-):
-    return service.register(db, payload)
+async def register():
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Create a company workspace at /organizations/register.",
+    )
 
 
 @router.post("/login", status_code=status.HTTP_200_OK)
 async def login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
+    workspace_slug: str | None = Query(default=None, min_length=3, max_length=63),
     db: Session = Depends(get_db),
 ):
     return service.login(
@@ -47,6 +49,7 @@ async def login(
         form_data.password,
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
+        workspace_slug=workspace_slug,
     )
 
 
@@ -89,6 +92,11 @@ async def verify_email(
     db: Session = Depends(get_db),
 ):
     return service.verify_email(db, token)
+
+
+@router.post("/resend-verification", response_model=VerificationResendRead, status_code=status.HTTP_200_OK)
+async def resend_email_verification(payload: VerificationResendRequest, db: Session = Depends(get_db)):
+    return service.resend_verification(db, payload.email)
 
 
 @router.get("/me", response_model=UserRead, status_code=status.HTTP_200_OK)

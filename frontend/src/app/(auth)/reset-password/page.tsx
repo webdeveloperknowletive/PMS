@@ -61,7 +61,7 @@ function ResetPasswordForm() {
   };
 
   return (
-    <Card>
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
         <CardTitle>Set a new password</CardTitle>
         <CardDescription>Choose a strong password for your account.</CardDescription>

@@ -14,6 +14,14 @@ export function useDocuments(enabled = true) {
   });
 }
 
+export function useProjectDocuments(projectId: string | undefined) {
+  return useQuery({
+    queryKey: [KEY, "project", projectId],
+    queryFn: () => documentsApi.getProjectDocuments(projectId!, { limit: 500 }),
+    enabled: !!projectId,
+  });
+}
+
 export function useCreateDocument() {
   const queryClient = useQueryClient();
   return useMutation({

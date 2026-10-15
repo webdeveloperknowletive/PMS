@@ -102,7 +102,7 @@ export function RoleFormDialog({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="role_name">Role name</Label>
-            <Input id="role_name" placeholder="e.g. Project Manager" {...register("role_name")} />
+            <Input id="role_name" placeholder="e.g. Product operations" {...register("role_name")} />
             {errors.role_name && <p className="text-xs text-destructive">{errors.role_name.message}</p>}
           </div>
 

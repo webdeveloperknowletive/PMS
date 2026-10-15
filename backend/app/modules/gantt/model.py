@@ -6,9 +6,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 
 
-class GanttTask(Base):
+class GanttTask(Base, OrganizationScopedMixin):
     __tablename__ = "gantt_tasks"
     __table_args__ = (CheckConstraint("end_date >= start_date", name="ck_gantt_tasks_date_range"),)
 

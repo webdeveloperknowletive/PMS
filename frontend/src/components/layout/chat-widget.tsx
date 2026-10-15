@@ -42,6 +42,16 @@ function displayRoles(roles: string[]) {
   return roles.length ? `(${roles.join(", ")})` : "(Member)";
 }
 
+function renderMessageText(text: string) {
+  return text.split(/((?:https?:\/\/|www\.)[^\s<>]+)/gi).map((part, index) => {
+    if (!/^(https?:\/\/|www\.)/i.test(part)) return part;
+    const suffix = part.match(/[.,!?;:)]+$/)?.[0] ?? "";
+    const address = suffix ? part.slice(0, -suffix.length) : part;
+    const href = /^www\./i.test(address) ? `https://${address}` : address;
+    return <Fragment key={`${index}-${part}`}><a href={href} target="_blank" rel="noopener noreferrer" className="break-all underline decoration-current/50 underline-offset-2 hover:decoration-current">{address}</a>{suffix}</Fragment>;
+  });
+}
+
 function chatDayKey(value: string) {
   const date = new Date(value);
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
@@ -59,7 +69,8 @@ function chatDayLabel(value: string) {
 
 export function ChatWidget() {
   const user = useAuthStore((state) => state.user);
-  const { isAdmin } = usePermissions();
+  const { isAdmin, permissionCodes } = usePermissions();
+  const has = (code: string) => permissionCodes.includes(code);
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [screen, setScreen] = useState<ChatScreen>("inbox");
@@ -86,30 +97,31 @@ export function ChatWidget() {
   const conversations = useQuery({
     queryKey: CHAT_QUERY_KEY,
     queryFn: chatApi.conversations,
-    enabled: !!user,
+    enabled: !!user && has("chat.conversations.view"),
     refetchInterval: open ? 1200 : 3500,
   });
   const activeConversation = conversations.data?.find((item) => item.conversation_id === activeId) ?? null;
+  const isActiveGroupAdmin = !!activeConversation?.members.some((member) => member.user_id === user?.user_id && member.is_group_admin);
 
   const contacts = useQuery({
     queryKey: ["chat-contacts"],
     queryFn: chatApi.contacts,
-    enabled: open && (screen === "contacts" || screen === "inbox" || screen === "groups"),
+    enabled: open && has("chat.contacts.view") && (screen === "contacts" || screen === "inbox" || screen === "groups"),
   });
   const settings = useQuery({
     queryKey: ["chat-settings", user?.user_id],
     queryFn: chatApi.settings,
-    enabled: !!user,
+    enabled: !!user && has("chat.settings.view"),
   });
   const orgSettings = useQuery({
     queryKey: ["chat-organization-settings"],
     queryFn: chatApi.organizationSettings,
-    enabled: open && screen === "settings" && isAdmin,
+    enabled: open && screen === "settings" && has("chat.organization_settings.view"),
   });
   const messages = useQuery({
     queryKey: ["chat-messages", activeId],
     queryFn: () => chatApi.messages(activeId!),
-    enabled: open && screen === "thread" && !!activeId,
+    enabled: open && screen === "thread" && !!activeId && has("chat.messages.view"),
     refetchInterval: 1000,
   });
   useEffect(() => {
@@ -189,6 +201,15 @@ export function ChatWidget() {
       setGroupName("");
       setSelectedGroupMemberIds([]);
       toast.success(`Group chat created: ${conversation.name}`);
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+  const promoteGroupAdmin = useMutation({
+    mutationFn: (memberId: string) => chatApi.promoteGroupAdmin(activeId!, memberId),
+    onSuccess: (conversation) => {
+      queryClient.setQueryData(CHAT_QUERY_KEY, (current: ChatConversation[] | undefined) => current?.map((item) => item.conversation_id === conversation.conversation_id ? conversation : item));
+      queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEY });
+      toast.success("Group admin added");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
@@ -298,6 +319,7 @@ export function ChatWidget() {
 
   if (!user) return null;
 
+  if (!has("chat.conversations.view")) return null;
   return (
     <div ref={widgetRoot} className="fixed bottom-5 right-5 z-40">
       {open && <section data-chat-theme={settings.data?.theme ?? "light"} data-chat-font-size={settings.data?.font_size ?? "medium"} className="chat-widget relative mb-3 flex h-[min(620px,calc(100vh-7rem))] w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:w-[390px]" aria-label="Connect chat">
@@ -314,12 +336,12 @@ export function ChatWidget() {
 
         {groupMembersOpen && screen === "thread" && activeConversation && activeConversation.conversation_type !== "DIRECT" && <div data-group-members-panel className="absolute left-3 right-3 top-[72px] z-30 max-h-[min(360px,70vh)] overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3"><div><p className="text-sm font-semibold">{activeConversation.name}</p><p className="text-xs text-slate-500">Group members · {activeConversation.members?.length ?? activeConversation.member_count}</p><span className="mt-1 inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">Created by Admin</span></div><button type="button" onClick={() => setGroupMembersOpen(false)} aria-label="Close group details" className="rounded-lg px-2 py-1 text-lg leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-700">×</button></div>
-          <div className="chat-scroll-area max-h-72 overflow-y-auto p-2">{(activeConversation.members ?? []).map((member) => { const isCreator = member.user_id === activeConversation.created_by_user_id; return <div key={member.user_id} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-violet-50"><UserAvatar user={member} showName={false} size="md" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{member.name}</span><span className="block truncate text-xs text-slate-500">{member.roles.length ? member.roles.join(", ") : "Member"}</span></span>{isCreator && <span className="shrink-0 rounded-full bg-violet-100 px-2 py-1 text-[9px] font-semibold text-violet-700">Created by Admin</span>}</div>; })}</div>
+          <div className="chat-scroll-area max-h-72 overflow-y-auto p-2">{(activeConversation.members ?? []).map((member) => { const isCreator = member.user_id === activeConversation.created_by_user_id; const isSelf = member.user_id === user.user_id; return <div key={member.user_id} className="flex items-center gap-2 rounded-xl px-2 py-2 hover:bg-violet-50"><button type="button" onClick={() => { setGroupMembersOpen(false); openDirect.mutate(member); }} disabled={isSelf || openDirect.isPending} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left disabled:cursor-default disabled:opacity-70" aria-label={isSelf ? "You are a member of this group" : `Open direct chat with ${member.name}`}><UserAvatar user={member} showName={false} size="md" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{member.name}{isSelf ? " (You)" : ""}</span><span className="block truncate text-xs text-slate-500">{member.roles.length ? member.roles.join(", ") : "Member"}</span></span></button>{(member.is_group_admin || isCreator) && <span className="shrink-0 rounded-full bg-violet-100 px-2 py-1 text-[9px] font-semibold text-violet-700">Group Admin</span>}{isActiveGroupAdmin && !member.is_group_admin && !isCreator && <Button size="sm" variant="outline" disabled={promoteGroupAdmin.isPending} onClick={() => promoteGroupAdmin.mutate(member.user_id)}>Make admin</Button>}</div>; })}</div>
         </div>}
 
         {screen === "inbox" && <>
           <div className="flex items-center gap-2 border-b border-slate-100 p-3">
-            {isAdmin && <Button size="sm" variant="outline" onClick={() => showScreen("groups")}><Users /> Create team group</Button>}
+            {has("chat.groups.create") && <Button size="sm" variant="outline" onClick={() => showScreen("groups")}><Users /> Create Group</Button>}
           </div>
           <div className="flex gap-1 overflow-x-auto border-b border-slate-100 px-3 py-2">
             {([ ["all", "All"], ["unread", "Unread"], ["favorites", "Favorites"], ["groups", "Groups"] ] as const).map(([key, label]) => <button key={key} type="button" onClick={() => setConversationFilter(key)} aria-pressed={conversationFilter === key} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${conversationFilter === key ? "bg-violet-600 text-white" : "text-slate-500 hover:bg-violet-50 hover:text-violet-700"}`}>{label}{key === "unread" && unreadCount > 0 ? ` ${unreadCount}` : ""}</button>)}
@@ -350,7 +372,7 @@ export function ChatWidget() {
           </button>)}</div>
         </>}
 
-        {screen === "groups" && isAdmin && <div className="chat-scroll-area flex-1 overflow-y-auto p-3">
+        {screen === "groups" && has("chat.groups.create") && <div className="chat-scroll-area flex-1 overflow-y-auto p-3">
           <div className="mb-3 rounded-xl bg-violet-50 p-3 text-xs leading-5 text-violet-900">Create a chat group by giving it a name and choosing organization members. You are included automatically.</div>
           <div className="space-y-3">
             <div><Label htmlFor="chat-group-name">Group name</Label><Input id="chat-group-name" value={groupName} onChange={(event) => setGroupName(event.target.value)} placeholder="e.g. Website launch" maxLength={150} className="mt-1" /></div>
@@ -395,8 +417,8 @@ export function ChatWidget() {
                 <div onClick={() => setReactionMessageId(reactionMessageId === message.message_id ? null : message.message_id)} onDoubleClick={() => { setReplyTo(message); setReactionMessageId(null); }} title="Click for reactions · Double-click to reply · Right-click for options" className={`cursor-pointer rounded-2xl px-3 py-2 shadow-sm ${mine ? "rounded-br-md bg-violet-600 text-white" : "rounded-bl-md border border-slate-200 bg-white text-slate-800"}`}>
                   {!mine && <p className="mb-1 text-[10px] font-semibold text-violet-700">{message.sender_name} <span className="font-normal text-slate-400">{displayRoles(message.sender_roles)}</span></p>}
                   {message.reply_to_body && <div className={`mb-2 rounded-lg border-l-2 px-2 py-1 text-[10px] ${mine ? "border-violet-200 bg-violet-700/50 text-violet-50" : "border-violet-400 bg-slate-50 text-slate-600"}`}><strong>{message.reply_to_sender_name ?? "Reply"}</strong><p className="truncate">{message.reply_to_body}</p></div>}
-                  {message.attachment_url ? <><p className={`whitespace-pre-wrap break-words leading-5 ${settings.data?.font_size === "small" ? "text-xs" : settings.data?.font_size === "large" ? "text-sm" : "text-[13px]"}`}>{message.message_type === "TEXT" ? message.body : ""}</p><ChatAttachment message={message} conversationId={activeId!} /></> : <p className={`whitespace-pre-wrap break-words leading-5 ${settings.data?.font_size === "small" ? "text-xs" : settings.data?.font_size === "large" ? "text-sm" : "text-[13px]"}`}>{message.body}</p>}
-                  <p className={`mt-1 text-right text-[9px] ${mine ? "text-violet-100" : "text-slate-400"}`} title={sentDate.toLocaleString([], { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })}>{sentDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}</p>
+                  {message.attachment_url ? <><p className={`whitespace-pre-wrap break-words leading-5 ${settings.data?.font_size === "small" ? "text-xs" : settings.data?.font_size === "large" ? "text-sm" : "text-[13px]"}`}>{message.message_type === "TEXT" ? renderMessageText(message.body) : ""}</p><ChatAttachment message={message} conversationId={activeId!} /></> : <p className={`whitespace-pre-wrap break-words leading-5 ${settings.data?.font_size === "small" ? "text-xs" : settings.data?.font_size === "large" ? "text-sm" : "text-[13px]"}`}>{renderMessageText(message.body)}</p>}
+                  <p className={`mt-1 text-right text-[9px] ${mine ? "text-violet-100" : "text-slate-400"}`} title={sentDate.toLocaleString([], { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}>{sentDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</p>
                 </div>
                 {(reactionMessageId === message.message_id || message.reactions.length > 0) && <div className="mt-1 flex flex-wrap items-center gap-1">{CHAT_REACTIONS.map((emoji) => { const reaction = message.reactions.find((item) => item.emoji === emoji); if (!reaction && reactionMessageId !== message.message_id) return null; return <button key={emoji} type="button" onClick={(event) => { event.stopPropagation(); reactToMessage.mutate({ messageId: message.message_id, emoji }); }} className={`rounded-full border px-1.5 py-0.5 text-[11px] ${reaction?.reacted ? "border-violet-300 bg-violet-100" : "border-slate-200 bg-white"}`} title={`React with ${emoji}`}>{emoji}{reaction && <span className="ml-1 text-[9px]">{reaction.count}</span>}</button>; })}</div>}
                 </div>

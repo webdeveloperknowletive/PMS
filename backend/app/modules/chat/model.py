@@ -5,9 +5,10 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.shared.mixins import OrganizationScopedMixin
 
 
-class ChatConversation(Base):
+class ChatConversation(Base, OrganizationScopedMixin):
     __tablename__ = "chat_conversations"
     __table_args__ = (UniqueConstraint("team_id", name="uq_chat_conversations_team"),)
 
@@ -20,16 +21,17 @@ class ChatConversation(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 
-class ChatConversationMember(Base):
+class ChatConversationMember(Base, OrganizationScopedMixin):
     __tablename__ = "chat_conversation_members"
 
     conversation_id = Column(UUID(as_uuid=True), ForeignKey("chat_conversations.conversation_id", ondelete="CASCADE"), primary_key=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True, index=True)
     joined_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     last_read_at = Column(DateTime(timezone=True), nullable=True)
+    is_group_admin = Column(Boolean, nullable=False, default=False, server_default="false")
 
 
-class ChatMessage(Base):
+class ChatMessage(Base, OrganizationScopedMixin):
     __tablename__ = "chat_messages"
     __table_args__ = (Index("ix_chat_messages_conversation_sent", "conversation_id", "sent_at"),)
 
@@ -45,7 +47,7 @@ class ChatMessage(Base):
     sent_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 
-class ChatMessageReaction(Base):
+class ChatMessageReaction(Base, OrganizationScopedMixin):
     __tablename__ = "chat_message_reactions"
     __table_args__ = (UniqueConstraint("message_id", "user_id", "emoji", name="uq_chat_message_reaction_user"),)
 
@@ -56,7 +58,7 @@ class ChatMessageReaction(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 
-class ChatUserSetting(Base):
+class ChatUserSetting(Base, OrganizationScopedMixin):
     __tablename__ = "chat_user_settings"
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True)
@@ -66,7 +68,7 @@ class ChatUserSetting(Base):
     theme = Column(String(8), nullable=False, default="light", server_default="light")
 
 
-class ChatConversationFavorite(Base):
+class ChatConversationFavorite(Base, OrganizationScopedMixin):
     __tablename__ = "chat_conversation_favorites"
     __table_args__ = (UniqueConstraint("conversation_id", "user_id", name="uq_chat_favorite_user_conversation"),)
 

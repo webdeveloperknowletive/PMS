@@ -14,9 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { useAllRoleAssignments, useAssignRole, useRemoveRoleAssignment } from "@/hooks/queries/use-roles";
-import { useUsers } from "@/hooks/queries/use-users";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { Role } from "@/types/role";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export function RoleAssignUsersDialog({
   open,
@@ -27,10 +27,11 @@ export function RoleAssignUsersDialog({
   onOpenChange: (open: boolean) => void;
   role: Role | null;
 }) {
-  const { data: users } = useUsers();
   const { data: assignments, isLoading } = useAllRoleAssignments();
   const assignRole = useAssignRole();
   const removeAssignment = useRemoveRoleAssignment();
+  const { permissionCodes } = usePermissions();
+  const can = (code: string) => permissionCodes.includes(code) || (code.startsWith("roles.") && permissionCodes.includes("roles.manage"));
   const [selectedUserId, setSelectedUserId] = useState("");
 
   if (!role) return null;
@@ -40,7 +41,9 @@ export function RoleAssignUsersDialog({
     .map((a) => ({ user: a.user, userRole: a.roles.find((r) => r.role_id === role.role_id)! }));
 
   const assignedUserIds = new Set(assignedForThisRole.map((a) => a.user.user_id));
-  const availableUsers = (users ?? []).filter((u) => !assignedUserIds.has(u.user_id));
+  const availableUsers = (assignments ?? []).map((item) => item.user).filter((u) => !assignedUserIds.has(u.user_id));
+  const canAssign = !role.is_system;
+  const canRemove = !role.is_system;
 
   const handleAssign = async () => {
     if (!selectedUserId) return;
@@ -70,7 +73,7 @@ export function RoleAssignUsersDialog({
           <DialogDescription>Manage which users have this role.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex gap-2">
+        {canAssign ? <div className="flex gap-2">
           <Select value={selectedUserId} onValueChange={setSelectedUserId}>
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="Select user to assign" />
@@ -78,16 +81,16 @@ export function RoleAssignUsersDialog({
             <SelectContent>
               {availableUsers.map((u) => (
                 <SelectItem key={u.user_id} value={u.user_id}>
-                  {u.name}
+                  {u.name} ({u.role_names?.join(", ") || "No post assigned"})
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={handleAssign} disabled={!selectedUserId || assignRole.isPending}>
+          {can("roles.assignments.create") && <Button onClick={handleAssign} disabled={!selectedUserId || assignRole.isPending}>
             {assignRole.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
             Assign
-          </Button>
-        </div>
+          </Button>}
+        </div> : <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">System access cannot be assigned from this panel.</p>}
 
         <div className="space-y-1">
           {isLoading ? (
@@ -103,7 +106,7 @@ export function RoleAssignUsersDialog({
                   size="icon"
                   className="h-7 w-7 text-destructive hover:text-destructive"
                   onClick={() => handleRemove(user.user_id, user.name)}
-                  disabled={removeAssignment.isPending}
+                  disabled={removeAssignment.isPending || !canRemove || !can("roles.assignments.delete")}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>

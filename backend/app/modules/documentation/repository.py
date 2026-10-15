@@ -67,13 +67,14 @@ def get_documents(
 def get_documents_by_project(
     db: Session,
     project_id: UUID,
+    organization_id: UUID,
     skip: int = 0,
     limit: int = 100,
 ) -> list[Document]:
 
     return (
         db.query(Document)
-        .filter(Document.project_id == project_id)
+        .filter(Document.project_id == project_id, Document.organization_id == organization_id)
         .order_by(Document.created_at.desc())
         .offset(skip)
         .limit(limit)

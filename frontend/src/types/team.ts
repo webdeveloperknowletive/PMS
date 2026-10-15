@@ -10,6 +10,13 @@ export interface TeamLeadCreate {
   user_id: string;
 }
 
+export interface TeamMemberCandidate {
+  user_id: string;
+  name: string;
+  is_active: boolean;
+  role_names: string[];
+}
+
 export interface TeamBase {
   project_id: string;
   team_lead_id: string;
