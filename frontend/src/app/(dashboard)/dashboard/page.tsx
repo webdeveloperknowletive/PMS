@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, ArrowRight, ArrowLeft, CalendarDays, CheckCircle2, CheckSquare, ChevronDown, ChevronRight, Clock, FolderKanban, History, Home, Plus, Sparkles, UserPlus, UsersRound, ClipboardCheck, Eye, Download, ExternalLink, FileText, MailPlus } from "lucide-react";
+import { Activity, ArrowRight, ArrowLeft, CalendarDays, CheckCircle2, CheckSquare, ChevronDown, ChevronRight, Clock, FolderKanban, History, Plus, Sparkles, UserPlus, UsersRound, ClipboardCheck, Eye, Download, ExternalLink, FileText, MailPlus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -12,6 +12,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ProjectStatusBadge } from "@/components/shared/status-badge";
 import { ProjectFormDialog } from "@/components/modules/projects/project-form-dialog";
 import { TeamFormDialog } from "@/components/modules/teams/team-form-dialog";
+import { TaskFormDialog } from "@/components/modules/tasks/task-form-dialog";
+import { EventFormDialog } from "@/components/modules/calendar/event-form-dialog";
 import { WorkOverview } from "@/components/modules/dashboard/work-overview";
 import { useProjects } from "@/hooks/queries/use-projects";
 import { useTeamLeads, useTeamMemberCandidates, useTeams } from "@/hooks/queries/use-teams";
@@ -25,6 +27,7 @@ import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { tasksApi } from "@/lib/api/tasks";
 import { formatDate } from "@/lib/utils";
+import { canAccessModule } from "@/lib/permissions";
 import { getTaskWorkflowStatus } from "@/lib/kanban-status";
 import { useAuthStore } from "@/store/auth-store";
 import type { Task } from "@/types/task";
@@ -53,6 +56,9 @@ const formatActivityTimestamp = (value: string) => new Intl.DateTimeFormat(undef
   timeStyle: "short",
 }).format(new Date(value));
 
+const localDateKey = (value = new Date()) =>
+  `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+
 const formatTaskStatus = (status: string) => ({
   TODO: "To Do",
   IN_PROGRESS: "In Progress",
@@ -65,6 +71,8 @@ const formatTaskStatus = (status: string) => ({
 export default function DashboardPage() {
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [taskPage, setTaskPage] = useState(0);
   const [expandedActivityTaskId, setExpandedActivityTaskId] = useState<string | null>(null);
   const [approvingTaskId, setApprovingTaskId] = useState<string | null>(null);
@@ -74,14 +82,23 @@ export default function DashboardPage() {
   const { permissionCodes, isLoading: permissionsLoading } = usePermissions();
   const isProjectManager = (user?.role_names ?? []).some((role) => role.trim().toLowerCase() === "project manager");
   const canCreateProject = permissionCodes.includes("projects.create");
-  const canCreateTeam = !isProjectManager && (permissionCodes.includes("teams.create") || permissionCodes.includes("teams.members.manage"));
-  const canCreateInvitation = permissionCodes.includes("invitations.create");
+  const canCreateTeam = permissionCodes.includes("teams.create") || ["teams.members.create", "teams.members.update", "teams.members.delete"].some((code) => permissionCodes.includes(code));
+  const canCreateInvitation = permissionCodes.includes("invitations.create") && permissionCodes.includes("users.view");
   const canViewTeams = ["teams.view", "teams.manage", "teams.members.view", "teams.members.manage", "teams.leads.view"].some((code) => permissionCodes.includes(code));
   // The flexible permission API returns the selected CRUD codes, not the legacy
   // `*.manage` aliases. Treat project CRUD as sufficient to load the user's
   // assigned project list on their dashboard.
   const canViewProjects = permissionCodes.includes("roles.manage") || canViewTeams || ["projects.view", "projects.create", "projects.update", "projects.delete", "tasks.view", "tasks.create", "tasks.update", "tasks.delete"].some((code) => permissionCodes.includes(code));
+  const canOpenProjects = canAccessModule("/projects", permissionCodes);
+  const canCreateTask = permissionCodes.includes("tasks.create") && canViewProjects;
+  const canCreateEvent = permissionCodes.includes("calendar.create") && canViewProjects;
+  const canAccessCalendar = canAccessModule("/calendar", permissionCodes);
+  const hasQuickActions = canCreateProject || canCreateTeam || canCreateTask || canCreateEvent || canCreateInvitation || permissionCodes.includes("roles.manage");
   const canViewTasks = permissionCodes.includes("tasks.view");
+  // Assigned developers/testers can read their own tasks with this permission;
+  // the API scopes their task list to assignments for the signed-in user.
+  const canViewAssignedTasks = permissionCodes.includes("tasks.update_assigned");
+  const canAccessTasks = canViewTasks || canViewAssignedTasks;
   const canViewUsers = permissionCodes.includes("users.view");
   const canViewWork = permissionCodes.includes("tasks.work_sessions.view");
   const { data: projects, isLoading: projectsLoading } = useProjects({ limit: 500 }, canViewProjects);
@@ -104,10 +121,10 @@ export default function DashboardPage() {
   const { data: tasks, isLoading: tasksLoading } = useQuery({
     queryKey: ["tasks", "dashboard"],
     queryFn: () => tasksApi.list({ limit: 500 }),
-    enabled: canViewTasks,
+    enabled: canAccessTasks,
     // Deletions are made in the Team Lead's session; poll so the PM's
     // dashboard counts and project summaries converge without a manual reload.
-    refetchInterval: canViewTasks ? 2_000 : false,
+    refetchInterval: canAccessTasks ? 2_000 : false,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
   });
@@ -115,7 +132,7 @@ export default function DashboardPage() {
   const { data: organizationTaskPage, isLoading: organizationTasksLoading } = useQuery({
     queryKey: ["tasks", "organization-register", taskPage],
     queryFn: () => tasksApi.list({ limit: adminTaskPageSize, skip: taskPage * adminTaskPageSize }),
-    enabled: canViewTasks,
+    enabled: canAccessTasks,
     refetchInterval: 2_000,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
@@ -133,7 +150,7 @@ export default function DashboardPage() {
     ...(employees ?? []).map((employee) => [employee.user_id, employee.name] as const),
   ]);
   const taskWorkTimeById = new Map(taskWorkTimes.map((workTime) => [workTime.task_id, workTime]));
-  const hasRunningVisibleTask = taskWorkTimes.some((workTime) => workTime.is_tracking);
+  const hasRunningVisibleTask = taskWorkTimes.some((workTime) => workTime.is_reported_tracking ?? workTime.is_tracking);
   useEffect(() => {
     if (!hasRunningVisibleTask) return;
     const intervalId = window.setInterval(() => setClockNow(Date.now()), 1000);
@@ -141,24 +158,25 @@ export default function DashboardPage() {
   }, [hasRunningVisibleTask]);
   const taskTimeLabel = (taskId: string) => {
     const workTime = taskWorkTimeById.get(taskId);
-    const elapsed = (workTime?.duration_seconds ?? 0) + (
-      workTime?.is_tracking && workTime.active_since
+    const elapsed = (workTime?.reported_duration_seconds ?? workTime?.duration_seconds ?? 0) + (
+      (workTime?.is_reported_tracking ?? workTime?.is_tracking) && workTime.active_since
         ? Math.max(0, Math.floor((clockNow - Date.parse(workTime.active_since)) / 1000))
         : 0
     );
-    if (elapsed === 0) return "—";
+    if (elapsed === 0) return workTime?.pending_review_seconds ? "Pending PM approval" : "—";
     const hours = Math.floor(elapsed / 3600);
     const minutes = Math.floor((elapsed % 3600) / 60);
     const seconds = elapsed % 60;
     const formatted = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-    return `${formatted} · ${workTime?.is_tracking ? "Running" : "Saved"}`;
+    return `${formatted} · ${(workTime?.is_reported_tracking ?? workTime?.is_tracking) ? "Running" : workTime?.pending_review_seconds ? "Pending PM approval" : "Saved"}`;
   };
 
   const totalProjects = dashboardProjects.length;
   const totalTasks = dashboardTasks.length;
+  const localToday = localDateKey();
   const dashboardTaskStatus = (task: Task) => getTaskWorkflowStatus(task, kanbanPlacements, kanbanColumns);
   const completedTasks = dashboardTasks.filter((task) => dashboardTaskStatus(task) === "DONE").length;
-  const overdueProjectTasks = dashboardTasks.filter((task) => task.due_date && new Date(task.due_date) < new Date() && !["DONE", "CANCELLED"].includes(dashboardTaskStatus(task)));
+  const overdueProjectTasks = dashboardTasks.filter((task) => task.due_date && task.due_date < localToday && !["DONE", "CANCELLED"].includes(dashboardTaskStatus(task)));
   const inProgressTasks = dashboardTasks.filter((task) => dashboardTaskStatus(task) === "IN_PROGRESS").length;
   const reviewTasks = dashboardTasks.filter((task) => dashboardTaskStatus(task) === "IN_REVIEW").length;
   const todoTasks = dashboardTasks.filter((task) => dashboardTaskStatus(task) === "TODO").length;
@@ -213,13 +231,13 @@ export default function DashboardPage() {
   });
   const taskTableColumnCount = 6 + Number(canViewMyTeamTaskTimes) + (canShowReviewActions ? 2 : 0);
   const roleStats = [
-    ...(canViewTasks ? isProjectManager ? [
+    ...(canAccessTasks ? isProjectManager ? [
         { icon: CheckSquare, label: "Project work", value: totalTasks, tint: "bg-sky-100 text-sky-700" },
         { icon: CheckCircle2, label: "Work done", value: completedTasks, tint: "bg-emerald-100 text-emerald-700" },
         { icon: Clock, label: "Overdue work", value: overdueProjectTasks.length, tint: "bg-rose-100 text-rose-700" },
       ] : [
         { icon: CheckSquare, label: "My Tasks", value: myTasks.length, tint: "bg-sky-100 text-sky-700" },
-        { icon: Clock, label: "Overdue", value: myTasks.filter((task) => task.due_date && new Date(task.due_date) < new Date() && !["DONE", "CANCELLED"].includes(dashboardTaskStatus(task))).length, tint: "bg-rose-100 text-rose-700" },
+        { icon: Clock, label: "Overdue", value: myTasks.filter((task) => task.due_date && task.due_date < localToday && !["DONE", "CANCELLED"].includes(dashboardTaskStatus(task))).length, tint: "bg-rose-100 text-rose-700" },
       ] : []),
     ...(canViewProjects ? [{ icon: FolderKanban, label: "Projects", value: totalProjects, tint: "bg-violet-100 text-violet-700" }] : []),
     ...(canViewTeams ? [{ icon: UsersRound, label: "Teams", value: teams?.length ?? 0, tint: "bg-indigo-100 text-indigo-700" }] : []),
@@ -254,8 +272,7 @@ export default function DashboardPage() {
           <p className="mt-1.5 max-w-lg text-xs text-violet-100/90 sm:text-sm">A clear view of the work in motion, what needs attention, and where your team is headed.</p>
         </div>
         <div className="relative z-10 flex shrink-0 flex-wrap gap-2">
-          <Button asChild variant="secondary" className="bg-white text-indigo-700 shadow-lg hover:bg-violet-50"><Link href="/dashboard"><Home className="h-4 w-4" /> Home</Link></Button>
-          <Button asChild variant="secondary" className="bg-white text-indigo-700 shadow-lg hover:bg-violet-50"><Link href="/projects">Explore projects <ArrowRight className="h-4 w-4" /></Link></Button>
+          {canOpenProjects && <Button asChild variant="secondary" className="bg-white text-indigo-700 shadow-lg hover:bg-violet-50"><Link href="/projects">Explore projects <ArrowRight className="h-4 w-4" /></Link></Button>}
         </div>
       </section>
 
@@ -303,9 +320,11 @@ export default function DashboardPage() {
             {permissionsLoading ? <Skeleton className="h-10 w-36" /> : <>
               {canCreateProject && <Button size="sm" onClick={() => setProjectDialogOpen(true)}><Plus className="h-4 w-4" /> New project</Button>}
               {canCreateTeam && <Button size="sm" variant="outline" onClick={() => setTeamDialogOpen(true)}><UsersRound className="h-4 w-4" /> Add team</Button>}
+              {canCreateTask && <Button size="sm" variant="outline" onClick={() => setTaskDialogOpen(true)}><CheckSquare className="h-4 w-4" /> New task</Button>}
+              {canCreateEvent && <Button size="sm" variant="outline" onClick={() => setEventDialogOpen(true)}><CalendarDays className="h-4 w-4" /> Schedule event</Button>}
               {canCreateInvitation && <Button asChild size="sm" variant="outline"><Link href="/users#invite-employee"><MailPlus className="h-4 w-4" /> Create invitation</Link></Button>}
               {permissionCodes.includes("roles.manage") && <Button asChild size="sm" variant="outline"><Link href="/roles"><Eye className="h-4 w-4" /> Review roles</Link></Button>}
-              {!canCreateProject && !canCreateTeam && !canCreateInvitation && <p className="self-center text-xs text-slate-500">Open your workspace modules to manage your work.</p>}
+              {!hasQuickActions && <p className="self-center text-xs text-slate-500">Open your workspace modules to manage your work.</p>}
             </>}
           </div>
         </CardContent>
@@ -323,9 +342,9 @@ export default function DashboardPage() {
         </CardContent>
       </Card>}
 
-      {canViewTasks && <Card className="min-w-0 overflow-hidden border-white/90">
+      {canAccessTasks && <Card className="min-w-0 overflow-hidden border-white/90">
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-5">
-          <div className="min-w-0 flex-1"><CardTitle className="text-base font-bold text-violet-800">{canShowReviewActions ? "Team developer work" : isProjectManager ? "Project task register" : "Organization task register"}</CardTitle><p className="mt-1 text-xs text-slate-500">{canShowReviewActions ? "Tasks, checklist progress, tracked time, and developer activity for your assigned team." : isProjectManager ? "Status, assignees, and due dates for work on projects assigned to you." : "Every project work item, including subtasks. Select a project to open its full workspace."}</p></div>
+          <div className="min-w-0 flex-1"><CardTitle className="text-base font-bold text-violet-800">{canShowReviewActions ? "Team developer work" : isProjectManager ? "Project task register" : canViewTasks ? "Organization task register" : "My assigned tasks"}</CardTitle><p className="mt-1 text-xs text-slate-500">{canShowReviewActions ? "Tasks, checklist progress, tracked time, and developer activity for your assigned team." : isProjectManager ? "Status, assignees, and due dates for work on projects assigned to you." : canViewTasks ? "Every project work item, including subtasks. Select a project to open its full workspace." : "Tasks assigned to you, with project, status, and due date."}</p></div>
           <Link href="/tasks" className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-violet-700 hover:text-violet-900">Open task module <ArrowRight className="h-3.5 w-3.5" /></Link>
         </CardHeader>
         <CardContent className="p-0">
@@ -339,7 +358,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>}
 
-      {canViewWork && canViewTasks && <WorkOverview />}
+      {canViewWork && canAccessTasks && <WorkOverview />}
 
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
         {canViewProjects && <Card className="min-w-0 overflow-hidden border-white/90">
@@ -373,13 +392,15 @@ export default function DashboardPage() {
             <div className="space-y-3">
               {[{ label: "In progress", count: inProgressTasks, color: "bg-sky-500" }, { label: "In review", count: reviewTasks, color: "bg-amber-500" }, { label: "To do", count: todoTasks, color: "bg-slate-400" }].map((item) => <div key={item.label} className="flex items-center gap-3"><div className={`h-2 w-2 rounded-full ${item.color}`} /><span className="flex-1 text-xs font-bold text-violet-700">{item.label}</span><span className="text-xs font-semibold text-slate-800">{item.count}</span><span className="w-9 text-right text-[10px] text-slate-400">{totalTasks ? Math.round((item.count / totalTasks) * 100) : 0}%</span></div>)}
             </div>
-            <Link href="/calendar" className="flex items-center justify-between rounded-xl bg-slate-50 px-3.5 py-3 text-xs font-semibold text-slate-700 transition hover:bg-violet-50 hover:text-violet-700"><span className="flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Open team calendar</span><ArrowRight className="h-3.5 w-3.5" /></Link>
+            {canAccessCalendar && <Link href="/calendar" className="flex items-center justify-between rounded-xl bg-slate-50 px-3.5 py-3 text-xs font-semibold text-slate-700 transition hover:bg-violet-50 hover:text-violet-700"><span className="flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Open calendar</span><ArrowRight className="h-3.5 w-3.5" /></Link>}
           </CardContent>
         </Card>
       </div>
 
       {canCreateProject && <ProjectFormDialog open={projectDialogOpen} onOpenChange={setProjectDialogOpen} />}
       {canCreateTeam && <TeamFormDialog open={teamDialogOpen} onOpenChange={setTeamDialogOpen} />}
+      {canCreateTask && <TaskFormDialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen} />}
+      {canCreateEvent && <EventFormDialog open={eventDialogOpen} onOpenChange={setEventDialogOpen} />}
     </div>
   );
 }

@@ -24,6 +24,12 @@ export interface Permission {
   category: string;
 }
 
+export interface UserPermissions {
+  direct: Permission[];
+  inherited: Permission[];
+  effective: Permission[];
+}
+
 export interface UserRoleBase {
   user_id: string;
   role_id: string;

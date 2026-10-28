@@ -4,6 +4,22 @@ export interface ListParams {
   limit?: number;
 }
 
+export interface TaskListParams extends ListParams {
+  search?: string;
+  project_id?: string;
+  assignee_id?: string;
+  status?: string;
+  priority?: string;
+  component_id?: string;
+  release_id?: string;
+  label?: string;
+  overdue?: boolean;
+  due_after?: string;
+  due_before?: string;
+  backlog?: boolean;
+  blocked?: boolean;
+}
+
 /** Shape returned by FastAPI's default validation error handler (422). */
 export interface ApiValidationError {
   detail: { loc: (string | number)[]; msg: string; type: string }[];

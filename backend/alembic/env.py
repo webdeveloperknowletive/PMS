@@ -24,6 +24,7 @@ from db.base import Base
 
 # Import every module's models so their tables register on Base.metadata
 from app.modules.auth import model as auth_model
+from app.modules.audit import model as audit_model
 from app.modules.organizations import model as organizations_model
 from app.modules.users import model as users_model
 from app.modules.teams import model as teams_model

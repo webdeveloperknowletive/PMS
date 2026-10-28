@@ -128,6 +128,19 @@ export function ChatWidget() {
     window.dispatchEvent(new CustomEvent("chat-window-state", { detail: open }));
   }, [open]);
   useEffect(() => {
+    const onOpenConversation = (event: Event) => {
+      const conversationId = (event as CustomEvent<{ conversationId?: string }>).detail?.conversationId;
+      if (!conversationId || !permissionCodes.includes("chat.conversations.view") || !permissionCodes.includes("chat.messages.view")) return;
+      setActiveId(conversationId);
+      setScreen("thread");
+      setGroupMembersOpen(false);
+      setOpen(true);
+      queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEY });
+    };
+    window.addEventListener("chat-open-conversation", onOpenConversation);
+    return () => window.removeEventListener("chat-open-conversation", onOpenConversation);
+  }, [permissionCodes, queryClient]);
+  useEffect(() => {
     if (!open) return;
     const closeOutside = (event: PointerEvent) => { if (!widgetRoot.current?.contains(event.target as Node)) setOpen(false); };
     document.addEventListener("pointerdown", closeOutside);

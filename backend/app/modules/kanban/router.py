@@ -1,11 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ForbiddenException
+from app.core.permissions import require_any_permission, require_permission
 from app.modules.kanban import service
 from app.modules.kanban.schema import (
     KanbanColumnCreate,
@@ -14,12 +15,20 @@ from app.modules.kanban.schema import (
     KanbanTaskCreate,
     KanbanTaskRead,
     KanbanTaskUpdate,
+    KanbanCardDetailsUpdate,
+    KanbanCardMembersUpdate,
+    KanbanCardMemberOptionRead,
+    KanbanLabelCreate,
+    KanbanLabelRead,
+    KanbanLabelUpdate,
 )
 from app.modules.kanban.permissions import can_manage_board, can_move_task, can_view_board
 from app.modules.kanban.model import KanbanColumn, KanbanTask
+from app.modules.projects.model import Project
 from app.modules.tasks import service as task_service
-from app.modules.tasks.schema import TaskUpdate
+from app.modules.tasks.schema import TaskCommentCreate, TaskUpdate
 from app.modules.tasks.model import Task
+from app.modules.tasks.schema import TaskCreate, TaskRead
 from app.modules.notifications.events import notify_users
 from app.modules.teams.model import Team, TeamLead
 from app.modules.users.model import User
@@ -28,6 +37,46 @@ router = APIRouter(
     prefix="/kanban",
     tags=["Kanban"]
 )
+
+
+@router.get(
+    "/labels",
+    response_model=list[KanbanLabelRead],
+    dependencies=[Depends(require_any_permission("kanban.tasks.view", "tasks.create", "tasks.update", "tasks.update_assigned"))],
+)
+async def list_kanban_labels(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.get_kanban_labels(db, current_user.organization_id)
+
+
+@router.post(
+    "/labels",
+    response_model=KanbanLabelRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("kanban.labels.manage"))],
+)
+async def create_kanban_label(
+    payload: KanbanLabelCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.create_kanban_label(db, payload, current_user)
+
+
+@router.patch(
+    "/labels/{label_id}",
+    response_model=KanbanLabelRead,
+    dependencies=[Depends(require_permission("kanban.labels.manage"))],
+)
+async def update_kanban_label(
+    label_id: UUID,
+    payload: KanbanLabelUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.update_kanban_label(db, label_id, payload, current_user)
 
 
 def _is_review_column(column: KanbanColumn | None) -> bool:
@@ -44,6 +93,17 @@ def _is_assigned_team_lead(db: Session, task: Task, user: User) -> bool:
     ).filter(Team.team_id == task.team_id, TeamLead.user_id == user.user_id).first())
 
 
+def _is_assigned_project_manager(db: Session, task: Task, user: User) -> bool:
+    return bool(db.query(Project.project_id).filter(
+        Project.project_id == task.project_id,
+        Project.project_manager_user_id == user.user_id,
+    ).first())
+
+
+def _can_approve_review(db: Session, task: Task, user: User) -> bool:
+    return _is_assigned_team_lead(db, task, user) or _is_assigned_project_manager(db, task, user)
+
+
 def _require_review_approval(
     db: Session,
     task: Task | None,
@@ -52,8 +112,16 @@ def _require_review_approval(
     user: User,
 ) -> None:
     review_is_pending = bool(task and (task.status == "IN_REVIEW" or _is_review_column(source_column)))
-    if review_is_pending and _is_done_column(target_column) and not _is_assigned_team_lead(db, task, user):
-        raise ForbiddenException(message="This task is awaiting Team Lead approval. Only its assigned Team Lead can move it to Done.")
+    if review_is_pending and _is_done_column(target_column) and not _can_approve_review(db, task, user):
+        raise ForbiddenException(message="This task is awaiting review. Only its assigned Team Lead or Project Manager can approve it to Done.")
+
+
+def require_card_details_edit(db: Session, task: Task, user: User) -> bool:
+    from app.core.permissions import has_permission
+
+    return has_permission(db, user, "kanban.cards.details.update") or (
+        task.user_id == user.user_id and has_permission(db, user, "tasks.update_assigned")
+    )
 
 # ==========================================================
 # Kanban Columns
@@ -130,6 +198,117 @@ async def delete_kanban_column(
 # ==========================================================
 # Kanban Tasks (card placements)
 # ==========================================================
+
+@router.post(
+    "/cards",
+    response_model=TaskRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("kanban.cards.create"))],
+)
+async def create_kanban_card(
+    payload: TaskCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if payload.kanban_column_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Choose a Kanban column before creating a card.")
+    column = db.query(KanbanColumn).filter(
+        KanbanColumn.column_id == payload.kanban_column_id,
+        KanbanColumn.project_id == payload.project_id,
+        KanbanColumn.organization_id == current_user.organization_id,
+    ).one_or_none()
+    if column is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Choose a board column from this project.")
+    service._enforce_wip_limit(db, column, payload.status)
+    return task_service.create_task(db, payload, assigned_by=current_user)
+
+
+@router.get(
+    "/cards/archived",
+    response_model=list[TaskRead],
+    dependencies=[Depends(can_view_board)],
+)
+async def get_archived_kanban_cards(
+    project_id: UUID | None = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.get_archived_cards(db, current_user, project_id)
+
+
+@router.patch(
+    "/cards/{task_id}",
+    response_model=TaskRead,
+)
+async def update_kanban_card_details(
+    task_id: UUID,
+    payload: KanbanCardDetailsUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    task = service.get_card_for_board(db, task_id, current_user)
+    if not require_card_details_edit(db, task, current_user):
+        raise ForbiddenException(message="Missing required permission: kanban.cards.details.update")
+    if task.archived_at is not None:
+        raise ForbiddenException(message="Restore this card before editing it.")
+    return task_service.update_task(db, task_id, TaskUpdate(**payload.model_dump(exclude_unset=True)), assigned_by=current_user)
+
+
+@router.post(
+    "/cards/{task_id}/archive",
+    response_model=TaskRead,
+    dependencies=[Depends(require_permission("kanban.cards.archive"))],
+)
+async def archive_kanban_card(
+    task_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    task = service.get_card_for_board(db, task_id, current_user)
+    return service.set_card_archived(db, task, current_user, archived=True)
+
+
+@router.post(
+    "/cards/{task_id}/restore",
+    response_model=TaskRead,
+    dependencies=[Depends(require_permission("kanban.cards.restore"))],
+)
+async def restore_kanban_card(
+    task_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    task = service.get_card_for_board(db, task_id, current_user)
+    return service.set_card_archived(db, task, current_user, archived=False)
+
+
+@router.get(
+    "/cards/{task_id}/member-options",
+    response_model=list[KanbanCardMemberOptionRead],
+    dependencies=[Depends(require_permission("kanban.cards.members.manage"))],
+)
+async def get_kanban_card_member_options(
+    task_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    task = service.get_card_for_board(db, task_id, current_user)
+    return service.get_card_member_options(db, task)
+
+
+@router.put(
+    "/cards/{task_id}/members",
+    response_model=TaskRead,
+    dependencies=[Depends(require_permission("kanban.cards.members.manage"))],
+)
+async def update_kanban_card_members(
+    task_id: UUID,
+    payload: KanbanCardMembersUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    task = service.get_card_for_board(db, task_id, current_user)
+    return service.update_card_members(db, task, payload.member_ids, current_user)
 
 @router.get(
     "/tasks",
@@ -261,17 +440,17 @@ async def move_kanban_task(
                 lead_ids = {row[0] for row in db.query(TeamLead.user_id).join(
                     Team, Team.team_lead_id == TeamLead.team_lead_id
                 ).filter(Team.team_id == task.team_id).all()}
-            approved_by_lead = (previous_status == "IN_REVIEW" or _is_review_column(previous_column)) and next_status == "DONE" and current_user.user_id in lead_ids
-            title = f"Review approved: {task.task_name}" if approved_by_lead else f"Task moved: {task.task_name}"
+            approved_review = (previous_status == "IN_REVIEW" or _is_review_column(previous_column)) and next_status == "DONE" and _can_approve_review(db, task, current_user)
+            title = f"Review approved: {task.task_name}" if approved_review else f"Task moved: {task.task_name}"
             message = (
                 f"{current_user.name} approved your review and moved the task to Done."
-                if approved_by_lead else f"{current_user.name} moved the task to {column.column_name}."
+                if approved_review else f"{current_user.name} moved the task to {column.column_name}."
             )
             notify_users(
-                db, {task.user_id} if approved_by_lead and task.user_id else lead_ids,
+                db, {task.user_id} if approved_review and task.user_id else lead_ids,
                 actor_id=current_user.user_id, project_id=task.project_id,
                 title=title, message=message,
-                notification_type="Review Approved" if approved_by_lead else "Task Movement",
+                notification_type="Review Approved" if approved_review else "Task Movement",
             )
     return placement
 
@@ -283,13 +462,13 @@ async def move_kanban_task(
 )
 async def approve_task_review(
     task_id: UUID,
-    current_user: User = Depends(can_move_task),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Approve a task's review and move its card to the project's Done column."""
     task = task_service.get_task(db, task_id, current_user=current_user)
-    if not _is_assigned_team_lead(db, task, current_user):
-        raise ForbiddenException(message="Only the assigned Team Lead can approve this task.")
+    if not _can_approve_review(db, task, current_user):
+        raise ForbiddenException(message="Only this project's assigned Team Lead or Project Manager can approve this task.")
 
     placement = db.query(KanbanTask).filter(KanbanTask.task_id == task.task_id).one_or_none()
     source_column = db.get(KanbanColumn, placement.column_id) if placement else None
@@ -316,6 +495,24 @@ async def approve_task_review(
         current_user,
         db,
     )
+
+
+@router.post(
+    "/tasks/{task_id}/cancel-review",
+    response_model=KanbanTaskRead,
+    status_code=status.HTTP_200_OK,
+)
+async def cancel_task_review(
+    task_id: UUID,
+    payload: TaskCommentCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Have the assigned Project Manager return a review task with required feedback."""
+    task = task_service.get_task(db, task_id, current_user=current_user)
+    if not _is_assigned_project_manager(db, task, current_user):
+        raise ForbiddenException(message="Only this project's assigned Project Manager can request changes.")
+    return task_service.cancel_task_review(db, task, payload.content, current_user)
 
 
 @router.delete(

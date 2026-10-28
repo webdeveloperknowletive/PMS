@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, UserCog, Search, MailPlus, Copy, XCircle, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, UserCog, Search, MailPlus, Copy, XCircle, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UserFormDialog } from "@/components/modules/users/user-form-dialog";
+import { UserPermissionsDialog } from "@/components/modules/users/user-permissions-dialog";
 import { useUsers } from "@/hooks/queries/use-users";
 import { useInviteOrganizationMember, useOrganizationInvitations, useResendOrganizationInvitation, useRevokeOrganizationInvitation } from "@/hooks/queries/use-organizations";
 import { useDeleteUser, useToggleUserStatus } from "@/hooks/queries/use-users-admin";
@@ -45,6 +46,7 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [permissionsUser, setPermissionsUser] = useState<User | null>(null);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRoleId, setInviteRoleId] = useState("");
@@ -145,7 +147,7 @@ export default function UsersPage() {
       <div className="space-y-6">
         <PageHeader
           title="Users"
-          description="Invite employees, assign workspace roles, and manage their access"
+          description="Invite employees, assign roles, and manage module and action access"
           actions={can("invitations.create") ?
             <Button onClick={() => document.getElementById("invite-employee")?.scrollIntoView({ behavior: "smooth", block: "center" })}>
               <Plus className="h-4 w-4" />
@@ -248,7 +250,7 @@ export default function UsersPage() {
                   <TableHead>User</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Joined</TableHead>
-                  <TableHead className="w-10" />
+                  <TableHead className="w-36">Access</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -281,6 +283,7 @@ export default function UsersPage() {
                     <TableCell className="text-sm text-muted-foreground">{formatDate(u.created_at)}</TableCell>
                     <TableCell>
                       <div className="flex flex-nowrap items-center gap-1">
+                        {(can("users.permissions.view") || can("users.permissions.update")) && <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2" aria-label={`Manage permissions for ${u.name}`} title="Manage direct permissions" onClick={() => setPermissionsUser(u)}><ShieldCheck className="h-4 w-4" /><span className="hidden xl:inline">Access</span></Button>}
                         {can("users.update") && <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit user" title="Edit user" onClick={() => openEdit(u)}><Pencil className="h-4 w-4" /></Button>}
                         {can("users.delete") && u.user_id !== currentUser?.user_id && <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete user" title="Delete user" onClick={() => setDeletingUser(u)}><Trash2 className="h-4 w-4" /></Button>}
                       </div>
@@ -301,6 +304,12 @@ export default function UsersPage() {
         </div>
 
         <UserFormDialog open={formOpen} onOpenChange={setFormOpen} user={editingUser} />
+        <UserPermissionsDialog
+          open={!!permissionsUser}
+          onOpenChange={(open) => !open && setPermissionsUser(null)}
+          user={permissionsUser}
+          canUpdate={can("users.permissions.update")}
+        />
 
         <ConfirmDialog
           open={!!deletingUser}

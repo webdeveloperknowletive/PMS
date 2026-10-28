@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCalendarEvents } from "@/hooks/queries/use-calendar";
 import { useAuthStore } from "@/store/auth-store";
 import { notificationSettingsApi, notificationsApi } from "@/lib/api/notifications";
+import { tasksApi } from "@/lib/api/tasks";
 import { formatTime } from "@/lib/utils";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -39,6 +40,10 @@ export function useEventReminders() {
   const user = useAuthStore((s) => s.user);
   const { permissionCodes } = usePermissions();
   const calendarAccess = permissionCodes.includes("calendar.view");
+  const taskReminderAccess = permissionCodes.some((code) => [
+    "tasks.view", "tasks.team_view", "tasks.manage", "tasks.update",
+    "tasks.update_assigned", "kanban.view", "kanban.move", "roles.manage",
+  ].includes(code));
   const canViewReminderSettings = permissionCodes.includes("notifications.settings.view");
   const { data: events } = useCalendarEvents(calendarAccess);
   const { data: reminderSetting } = useQuery({
@@ -94,4 +99,30 @@ export function useEventReminders() {
     const interval = setInterval(checkReminders, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [events, user, queryClient, reminderSetting]);
+
+  useEffect(() => {
+    if (!user || !taskReminderAccess) return;
+    let checking = false;
+    const checkTaskReminders = async () => {
+      if (checking) return;
+      checking = true;
+      const now = new Date();
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      try {
+        const result = await tasksApi.checkDeadlineReminders(localDate);
+        if (result.created_count > 0) {
+          await queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        }
+      } catch {
+        // Reminders are best-effort while the user has the app open. The API
+        // rechecks assignments and de-duplicates every delivery server-side.
+      } finally {
+        checking = false;
+      }
+    };
+
+    void checkTaskReminders();
+    const interval = setInterval(() => void checkTaskReminders(), 60_000);
+    return () => clearInterval(interval);
+  }, [user?.user_id, taskReminderAccess, queryClient]);
 }

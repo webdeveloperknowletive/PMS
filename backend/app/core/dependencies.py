@@ -62,6 +62,7 @@ def get_current_user(
     db.info["organization_id"] = user.organization_id
 
     request.state.audit_actor = user.name
+    request.state.audit_actor_id = str(user.user_id)
     request.state.audit_roles = sorted({assignment.role.role_name for assignment in user.user_roles if assignment.role})
     request.state.audit_organization_id = str(user.organization_id)
     return user

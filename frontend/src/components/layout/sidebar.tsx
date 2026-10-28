@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
-  LayoutDashboard, FolderKanban, CheckSquare, Users, Flag, Calendar, FileText,
+  LayoutDashboard, FolderKanban, CheckSquare, Users, Flag, Calendar, FileText, Activity,
   KanbanSquare, GanttChartSquare, BarChart3, Sparkles, ListChecks, ShieldAlert,
   FileStack, MessageSquareText, Bell, ShieldCheck, UserCog, Settings, Workflow, Building2,
   X,
@@ -39,6 +39,7 @@ const AI_MODULES = [
 const ADMIN_MODULES = [
   { label: "Roles & Permissions", href: "/roles", icon: ShieldCheck },
   { label: "Users", href: "/users", icon: UserCog },
+  { label: "Audit Log", href: "/audit-logs", icon: Activity },
 ];
 const ORGANIZATION_MODULE = { label: "Organization", href: "/organization", icon: Building2 };
 

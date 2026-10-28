@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends
 from app.core.permissions import authorize_api_action
 
 from app.modules.auth.router import router as auth_router
+from app.modules.audit.router import router as audit_router
 from app.modules.organizations.router import router as organizations_router
 from app.modules.organizations import model as organizations_model
 from app.modules.users.router import router as users_router
@@ -25,6 +26,7 @@ from app.modules.roles.router import router as roles_router
 from app.modules.projects.router import router as projects_router
 from app.modules.teams.router import router as teams_router
 from app.modules.tasks.router import router as tasks_router
+from app.modules.search.router import router as search_router
 from app.modules.workflow.router import router as workflow_router
 from app.modules.kanban.router import router as kanban_router
 from app.modules.gantt.router import router as gantt_router
@@ -47,6 +49,7 @@ api_router = APIRouter(dependencies=[Depends(authorize_api_action)])
 # ==========================================================
 
 api_router.include_router(auth_router)
+api_router.include_router(audit_router)
 api_router.include_router(organizations_router)
 api_router.include_router(users_router)
 api_router.include_router(roles_router)
@@ -58,6 +61,7 @@ api_router.include_router(roles_router)
 api_router.include_router(projects_router)
 api_router.include_router(teams_router)
 api_router.include_router(tasks_router)
+api_router.include_router(search_router)
 api_router.include_router(workflow_router)
 
 # ==========================================================

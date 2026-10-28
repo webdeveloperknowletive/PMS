@@ -5,14 +5,14 @@ import { Loader2, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PriorityBadge } from "@/components/shared/priority-badge";
-import { useCreateKanbanTaskPlacement } from "@/hooks/queries/use-kanban";
-import { useCreateTask } from "@/hooks/queries/use-tasks";
-import { useAvailableTeamMembers, useTeamLeads, useTeams } from "@/hooks/queries/use-teams";
-import { useAuthStore } from "@/store/auth-store";
+import { KanbanLabelColorPicker } from "@/components/modules/kanban/kanban-label-color-picker";
+import { useCreateKanbanCard, useCreateKanbanTaskPlacement } from "@/hooks/queries/use-kanban";
+import { useProjectAssigneeCandidates } from "@/hooks/queries/use-tasks";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { TASK_PRIORITIES, PRIORITY_LABEL, COLUMN_NAME_TO_STATUS, type TaskPriority } from "@/lib/constants";
 import type { Task, TaskType } from "@/types/task";
@@ -26,6 +26,7 @@ export function AddTaskToColumnDialog({
   unplacedTasks,
   nextPosition,
   canCreateTask,
+  canAttachExisting,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,41 +36,45 @@ export function AddTaskToColumnDialog({
   unplacedTasks: Task[];
   nextPosition: number;
   canCreateTask: boolean;
+  canAttachExisting: boolean;
 }) {
   const [mode, setMode] = useState<"existing" | "create">(canCreateTask ? "create" : "existing");
   const [search, setSearch] = useState("");
   const [newTaskName, setNewTaskName] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [newTaskLabel, setNewTaskLabel] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>("MEDIUM");
+  const [newTaskStartDate, setNewTaskStartDate] = useState("");
   const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [newTaskReminder, setNewTaskReminder] = useState("none");
   const [assigneeId, setAssigneeId] = useState("");
   const [newTaskType, setNewTaskType] = useState<TaskType>("TASK");
   const [checklistDrafts, setChecklistDrafts] = useState<string[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState("");
 
-  const currentUser = useAuthStore((state) => state.user);
-  const { data: teams = [] } = useTeams(open);
-  const { data: teamLeads = [] } = useTeamLeads(open);
-  const isTeamLead = currentUser?.role_names?.some((role) => role.trim().toLowerCase() === "team lead") ?? false;
-  const currentTeamLeadId = teamLeads.find((lead) => lead.user_id === currentUser?.user_id)?.team_lead_id;
-  const projectTeams = teams.filter((team) => team.project_id === projectId);
-  const assignableTeams = isTeamLead && currentTeamLeadId
-    ? projectTeams.filter((team) => team.team_lead_id === currentTeamLeadId)
-    : projectTeams;
-  const selectedTeam = assignableTeams.find((team) => team.team_id === selectedTeamId) ?? assignableTeams[0];
-  const { data: availableMembers = [], isLoading: membersLoading } = useAvailableTeamMembers(
-    selectedTeam?.team_id,
-    open && mode === "create",
+  const { data: projectCandidates = [], isLoading: membersLoading } = useProjectAssigneeCandidates(
+    open && mode === "create" ? projectId : undefined,
   );
+  const assignableTeams = [...new Map(projectCandidates.map((member) => [member.team_id, {
+    team_id: member.team_id,
+    team_name: member.team_name,
+  }])).values()];
+  const selectedTeam = assignableTeams.find((team) => team.team_id === selectedTeamId) ?? assignableTeams[0];
+  const teamMembers = projectCandidates.filter((member) => member.team_id === selectedTeam?.team_id);
   const createPlacement = useCreateKanbanTaskPlacement();
-  const createTask = useCreateTask();
+  const createTask = useCreateKanbanCard();
 
   const filtered = unplacedTasks.filter((t) => t.task_name.toLowerCase().includes(search.toLowerCase()));
 
   const reset = () => {
     setSearch("");
     setNewTaskName("");
+    setNewTaskDescription("");
+    setNewTaskLabel("");
     setNewTaskPriority("MEDIUM");
+    setNewTaskStartDate("");
     setNewTaskDueDate("");
+    setNewTaskReminder("none");
     setAssigneeId("");
     setNewTaskType("TASK");
     setChecklistDrafts([]);
@@ -85,8 +90,8 @@ export function AddTaskToColumnDialog({
   }, [assignableTeams, selectedTeamId]);
 
   useEffect(() => {
-    if (!availableMembers.some((member) => member.user_id === assigneeId)) setAssigneeId("");
-  }, [availableMembers, assigneeId]);
+    if (!teamMembers.some((member) => member.user_id === assigneeId)) setAssigneeId("");
+  }, [teamMembers, assigneeId]);
 
   const handleAddExisting = async (task: Task) => {
     if (!columnId) return;
@@ -113,7 +118,15 @@ export function AddTaskToColumnDialog({
       toast.error("Due date is required.");
       return;
     }
-    if (!columnId || !selectedTeam || !availableMembers.some((member) => member.user_id === assigneeId)) return;
+    if (newTaskStartDate && newTaskDueDate < newTaskStartDate) {
+      toast.error("Due date must be on or after the task start date.");
+      return;
+    }
+    if (!newTaskLabel) {
+      toast.error("Choose a task color before creating the task.");
+      return;
+    }
+    if (!columnId || !selectedTeam || !teamMembers.some((member) => member.user_id === assigneeId)) return;
     try {
       const status = (columnName && COLUMN_NAME_TO_STATUS[columnName]) || "TODO";
       const task = await createTask.mutateAsync({
@@ -122,11 +135,15 @@ export function AddTaskToColumnDialog({
         kanban_column_id: columnId,
         kanban_position: nextPosition,
         task_name: newTaskName.trim(),
+        description: newTaskDescription.trim() || null,
+        labels: [newTaskLabel],
         status,
         priority: newTaskPriority,
         due_date: newTaskDueDate || null,
+        reminder_days_before: newTaskReminder === "none" ? null : Number(newTaskReminder) as 0 | 1 | 2 | 7,
         user_id: assigneeId,
         task_type: newTaskType,
+        start_date: newTaskStartDate || null,
         checklist_items: checklistDrafts.map((text) => text.trim()).filter(Boolean).map((text) => ({
           item_id: crypto.randomUUID(),
           text,
@@ -168,14 +185,14 @@ export function AddTaskToColumnDialog({
           >
             Create New
           </button>}
-          <button
+          {canAttachExisting && <button
             onClick={() => setMode("existing")}
             className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${
               mode === "existing" ? "bg-background shadow-sm" : "text-muted-foreground"
             }`}
           >
             Existing Tasks
-          </button>
+          </button>}
         </div>
 
         {mode === "create" && canCreateTask ? (
@@ -196,12 +213,24 @@ export function AddTaskToColumnDialog({
               />
             </div>
 
+            <div className="space-y-1.5">
+              <Label htmlFor="new-task-description">Description</Label>
+              <Textarea
+                id="new-task-description"
+                placeholder="Add task details (optional)"
+                value={newTaskDescription}
+                maxLength={10000}
+                onChange={(event) => setNewTaskDescription(event.target.value)}
+                rows={3}
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Work type</Label>
                 <Select value={newTaskType} onValueChange={(value) => setNewTaskType(value as TaskType)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{["EPIC", "STORY", "TASK", "BUG"].map((type) => <SelectItem key={type} value={type}>{type.charAt(0) + type.slice(1).toLowerCase()}</SelectItem>)}</SelectContent>
+                <SelectContent>{["EPIC", "STORY", "TASK", "BUG", "SPIKE"].map((type) => <SelectItem key={type} value={type}>{type.charAt(0) + type.slice(1).toLowerCase()}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
@@ -220,6 +249,15 @@ export function AddTaskToColumnDialog({
                 </Select>
               </div>
               <div className="space-y-1.5">
+                <Label htmlFor="new-task-start">Start date</Label>
+                <Input
+                  id="new-task-start"
+                  type="date"
+                  value={newTaskStartDate}
+                  onChange={(e) => setNewTaskStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
                 <Label htmlFor="new-task-due">Due date</Label>
                 <Input
                   id="new-task-due"
@@ -230,6 +268,23 @@ export function AddTaskToColumnDialog({
                 />
               </div>
             </div>
+
+            <div className="space-y-1.5">
+              <Label>In-app deadline reminder</Label>
+              <Select value={newTaskReminder} onValueChange={setNewTaskReminder}>
+                <SelectTrigger disabled={!newTaskDueDate}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No reminder</SelectItem>
+                  <SelectItem value="0">On the due date</SelectItem>
+                  <SelectItem value="1">1 day before</SelectItem>
+                  <SelectItem value="2">2 days before</SelectItem>
+                  <SelectItem value="7">1 week before</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Delivered in-app to the assignee and assigned card members.</p>
+            </div>
+
+            <KanbanLabelColorPicker value={newTaskLabel} onChange={setNewTaskLabel} required />
 
             {assignableTeams.length > 1 && <div className="space-y-1.5">
               <Label>Team</Label>
@@ -255,14 +310,13 @@ export function AddTaskToColumnDialog({
             <div className="space-y-1.5">
               <Label>Assign to</Label>
               <Select value={assigneeId} onValueChange={setAssigneeId} disabled={!selectedTeam || membersLoading}>
-                <SelectTrigger><SelectValue placeholder={membersLoading ? "Loading available members…" : "Select an available team member"} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={membersLoading ? "Loading Developers…" : "Select a Developer"} /></SelectTrigger>
                 <SelectContent>
-                  {availableMembers.map((member) => <SelectItem key={member.user_id} value={member.user_id}>{member.name}</SelectItem>)}
-                  {!membersLoading && availableMembers.length === 0 && <SelectItem value="__no_available_members__" disabled>No available team members</SelectItem>}
+                  {teamMembers.map((member) => <SelectItem key={member.user_id} value={member.user_id}>{member.name}</SelectItem>)}
+                  {!membersLoading && teamMembers.length === 0 && <SelectItem value="__no_developers__" disabled>No Developers in this team</SelectItem>}
                 </SelectContent>
               </Select>
-              {!selectedTeam && <p className="text-xs text-muted-foreground">No team is assigned to you for this project.</p>}
-              {selectedTeam && !membersLoading && availableMembers.length === 0 && <p className="text-xs text-muted-foreground">Every member on this team has unfinished work.</p>}
+              {!selectedTeam && !membersLoading && <p className="text-xs text-muted-foreground">No Developers are assigned to a team in this project.</p>}
             </div>
 
             <Button className="w-full" disabled={!selectedTeam || !assigneeId || isSaving} onClick={handleCreateAndAdd}>

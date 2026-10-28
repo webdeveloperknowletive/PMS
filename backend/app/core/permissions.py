@@ -8,7 +8,7 @@ from db.session import get_db
 from app.core.config import API_V1_PREFIX
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ForbiddenException
-from app.modules.roles.model import Permission, RolePermission, UserRole
+from app.modules.roles.model import Permission, RolePermission, UserPermission, UserRole
 from app.modules.users.model import User
 
 
@@ -18,6 +18,7 @@ _RESOURCES: dict[str, tuple[str, tuple[str, ...]]] = {
     "organizations": ("Organization", ("view", "update")),
     "invitations": ("Invitations", ("view", "create", "update", "delete", "resend")),
     "users": ("Users", ("view", "create", "update", "delete", "status.update", "password.update")),
+    "users.permissions": ("User permissions", ("view", "update")),
     "users.profile": ("User profile", ("view", "update")),
     "users.profile_picture": ("Profile picture", ("view", "upload", "delete")),
     "roles": ("Roles", ("view", "create", "update", "delete", "manage")),
@@ -31,6 +32,13 @@ _RESOURCES: dict[str, tuple[str, tuple[str, ...]]] = {
     "tasks.sprints": ("Sprints", ("view", "create", "update", "delete")),
     "tasks.comments": ("Task comments", ("view", "create")),
     "tasks.activity": ("Task activity", ("view",)),
+    "kanban.card_labels": ("Kanban card labels", ("update",)),
+    "kanban.labels": ("Kanban label catalog", ("manage",)),
+    "kanban.card_dates": ("Kanban card dates", ("update",)),
+    "kanban.card_checklists": ("Kanban card checklists", ("update",)),
+    "kanban.card_checklists.items": ("Checklist item details", ("manage",)),
+    "kanban.card_attachments": ("Kanban card attachments", ("view", "upload", "delete")),
+    "kanban.cards": ("Kanban cards", ("create", "details.update", "archive", "restore", "members.manage")),
     "tasks.subtasks": ("Subtasks", ("view",)),
     "tasks.work_sessions": ("Work sessions", ("view", "start", "stop")),
     "tasks.work_time": ("Work time", ("view",)),
@@ -63,8 +71,14 @@ _RESOURCES: dict[str, tuple[str, tuple[str, ...]]] = {
 
 
 PERMISSION_CATALOG = [
-    (f"{resource}.{action}", f"{label}: {action.replace('.', ' ').replace('_', ' ').title()}",
-     f"Allow {action.replace('.', ' ').replace('_', ' ')} for {label.lower()}.", label)
+    (f"{resource}.{action}",
+     "Kanban cards: Manage members" if resource == "kanban.cards" and action == "members.manage" else
+     "Checklist item details: Manage" if resource == "kanban.card_checklists.items" else
+     f"{label}: {action.replace('.', ' ').replace('_', ' ').title()}",
+     "Allow users to add or remove members from Kanban cards." if resource == "kanban.cards" and action == "members.manage" else
+     "Allow users to assign checklist item members and due dates." if resource == "kanban.card_checklists.items" else
+     f"Allow {action.replace('.', ' ').replace('_', ' ')} for {label.lower()}.",
+     label)
     for resource, (label, actions) in _RESOURCES.items()
     for action in actions
 ]
@@ -82,6 +96,7 @@ LEGACY_PERMISSION_ALIASES: dict[str, tuple[str, ...]] = {
     # Grant editors need to read the catalog and current selection to avoid
     # clearing permissions when they only have the update capability.
     "roles.permissions.view": ("roles.permissions.view", "roles.permissions.update"),
+    "users.permissions.view": ("users.permissions.view", "users.permissions.update"),
     "projects.manage": tuple(f"projects.{a}" for a in ("create", "update", "delete")),
     "teams.manage": tuple(f"teams.{a}" for a in ("create", "update", "delete")) + ("teams.leads.create", "teams.leads.delete"),
     "teams.members.manage": tuple(f"teams.members.{a}" for a in ("view", "create", "update", "delete")),
@@ -105,10 +120,29 @@ LEGACY_PERMISSION_ALIASES: dict[str, tuple[str, ...]] = {
 for _resource in ("projects", "teams", "tasks", "workflow", "gantt", "milestones", "documents", "calendar", "reports", "notifications"):
     LEGACY_PERMISSION_ALIASES[f"{_resource}.view"] = (f"{_resource}.view",)
 LEGACY_PERMISSION_ALIASES["kanban.view"] = ("kanban.columns.view", "kanban.tasks.view")
+LEGACY_PERMISSION_ALIASES["tasks.comments.view"] = ("tasks.comments.view", "tasks.comments.create")
+LEGACY_PERMISSION_ALIASES["kanban.cards.create"] = (
+    "kanban.cards.create", "kanban.tasks.create", "tasks.create", "tasks.update", "tasks.delete", "roles.manage",
+)
+LEGACY_PERMISSION_ALIASES["kanban.cards.details.update"] = ("kanban.cards.details.update", "tasks.update", "roles.manage")
+LEGACY_PERMISSION_ALIASES["kanban.cards.archive"] = ("kanban.cards.archive", "kanban.tasks.delete", "kanban.manage", "roles.manage")
+LEGACY_PERMISSION_ALIASES["kanban.cards.restore"] = ("kanban.cards.restore", "kanban.manage", "roles.manage")
+LEGACY_PERMISSION_ALIASES["kanban.cards.members.manage"] = ("kanban.cards.members.manage", "roles.manage")
+LEGACY_PERMISSION_ALIASES["kanban.card_checklists.items.manage"] = ("kanban.card_checklists.items.manage", "roles.manage")
+LEGACY_PERMISSION_ALIASES["kanban.labels.manage"] = ("kanban.labels.manage", "roles.manage")
 # Team dashboards need the read-only team/lead relationships when grants are
 # assigned at the granular members/leads level.
 LEGACY_PERMISSION_ALIASES["teams.view"] = ("teams.view", "teams.members.view", "teams.leads.view")
 LEGACY_PERMISSION_ALIASES["teams.leads.view"] = ("teams.leads.view", "teams.members.view", "teams.view")
+LEGACY_PERMISSION_ALIASES["kanban.card_attachments.view"] = (
+    "kanban.card_attachments.view", "kanban.card_attachments.upload", "kanban.card_attachments.delete",
+    "tasks.update", "tasks.update_assigned", "roles.manage",
+)
+for _feature_permission in (
+    "kanban.card_labels.update", "kanban.card_dates.update", "kanban.card_checklists.update",
+    "kanban.card_attachments.upload", "kanban.card_attachments.delete",
+):
+    LEGACY_PERMISSION_ALIASES[_feature_permission] = (_feature_permission, "tasks.update", "tasks.update_assigned", "roles.manage")
 
 
 def _action_for_method(method: str) -> str:
@@ -156,6 +190,10 @@ def permission_code_for_request(request: Request) -> str | None:
         if len(tail) > 1 and tail[1] == "permissions":
             return f"roles.permissions.{('view' if method == 'GET' else 'update')}"
         return f"roles.{action}"
+    if module == "audit-logs":
+        return "roles.manage"
+    if module == "search":
+        return "tasks.view"
     if module == "ai":
         resource_key = {
             "sprint-plans": "sprint_plans", "risk-predictions": "risk_predictions",
@@ -170,6 +208,10 @@ def permission_code_for_request(request: Request) -> str | None:
                 return f"{resource}.create"
             return f"{resource}.{action}"
     if module == "users":
+        if tail[:2] == ["permissions", "catalog"]:
+            return "users.permissions.view"
+        if len(tail) > 1 and tail[1] == "permissions":
+            return f"users.permissions.{('view' if method == 'GET' else 'update')}"
         if len(tail) > 1 and tail[1] == "profile":
             return f"users.profile.{action}"
         if len(tail) > 1 and tail[1] == "password":
@@ -183,6 +225,24 @@ def permission_code_for_request(request: Request) -> str | None:
         if "members" in tail:
             return f"teams.members.{action}"
     if module == "tasks" and tail:
+        if tail[:2] == ["deadline-reminders", "check"]:
+            return "tasks.view"
+        if "checklist-member-options" in tail:
+            return "kanban.card_checklists.items.manage"
+        if "card-labels" in tail:
+            return "kanban.card_labels.update"
+        if "card-dates" in tail:
+            return "kanban.card_dates.update"
+        if "card-checklist" in tail:
+            return "kanban.card_checklists.update"
+        if "attachments" in tail:
+            if method == "POST":
+                return "kanban.card_attachments.upload"
+            if method == "DELETE":
+                return "kanban.card_attachments.delete"
+            return "kanban.card_attachments.view"
+        if tail[0] == "saved-filters":
+            return "tasks.view"
         resource = tail[0].replace("-", "_")
         if resource in {"work_sessions", "work_time", "sprints", "comments", "activity", "subtasks"}:
             if resource == "work_sessions" and len(tail) > 1 and tail[1] in {"start", "stop"}:
@@ -191,8 +251,20 @@ def permission_code_for_request(request: Request) -> str | None:
         if len(tail) > 1 and tail[1] in {"comments", "activity", "subtasks"}:
             return f"tasks.{tail[1]}.{action}"
     if module == "kanban" and tail:
+        if tail[0] == "labels":
+            return "kanban.tasks.view" if method == "GET" else "kanban.labels.manage"
+        if tail[0] == "cards":
+            if len(tail) > 2 and tail[2] in {"members", "member-options"}:
+                return "kanban.cards.members.manage"
+            if len(tail) > 1 and tail[1] == "archived":
+                return "kanban.tasks.view"
+            if len(tail) > 2 and tail[2] in {"archive", "restore"}:
+                return f"kanban.cards.{tail[2]}"
+            if len(tail) > 1 and tail[1] not in {"archived"}:
+                return "kanban.cards.details.update" if method in {"PUT", "PATCH"} else f"kanban.cards.{action}"
+            return "kanban.cards.create" if method == "POST" else "kanban.tasks.view"
         resource = "columns" if tail[0] == "columns" else "tasks"
-        if resource == "tasks" and ("move" in tail or "approve-review" in tail):
+        if resource == "tasks" and ("move" in tail or "approve-review" in tail or "cancel-review" in tail):
             return "kanban.tasks.move"
         return f"kanban.{resource}.{action}"
     if module == "documentation":
@@ -232,12 +304,20 @@ def has_permission(db: Session, user: User, code: str) -> bool:
     if code == "projects.view":
         # Workspace administrators may read any project in their own tenant.
         candidates = (*candidates, "roles.manage")
-    return db.query(RolePermission.role_id).join(
+    from_role = db.query(RolePermission.role_id).join(
         UserRole, UserRole.role_id == RolePermission.role_id
     ).join(
         Permission, Permission.permission_id == RolePermission.permission_id
     ).filter(
         UserRole.user_id == user.user_id,
+        Permission.code.in_(candidates),
+    ).first() is not None
+    if from_role:
+        return True
+    return db.query(UserPermission.user_permission_id).join(
+        Permission, Permission.permission_id == UserPermission.permission_id
+    ).filter(
+        UserPermission.user_id == user.user_id,
         Permission.code.in_(candidates),
     ).first() is not None
 
@@ -259,11 +339,15 @@ def is_system_role_assigned(db: Session, user: User) -> bool:
 
 
 def get_user_permission_codes(db: Session, user: User) -> list[str]:
-    return [row[0] for row in db.query(Permission.code).join(
+    role_codes = {row[0] for row in db.query(Permission.code).join(
         RolePermission, Permission.permission_id == RolePermission.permission_id
     ).join(
         UserRole, UserRole.role_id == RolePermission.role_id
-    ).filter(UserRole.user_id == user.user_id).distinct().all()]
+    ).filter(UserRole.user_id == user.user_id).distinct().all()}
+    direct_codes = {row[0] for row in db.query(Permission.code).join(
+        UserPermission, Permission.permission_id == UserPermission.permission_id
+    ).filter(UserPermission.user_id == user.user_id).distinct().all()}
+    return sorted(role_codes | direct_codes)
 
 
 def require_permission(code: str):
@@ -370,7 +454,61 @@ async def authorize_api_action(
         and code in {"tasks.view", "tasks.work_sessions.view", "tasks.work_time.view"}
         and has_permission(db, current_user, "kanban.view")
     )
-    if not has_permission(db, current_user, code) and not can_read_assigned_project and not is_assigned_team_lead_create and not is_assigned_work_session_start and not is_kanban_task_data_read:
+    is_authorized_task_reminder_check = (
+        request.method == "POST"
+        and request.url.path.endswith("/tasks/deadline-reminders/check")
+        and any(has_permission(db, current_user, permission) for permission in (
+            "tasks.view", "tasks.team_view", "tasks.manage", "tasks.update",
+            "tasks.update_assigned", "kanban.view", "kanban.move", "roles.manage",
+        ))
+    )
+    is_assigned_kanban_card_detail_update = False
+    if code == "kanban.cards.details.update" and request.method == "PATCH" and has_permission(db, current_user, "tasks.update_assigned"):
+        from app.modules.tasks.model import Task
+        task_id = request.path_params.get("task_id")
+        if task_id:
+            try:
+                parsed_task_id = UUIDType(str(task_id))
+            except (TypeError, ValueError):
+                parsed_task_id = None
+            if parsed_task_id is not None:
+                is_assigned_kanban_card_detail_update = db.query(Task.task_id).filter(
+                    Task.task_id == parsed_task_id,
+                    Task.organization_id == current_user.organization_id,
+                    Task.user_id == current_user.user_id,
+                ).first() is not None
+    is_assigned_review_approver = False
+    if request.method == "POST" and request.url.path.endswith(("/approve-review", "/cancel-review")) and "task_id" in request.path_params:
+        from app.modules.projects.model import Project
+        from app.modules.tasks.model import Task
+        from app.modules.teams.model import Team, TeamLead
+
+        task = db.query(Task).filter(Task.task_id == UUIDType(str(request.path_params["task_id"]))).one_or_none()
+        if task is not None and task.project_id == project_id:
+            is_assigned_review_approver = db.query(Project.project_id).filter(
+                Project.project_id == task.project_id,
+                Project.project_manager_user_id == current_user.user_id,
+            ).first() is not None
+            if not is_assigned_review_approver and request.url.path.endswith("/approve-review") and task.team_id:
+                is_assigned_review_approver = db.query(Team.team_id).join(
+                    TeamLead, TeamLead.team_lead_id == Team.team_lead_id
+                ).filter(Team.team_id == task.team_id, TeamLead.user_id == current_user.user_id).first() is not None
+    is_assigned_project_manager_kanban_move = False
+    kanban_path = request.url.path.split(API_V1_PREFIX.rstrip("/") + "/", 1)[-1].strip("/").split("/")
+    is_card_move_request = (
+        request.method == "PUT" and len(kanban_path) == 3 and kanban_path[:2] == ["kanban", "tasks"]
+    ) or (
+        request.method == "PATCH" and len(kanban_path) == 4 and kanban_path[:2] == ["kanban", "tasks"] and kanban_path[-1] == "move"
+    )
+    if code == "kanban.tasks.move" and is_card_move_request and project_id is not None:
+        from app.modules.projects.model import Project
+
+        is_assigned_project_manager_kanban_move = db.query(Project.project_id).filter(
+            Project.project_id == project_id,
+            Project.project_manager_user_id == current_user.user_id,
+            Project.organization_id == current_user.organization_id,
+        ).first() is not None
+    if not has_permission(db, current_user, code) and not can_read_assigned_project and not is_assigned_team_lead_create and not is_assigned_work_session_start and not is_kanban_task_data_read and not is_authorized_task_reminder_check and not is_assigned_review_approver and not is_assigned_project_manager_kanban_move and not is_assigned_kanban_card_detail_update:
         raise ForbiddenException(message=f"Missing required permission: {code}")
     if project_id is not None and not has_permission(db, current_user, "roles.manage"):
         from app.modules.projects.model import Project
@@ -407,6 +545,16 @@ async def authorize_api_action(
         may_delete_own_team = is_team_lead_for_row and code == "teams.delete" and request.method == "DELETE"
         is_team_creation = request.method == "POST" and request.url.path.rstrip("/").endswith("/teams")
         is_team_lead_task_action = is_project_team_lead and request.url.path.startswith(f"{API_V1_PREFIX}/tasks")
+        is_permitted_kanban_card_action = (
+            request.url.path.startswith(f"{API_V1_PREFIX}/kanban/cards")
+            and code.startswith("kanban.cards.")
+            and has_permission(db, current_user, code)
+        )
+        is_permitted_task_card_feature_action = (
+            request.url.path.startswith(f"{API_V1_PREFIX}/tasks/")
+            and code.startswith("kanban.card_")
+            and has_permission(db, current_user, code)
+        )
         is_team_lead_team_create = is_project_team_lead and is_team_creation
         is_team_lead_review_approval = (
             is_project_team_lead
@@ -434,7 +582,7 @@ async def authorize_api_action(
             ).filter(KanbanTask.kanban_task_id == UUIDType(str(request.path_params["task_id"])), Task.user_id == current_user.user_id).first() is not None
         if manager_id != current_user.user_id and not (
             may_manage_own_team_membership or may_view_own_team or may_update_own_team or may_delete_own_team or is_team_lead_team_create
-            or is_team_lead_task_action or is_team_lead_review_approval or is_member_kanban_move
+            or is_team_lead_task_action or is_team_lead_review_approval or is_member_kanban_move or is_permitted_kanban_card_action or is_permitted_task_card_feature_action or is_assigned_kanban_card_detail_update
         ):
             raise ForbiddenException(message="Only the assigned Project Manager can manage this project's data")
     return current_user
@@ -500,10 +648,13 @@ async def _project_id_for_request(request: Request, db: Session):
             return db.query(Workflow.project_id).filter(Workflow.workflow_id == parse(params["workflow_id"])).scalar()
     if module == "kanban":
         from app.modules.kanban.model import KanbanColumn, KanbanTask
+        if len(segments) > 1 and segments[1] == "cards" and "task_id" in params:
+            from app.modules.tasks.model import Task
+            return db.query(Task.project_id).filter(Task.task_id == parse(params.get("task_id"))).scalar()
         if "column_id" in params:
             return db.query(KanbanColumn.project_id).filter(KanbanColumn.column_id == parse(params["column_id"])).scalar()
         if "task_id" in params:
-            if request.url.path.endswith("/approve-review"):
+            if request.url.path.endswith(("/approve-review", "/cancel-review")):
                 from app.modules.tasks.model import Task
                 return db.query(Task.project_id).filter(Task.task_id == parse(params["task_id"])).scalar()
             return db.query(KanbanColumn.project_id).join(KanbanTask, KanbanTask.column_id == KanbanColumn.column_id).filter(

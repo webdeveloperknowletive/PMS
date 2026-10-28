@@ -19,6 +19,8 @@ class CalendarEventBase(BaseModel):
 
     @model_validator(mode="after")
     def _check_datetime_range(self):
+        if (self.start_datetime.tzinfo is None) != (self.end_datetime.tzinfo is None):
+            raise ValueError("start_datetime and end_datetime must both include a timezone or both omit it")
         if self.end_datetime < self.start_datetime:
             raise ValueError("end_datetime must be on or after start_datetime")
         if self.calendar_scope == "PERSONAL" and self.calendar_owner_id is None:
@@ -39,6 +41,18 @@ class CalendarEventUpdate(BaseModel):
     start_datetime: datetime | None = None
     end_datetime: datetime | None = None
     location: str | None = Field(None, max_length=255)
+
+    @model_validator(mode="after")
+    def _validate_datetime_values(self):
+        for field in ("title", "event_type", "start_datetime", "end_datetime"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} cannot be cleared")
+        if self.start_datetime is not None and self.end_datetime is not None:
+            if (self.start_datetime.tzinfo is None) != (self.end_datetime.tzinfo is None):
+                raise ValueError("start_datetime and end_datetime must both include a timezone or both omit it")
+            if self.end_datetime < self.start_datetime:
+                raise ValueError("end_datetime must be on or after start_datetime")
+        return self
 
 
 class CalendarEventRead(CalendarEventBase):

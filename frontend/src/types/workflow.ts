@@ -1,3 +1,5 @@
+import type { TaskStatus } from "@/lib/constants";
+
 export interface WorkflowBase {
   project_id: string;
   team_lead_id: string;
@@ -6,6 +8,7 @@ export interface WorkflowBase {
   workflow_type: string;
   is_default: boolean;
   status: string;
+  allowed_transitions: Record<TaskStatus, TaskStatus[]>;
 }
 
 export interface WorkflowCreate extends WorkflowBase {}
@@ -17,6 +20,7 @@ export interface WorkflowUpdate {
   workflow_type?: string;
   is_default?: boolean;
   status?: string;
+  allowed_transitions?: Record<TaskStatus, TaskStatus[]>;
 }
 
 export interface Workflow extends WorkflowBase {

@@ -42,6 +42,12 @@ def create_workflow(
     payload: WorkflowCreate,
 ) -> Workflow:
 
+    if payload.is_default:
+        db.query(Workflow).filter(
+            Workflow.project_id == payload.project_id,
+            Workflow.is_default.is_(True),
+        ).update({Workflow.is_default: False}, synchronize_session=False)
+
     workflow = Workflow(**payload.model_dump())
 
     db.add(workflow)
@@ -102,6 +108,7 @@ def get_default_workflow(
             Workflow.project_id == project_id,
             Workflow.is_default.is_(True),
         )
+        .order_by(Workflow.created_at, Workflow.workflow_id)
         .first()
     )
 
@@ -121,7 +128,14 @@ def update_workflow(
     if workflow is None:
         return None
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    changes = payload.model_dump(exclude_unset=True)
+    if changes.get("is_default") is True:
+        db.query(Workflow).filter(
+            Workflow.project_id == workflow.project_id,
+            Workflow.workflow_id != workflow.workflow_id,
+            Workflow.is_default.is_(True),
+        ).update({Workflow.is_default: False}, synchronize_session=False)
+    for field, value in changes.items():
         setattr(workflow, field, value)
 
     db.commit()

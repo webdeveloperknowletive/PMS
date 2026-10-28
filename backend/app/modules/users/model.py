@@ -35,7 +35,11 @@ class User(Base, OrganizationScopedMixin, TimestampMixin):
     user_roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
     team_lead = relationship("TeamLead", back_populates="user", uselist=False, cascade="all, delete-orphan")
     team_memberships = relationship("TeamMember", back_populates="user", cascade="all, delete-orphan")
-    tasks = relationship("Task", back_populates="assignee")
+    tasks = relationship("Task", back_populates="assignee", foreign_keys="Task.user_id")
+    kanban_card_memberships = relationship(
+        "KanbanCardMember", back_populates="user", foreign_keys="KanbanCardMember.user_id",
+        cascade="all, delete-orphan",
+    )
     generated_sprint_plans = relationship("AISprintPlan", back_populates="generated_by_user")
     generated_documents = relationship("AIDocumentGeneration", back_populates="generated_by_user")
     meeting_summaries = relationship("AIMeetingSummary", back_populates="created_by_user")

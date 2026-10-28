@@ -5,11 +5,11 @@ import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import type { GanttTask } from "@/types/gantt";
-import type { Task } from "@/types/task";
+import type { Task, TaskLink } from "@/types/task";
 import type { User } from "@/types/user";
 
 const DAY_WIDTH = 28; // px per day at 100% zoom
-const ROW_HEIGHT = 44;
+const ROW_HEIGHT = 58;
 
 const BAR_COLOR_BY_STATUS: Record<string, string> = {
   TODO: "#94A3B8",
@@ -46,12 +46,14 @@ export function GanttChart({
   entries,
   taskMap,
   userMap,
+  taskLinks,
   onEdit,
   onDelete,
 }: {
   entries: GanttTask[];
   taskMap: Map<string, Task>;
   userMap: Map<string, User>;
+  taskLinks: TaskLink[];
   onEdit?: (entry: GanttTask) => void;
   onDelete?: (entry: GanttTask) => void;
 }) {
@@ -98,6 +100,12 @@ export function GanttChart({
         </div>
         {sorted.map((entry) => {
           const task = taskMap.get(entry.task_id);
+          const blockers = taskLinks.filter((link) => link.link_type === "BLOCKS" && link.target_task_id === entry.task_id).map((link) => `${link.source_task_name}${link.owner_name ? ` (owner: ${link.owner_name})` : ""}`);
+          const blockedTasks = taskLinks.filter((link) => link.link_type === "BLOCKS" && link.source_task_id === entry.task_id).map((link) => `${link.target_task_name}${link.owner_name ? ` (owner: ${link.owner_name})` : ""}`);
+          const dependencyText = [
+            blockers.length ? `Blocked by ${blockers.join(", ")}` : "",
+            blockedTasks.length ? `Blocks ${blockedTasks.join(", ")}` : "",
+          ].filter(Boolean).join(" · ");
           return (
             <div
               key={entry.gantt_id}
@@ -109,6 +117,7 @@ export function GanttChart({
                 <p className="text-xs text-muted-foreground">
                   {formatScheduleDate(entry.start_date)} – {formatScheduleDate(entry.end_date)}
                 </p>
+                {dependencyText && <p className="truncate text-[10px] text-amber-700" title={dependencyText}>{dependencyText}</p>}
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <UserAvatar user={task?.user_id ? userMap.get(task.user_id) : null} showName={false} size="sm" />

@@ -40,13 +40,13 @@ from app.core.permissions import has_permission
 # ==========================================================
 
 def get_team_member_candidates(db: Session, current_user: User) -> list[User]:
-    """Return only active Developer/Tester accounts in this workspace."""
+    """Return only active Developer accounts in this workspace."""
     return db.query(User).join(UserRole, UserRole.user_id == User.user_id).join(
         Role, Role.role_id == UserRole.role_id
     ).options(selectinload(User.user_roles).joinedload(UserRole.role)).filter(
         User.organization_id == current_user.organization_id,
         User.is_active.is_(True),
-        func.lower(Role.role_name).in_(("developer", "tester")),
+        func.lower(Role.role_name) == "developer",
     ).distinct().order_by(User.name.asc()).all()
 
 
@@ -87,7 +87,7 @@ def get_available_team_members(db: Session, team_id: UUID, current_user: User) -
         User.user_id.in_(available_ids),
         User.organization_id == current_user.organization_id,
         User.is_active.is_(True),
-        func.lower(Role.role_name).in_(("developer", "tester")),
+        func.lower(Role.role_name) == "developer",
     ).distinct().order_by(User.name.asc()).all()
 
 

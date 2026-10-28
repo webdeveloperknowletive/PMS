@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MonthGrid } from "@/components/modules/calendar/month-grid";
 import { UpcomingEventsList } from "@/components/modules/calendar/upcoming-events-list";
 import { EventFormDialog } from "@/components/modules/calendar/event-form-dialog";
+import { KanbanCardCalendar } from "@/components/modules/calendar/kanban-card-calendar";
 import { useCalendarEvents } from "@/hooks/queries/use-calendar";
 import { useProjects } from "@/hooks/queries/use-projects";
 import { getEventTypeColor } from "@/lib/event-colors";
@@ -22,6 +23,7 @@ const ALL = "__all__";
 const LEGEND_TYPES = ["Meeting", "Project", "Deadline", "Milestone", "Review", "Planning", "Standup", "Work activity", "Holiday"];
 
 export default function CalendarPage() {
+  const [calendarMode, setCalendarMode] = useState<"events" | "cards">("events");
   const [projectFilter, setProjectFilter] = useState(ALL);
   const [calendarScope, setCalendarScope] = useState<"PERSONAL" | "ORGANIZATION">("PERSONAL");
   const [viewDate, setViewDate] = useState(() => new Date());
@@ -68,14 +70,21 @@ export default function CalendarPage() {
     <div className="space-y-6">
       <PageHeader
         title="Calendar"
-        description="Switch between your personal task calendar and shared organization calendar."
-        actions={canCreateEvent ? (
+        description={calendarMode === "cards" ? "Plan Kanban cards by their start and due dates, and spot deadline conflicts." : "Switch between your personal task calendar and shared organization calendar."}
+        actions={calendarMode === "events" && canCreateEvent ? (
           <Button onClick={() => openCreate()}>
             <Plus className="h-4 w-4" />
             Create Event
           </Button>
         ) : undefined}
       />
+
+      <div className="inline-flex rounded-xl border bg-white p-1 shadow-sm" role="tablist" aria-label="Choose calendar content">
+        <button type="button" role="tab" aria-selected={calendarMode === "events"} onClick={() => setCalendarMode("events")} className={`rounded-lg px-4 py-2 text-sm font-semibold ${calendarMode === "events" ? "bg-violet-600 text-white shadow" : "text-slate-600 hover:bg-slate-50"}`}>Events</button>
+        <button type="button" role="tab" aria-selected={calendarMode === "cards"} onClick={() => setCalendarMode("cards")} className={`rounded-lg px-4 py-2 text-sm font-semibold ${calendarMode === "cards" ? "bg-violet-600 text-white shadow" : "text-slate-600 hover:bg-slate-50"}`}>Kanban Cards</button>
+      </div>
+
+      {calendarMode === "cards" ? <KanbanCardCalendar projects={projects ?? []} /> : <>
 
       <div className="inline-flex rounded-xl border bg-white p-1 shadow-sm" role="tablist" aria-label="Choose calendar">
         <button type="button" role="tab" aria-selected={calendarScope === "PERSONAL"} onClick={() => setCalendarScope("PERSONAL")} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${calendarScope === "PERSONAL" ? "bg-violet-600 text-white shadow" : "text-slate-600 hover:bg-slate-50"}`}><UserRound className="h-4 w-4" /> My Task Calendar</button>
@@ -149,6 +158,7 @@ export default function CalendarPage() {
         defaultDate={prefillDate}
         calendarScope={calendarScope}
       />}
+      </>}
     </div>
   );
 }

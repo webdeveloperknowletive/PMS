@@ -57,6 +57,16 @@ class RolePermissionsUpdate(BaseModel):
     permission_ids: list[uuid.UUID]
 
 
+class UserPermissionsRead(BaseModel):
+    direct: list[PermissionRead]
+    inherited: list[PermissionRead]
+    effective: list[PermissionRead]
+
+
+class UserPermissionsUpdate(BaseModel):
+    permission_ids: list[uuid.UUID] = Field(default_factory=list, max_length=1000)
+
+
 class UserRoleAssignmentsRead(BaseModel):
     user: UserRead
     roles: list[UserRoleRead]

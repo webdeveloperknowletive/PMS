@@ -63,6 +63,7 @@ export function canAccessModule(pathname: string, codes: string[]): boolean {
     "/reports": ["reports.view"],
     "/users": ["users.view"],
     "/roles": ["roles.view"],
+    "/audit-logs": ["roles.manage"],
     "/organization": ["organizations.view"],
   };
   const modulePath = Object.keys(required).find((path) => pathname === path || pathname.startsWith(`${path}/`));

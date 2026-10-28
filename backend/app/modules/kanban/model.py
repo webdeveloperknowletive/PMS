@@ -18,6 +18,7 @@ class KanbanColumn(Base, OrganizationScopedMixin):
     column_name = Column(String(100), nullable=False)
     position = Column(Integer, nullable=False)
     color = Column(String(20), nullable=True)
+    wip_limit = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     project = relationship("Project", back_populates="kanban_columns")
@@ -50,3 +51,42 @@ class KanbanTask(Base, OrganizationScopedMixin):
 
     def __repr__(self) -> str:
         return f"<KanbanTask task_id={self.task_id} column_id={self.column_id}>"
+
+
+class KanbanCardMember(Base, OrganizationScopedMixin):
+    """Additional people assigned to a task card alongside its primary assignee."""
+
+    __tablename__ = "kanban_card_members"
+    __table_args__ = (UniqueConstraint("task_id", "user_id", name="uq_kanban_card_members_task_user"),)
+
+    card_member_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.task_id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    assigned_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    assigned_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    task = relationship("Task", back_populates="kanban_member_assignments")
+    user = relationship("User", foreign_keys=[user_id], back_populates="kanban_card_memberships")
+    assigned_by = relationship("User", foreign_keys=[assigned_by_user_id])
+
+    def __repr__(self) -> str:
+        return f"<KanbanCardMember task_id={self.task_id} user_id={self.user_id}>"
+
+
+class KanbanLabel(Base, OrganizationScopedMixin):
+    """Workspace label definition used to render task labels with a saved color."""
+
+    __tablename__ = "kanban_labels"
+    __table_args__ = (UniqueConstraint("organization_id", "label_key", name="uq_kanban_labels_org_key"),)
+
+    label_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    label_key = Column(String(40), nullable=False)
+    name = Column(String(40), nullable=False)
+    color = Column(String(7), nullable=False, default="#64748B", server_default="#64748B")
+    created_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    created_by = relationship("User", foreign_keys=[created_by_user_id])
+
+    def __repr__(self) -> str:
+        return f"<KanbanLabel {self.name}>"

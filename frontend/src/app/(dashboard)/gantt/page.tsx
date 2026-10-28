@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { GanttChartSquare, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -18,6 +19,7 @@ import { useDeleteGanttTask, useGanttTasks } from "@/hooks/queries/use-gantt";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { GanttTask } from "@/types/gantt";
 import { usePermissions } from "@/hooks/use-permissions";
+import { tasksApi } from "@/lib/api/tasks";
 
 export default function GanttPage() {
   const { canManageGantt } = usePermissions();
@@ -25,6 +27,11 @@ export default function GanttPage() {
   const [projectId, setProjectId] = useState("");
 
   const { data: ganttTasks, isLoading: ganttLoading } = useGanttTasks();
+  const { data: projectTaskLinks = [], isLoading: linksLoading } = useQuery({
+    queryKey: ["project-task-links", projectId],
+    queryFn: () => tasksApi.getProjectLinks(projectId),
+    enabled: !!projectId,
+  });
   const { data: tasks, isLoading: tasksLoading } = useTasks({ limit: 500 });
   const { data: users } = useUsers();
   const deleteMutation = useDeleteGanttTask();
@@ -72,7 +79,7 @@ export default function GanttPage() {
     }
   };
 
-  const isLoading = projectsLoading || ganttLoading || tasksLoading;
+  const isLoading = projectsLoading || ganttLoading || tasksLoading || linksLoading;
   const overallProgress =
     projectEntries.length > 0
       ? Math.round(projectEntries.reduce((sum, e) => sum + Number(e.progress || 0), 0) / projectEntries.length)
@@ -148,7 +155,7 @@ export default function GanttPage() {
           onAction={canManageGantt && schedulableTasks.length > 0 ? openCreate : undefined}
         />
       ) : (
-        <GanttChart entries={projectEntries} taskMap={taskMap} userMap={userMap} onEdit={canManageGantt ? openEdit : undefined} onDelete={canManageGantt ? setDeletingEntry : undefined} />
+        <GanttChart entries={projectEntries} taskMap={taskMap} userMap={userMap} taskLinks={projectTaskLinks} onEdit={canManageGantt ? openEdit : undefined} onDelete={canManageGantt ? setDeletingEntry : undefined} />
       )}
 
       {canManageGantt && <GanttFormDialog

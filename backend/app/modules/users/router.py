@@ -12,11 +12,23 @@ from app.modules.users.schema import UserRead, UserUpdate
 from app.modules.users.permissions import can_manage_users, can_modify_user
 from app.core.permissions import has_permission, is_system_role_assigned, require_any_permission
 from app.core.exceptions import ForbiddenException
+from app.modules.roles.model import Permission, RolePermission, UserPermission, UserRole
+from app.modules.roles.schema import PermissionRead, UserPermissionsRead, UserPermissionsUpdate
 
 router = APIRouter(
     prefix="/users",
     tags=["Users"]
 )
+
+
+@router.get("/permissions/catalog", response_model=list[PermissionRead])
+async def get_user_permission_catalog(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return db.query(Permission).filter(
+        Permission.organization_id == current_user.organization_id,
+    ).order_by(Permission.category, Permission.name).all()
 
 
 @router.get("/", response_model=list[UserRead], status_code=status.HTTP_200_OK,
@@ -47,6 +59,74 @@ async def get_user(
     if target.user_id != current_user.user_id and not is_system_role_assigned(db, current_user) and is_system_role_assigned(db, target):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return target
+
+
+@router.get("/{user_id}/permissions", response_model=UserPermissionsRead)
+async def get_user_permissions(
+    user_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    target = service.get_user(db, user_id)
+    if target.user_id != current_user.user_id and not is_system_role_assigned(db, current_user) and is_system_role_assigned(db, target):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    direct = db.query(Permission).join(
+        UserPermission, UserPermission.permission_id == Permission.permission_id
+    ).filter(
+        UserPermission.user_id == target.user_id,
+    ).order_by(Permission.category, Permission.name).all()
+    inherited = db.query(Permission).join(
+        RolePermission, RolePermission.permission_id == Permission.permission_id
+    ).join(
+        UserRole, UserRole.role_id == RolePermission.role_id
+    ).filter(
+        UserRole.user_id == target.user_id,
+    ).distinct().order_by(Permission.category, Permission.name).all()
+    effective_by_id = {permission.permission_id: permission for permission in (*inherited, *direct)}
+    effective = sorted(effective_by_id.values(), key=lambda permission: (permission.category, permission.name))
+    return {"direct": direct, "inherited": inherited, "effective": effective}
+
+
+@router.put("/{user_id}/permissions", response_model=UserPermissionsRead)
+async def set_user_permissions(
+    user_id: UUID,
+    payload: UserPermissionsUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    target = service.get_user(db, user_id)
+    if target.user_id != current_user.user_id and not is_system_role_assigned(db, current_user) and is_system_role_assigned(db, target):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    requested_ids = set(payload.permission_ids)
+    selected = db.query(Permission).filter(
+        Permission.organization_id == current_user.organization_id,
+        Permission.permission_id.in_(requested_ids),
+    ).all() if requested_ids else []
+    if len(selected) != len(requested_ids):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="One or more permissions are not available in this workspace")
+
+    db.query(UserPermission).filter(UserPermission.user_id == target.user_id).delete(synchronize_session=False)
+    db.add_all(UserPermission(
+        organization_id=current_user.organization_id,
+        user_id=target.user_id,
+        permission_id=permission.permission_id,
+        assigned_by_user_id=current_user.user_id,
+    ) for permission in selected)
+    db.commit()
+
+    direct = sorted(selected, key=lambda permission: (permission.category, permission.name))
+    inherited = db.query(Permission).join(
+        RolePermission, RolePermission.permission_id == Permission.permission_id
+    ).join(
+        UserRole, UserRole.role_id == RolePermission.role_id
+    ).filter(
+        UserRole.user_id == target.user_id,
+    ).distinct().order_by(Permission.category, Permission.name).all()
+    effective_by_id = {permission.permission_id: permission for permission in (*inherited, *direct)}
+    effective = sorted(effective_by_id.values(), key=lambda permission: (permission.category, permission.name))
+    return {"direct": direct, "inherited": inherited, "effective": effective}
 
 
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(can_manage_users)])

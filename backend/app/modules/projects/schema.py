@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -13,7 +14,7 @@ def _validate_status(value: str | None) -> str | None:
 
 
 class ProjectBase(BaseModel):
-    project_name: str = Field(..., max_length=200)
+    project_name: str = Field(..., min_length=2, max_length=200, str_strip_whitespace=True)
     description: str | None = None
     status: str = Field("ACTIVE", max_length=20)
     priority: str = Field("MEDIUM", max_length=20)
@@ -41,8 +42,10 @@ class ProjectBase(BaseModel):
 
 
 class ProjectCreate(ProjectBase):
+    board_template: Literal["STANDARD", "SIMPLE", "BLOCKED"] = "STANDARD"
+    project_template_id: uuid.UUID | None = None
     team_lead_user_id: uuid.UUID
-    project_manager_user_id: uuid.UUID
+    project_manager_user_id: uuid.UUID | None = None
     team_member_user_ids: list[uuid.UUID] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -53,12 +56,14 @@ class ProjectCreate(ProjectBase):
 
 
 class ProjectUpdate(BaseModel):
-    project_name: str | None = Field(None, max_length=200)
+    project_name: str | None = Field(None, min_length=2, max_length=200, str_strip_whitespace=True)
     description: str | None = None
     status: str | None = Field(None, max_length=20)
     priority: str | None = Field(None, max_length=20)
     start_date: date | None = None
     due_date: date | None = None
+    team_lead_user_id: uuid.UUID | None = None
+    team_member_user_ids: list[uuid.UUID] | None = None
 
     @field_validator("status")
     @classmethod
@@ -76,6 +81,11 @@ class ProjectUpdate(BaseModel):
     def check_dates(self):
         if self.start_date and self.due_date and self.due_date < self.start_date:
             raise ValueError("Due date must be on or after the start date")
+        for field in ("project_name", "status", "priority"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} cannot be cleared")
+        if self.team_member_user_ids is not None and len(self.team_member_user_ids) != len(set(self.team_member_user_ids)):
+            raise ValueError("Team members must be unique")
         return self
 
 
@@ -83,6 +93,7 @@ class ProjectRead(ProjectBase):
     model_config = ConfigDict(from_attributes=True)
 
     project_id: uuid.UUID
+    project_key: str
     project_manager_user_id: uuid.UUID | None = None
     created_at: datetime
     updated_at: datetime
@@ -93,3 +104,9 @@ class ProjectAssignmentCandidateRead(BaseModel):
     name: str
     role_names: list[str]
     is_active: bool
+
+
+class ProjectAssignmentRead(BaseModel):
+    team_id: uuid.UUID | None = None
+    team_lead_user_id: uuid.UUID | None = None
+    team_member_user_ids: list[uuid.UUID] = Field(default_factory=list)

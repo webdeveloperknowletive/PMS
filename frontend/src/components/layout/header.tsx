@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { enableNotificationSound, playNotificationSound } from "@/lib/notification-sound";
 import { chatApi } from "@/lib/api/chat";
 import { canAccessModule } from "@/lib/permissions";
+import { searchApi } from "@/lib/api/search";
 
 const DESTINATIONS = [
   { label: "Dashboard", description: "Your project overview", href: "/dashboard", group: "Workspace" },
@@ -53,6 +54,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const displayedRole = roleNames.length ? roleNames.join(", ") : rolesLoading ? "Loading role..." : "No role assigned";
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [chatWindowOpen, setChatWindowOpen] = useState(false);
   const seenNotifications = useRef<{ userId: string; ids: Set<string> } | null>(null);
 
@@ -99,7 +101,18 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     enabled: !!user && permissionCodes.includes("chat.organization_settings.view"),
     refetchInterval: 30_000,
   });
+  const { data: searchResults = [], isFetching: isSearching } = useQuery({
+    queryKey: ["global-search", user?.user_id, debouncedSearch],
+    queryFn: () => searchApi.global(debouncedSearch),
+    enabled: !!user && ["tasks.view", "tasks.team_view", "roles.manage", "users.view", "calendar.view", "chat.messages.view", "documents.view", "reports.view"].some((code) => permissionCodes.includes(code)) && searchOpen && debouncedSearch.length >= 2,
+    staleTime: 15_000,
+  });
   const unreadCount = notifications?.length ?? 0;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     if (!user || !notifications || !toastDurationSetting) return;
@@ -163,6 +176,16 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     router.push(href);
   };
 
+  const openSearchResult = (item: (typeof searchResults)[number]) => {
+    if (item.action === "OPEN_CHAT" && item.conversation_id) {
+      setSearchOpen(false);
+      setSearch("");
+      window.dispatchEvent(new CustomEvent("chat-open-conversation", { detail: { conversationId: item.conversation_id } }));
+      return;
+    }
+    goTo(item.href);
+  };
+
   return (
     <>
       <header className="z-30 flex h-[72px] shrink-0 items-center justify-between gap-3 border-b border-slate-200/70 bg-white/85 px-4 backdrop-blur-xl sm:px-6">
@@ -170,9 +193,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           <Button variant="ghost" size="icon" aria-label="Open navigation" className="shrink-0 lg:hidden" onClick={onMenuClick}>
             <Menu className="h-5 w-5" />
           </Button>
-          <Link href="/dashboard" aria-label="Go to home dashboard" title="Home" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+          {!roleNames.some((role) => role.trim().toLowerCase() === "project manager") && <Link href="/dashboard" aria-label="Go to home dashboard" title="Home" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
             <Home className="h-[18px] w-[18px]" />
-          </Link>
+          </Link>}
           <button type="button" onClick={() => setSearchOpen(true)} className="group flex h-10 w-full max-w-[540px] items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 text-left text-sm text-slate-500 shadow-inner shadow-white transition hover:border-violet-200 hover:bg-white hover:shadow-sm">
             <Search className="h-4 w-4 text-slate-400 group-hover:text-violet-500" />
             <span className="flex-1 truncate">Search anything in SprintIX...</span>
@@ -211,19 +234,29 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           <DialogDescription className="sr-only">Find a page or module in your workspace.</DialogDescription>
           <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
             <Search className="h-5 w-5 text-violet-500" />
-            <Input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search projects, tasks, modules..." className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:border-0 focus-visible:ring-0" />
+            <Input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search tasks, people, events, chat..." className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:border-0 focus-visible:ring-0" />
             <kbd className="rounded-md border bg-slate-50 px-1.5 py-1 text-[10px] text-slate-500">ESC</kbd>
           </div>
           <div className="max-h-[55vh] overflow-y-auto p-2">
-            {destinations.length ? destinations.map((item) => (
+            {search.trim().length >= 2 && <>
+              {isSearching && <p className="px-3 py-2 text-xs text-muted-foreground">Searching workspace records…</p>}
+              {searchResults.map((item) => <button key={`${item.type}:${item.id}`} type="button" onClick={() => openSearchResult(item)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-violet-50 focus:bg-violet-50 focus:outline-none">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700"><Search className="h-4 w-4" /></span>
+                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-800">{item.title}</span><span className="mt-0.5 block truncate text-xs text-slate-500">{item.type} · {item.subtitle}</span></span>
+              </button>)}
+              {!isSearching && searchResults.length === 0 && <p className="px-3 py-2 text-xs text-muted-foreground">No matching workspace records.</p>}
+            </>}
+            {destinations.length ? <>
+              {search.trim().length >= 2 && <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Pages</p>}
+              {destinations.map((item) => (
               <button key={item.href} type="button" onClick={() => goTo(item.href)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-violet-50 focus:bg-violet-50 focus:outline-none">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-700"><ArrowUpRight className="h-4 w-4" /></span>
                 <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-slate-800">{item.label}</span><span className="mt-0.5 block truncate text-xs text-slate-500">{item.description}</span></span>
                 <span className="hidden text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:block">{item.group}</span>
               </button>
-            )) : <p className="px-4 py-10 text-center text-sm text-muted-foreground">No pages match “{search}”.</p>}
+            ))}</> : search.trim().length < 2 ? <p className="px-4 py-10 text-center text-sm text-muted-foreground">Type at least 2 characters to search records.</p> : null}
           </div>
-          <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-3 text-[11px] text-slate-500"><Search className="h-3.5 w-3.5" /> Search all workspace modules</div>
+          <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-3 text-[11px] text-slate-500"><Search className="h-3.5 w-3.5" /> Search records you have permission to view</div>
         </DialogContent>
       </Dialog>
     </>

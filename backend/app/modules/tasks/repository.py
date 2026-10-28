@@ -10,15 +10,18 @@ Data-access layer for the Task model.
 # Import Required Modules
 # ==========================================================
 
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.modules.tasks.model import Task
+from app.modules.tasks.model import Task, TaskLink
 from app.modules.tasks.schema import TaskCreate, TaskUpdate
 from app.modules.teams.model import Team, TeamLead, TeamMember
 from app.modules.projects.model import Project
+from sqlalchemy import func, or_
 
+from app.modules.kanban.model import KanbanColumn, KanbanTask
 
 # ==========================================================
 # Create
@@ -70,6 +73,74 @@ def get_tasks(
         .limit(limit)
         .all()
     )
+
+
+def list_filtered_tasks(
+    query,
+    *,
+    db: Session,
+    skip: int,
+    limit: int,
+    search: str | None = None,
+    project_id: UUID | None = None,
+    assignee_id: UUID | None = None,
+    task_status: str | None = None,
+    priority: str | None = None,
+    component_id: UUID | None = None,
+    release_id: UUID | None = None,
+    label: str | None = None,
+    overdue: bool = False,
+    due_after: date | None = None,
+    due_before: date | None = None,
+    backlog: bool = False,
+    blocked: bool = False,
+) -> list[Task]:
+    """Apply filters to an already permission-scoped task query."""
+    if search:
+        escaped = search.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+        pattern = f"%{escaped}%"
+        query = query.filter(or_(Task.task_name.ilike(pattern, escape="!"), Task.description.ilike(pattern, escape="!")))
+    if project_id:
+        query = query.filter(Task.project_id == project_id)
+    if assignee_id:
+        query = query.filter(Task.user_id == assignee_id)
+    if task_status:
+        query = query.filter(Task.status == task_status)
+    if priority:
+        query = query.filter(Task.priority == priority)
+    if component_id:
+        query = query.filter(Task.component_id == component_id)
+    if release_id:
+        query = query.filter(Task.release_id == release_id)
+    if label:
+        query = query.filter(Task.labels.contains([label.casefold()]))
+    if overdue:
+        query = query.filter(Task.due_date < date.today(), Task.status.notin_(("DONE", "CANCELLED")))
+    if due_after:
+        query = query.filter(Task.due_date >= due_after)
+    if due_before:
+        query = query.filter(Task.due_date <= due_before)
+    if backlog:
+        query = query.filter(Task.status == "TODO", Task.sprint_id.is_(None))
+        return query.join(Project, Project.project_id == Task.project_id).order_by(
+            Project.project_name.asc(), Task.backlog_rank.asc(), Task.created_at.asc(), Task.task_id.asc()
+        ).offset(skip).limit(limit).all()
+    if blocked:
+        open_blocker_targets = db.query(TaskLink.target_task_id).join(
+            Task, Task.task_id == TaskLink.source_task_id,
+        ).filter(
+            TaskLink.link_type == "BLOCKS",
+            Task.status.notin_(("DONE", "CANCELLED")),
+        ).distinct()
+        board_blocked_tasks = db.query(KanbanTask.task_id).join(
+            KanbanColumn, KanbanColumn.column_id == KanbanTask.column_id,
+        ).filter(func.upper(func.trim(KanbanColumn.column_name)) == "BLOCKED").distinct()
+        query = query.filter(or_(
+            Task.status == "BLOCKED",
+            Task.task_id.in_(open_blocker_targets),
+            Task.task_id.in_(board_blocked_tasks),
+        ))
+    return query.order_by(Task.created_at.desc()).offset(skip).limit(limit).all()
 
 
 def get_tasks_for_user(
@@ -288,6 +359,8 @@ def update_task_status(
 def delete_task(
     db: Session,
     task_id: UUID,
+    *,
+    commit: bool = True,
 ) -> bool:
 
     task = db.get(Task, task_id)
@@ -296,6 +369,9 @@ def delete_task(
         return False
 
     db.delete(task)
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
 
     return True

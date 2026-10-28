@@ -30,6 +30,15 @@ class GanttTaskUpdate(BaseModel):
     end_date: date | None = None
     progress: Decimal | None = Field(None, ge=0, le=100)
 
+    @model_validator(mode="after")
+    def _check_date_range_when_both_dates_are_provided(self):
+        for field in ("start_date", "end_date", "progress"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} cannot be cleared")
+        if self.start_date is not None and self.end_date is not None and self.end_date < self.start_date:
+            raise ValueError("end_date must be on or after start_date")
+        return self
+
 
 class GanttTaskRead(GanttTaskBase):
     model_config = ConfigDict(from_attributes=True)

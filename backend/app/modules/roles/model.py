@@ -67,3 +67,16 @@ class RolePermission(Base, OrganizationScopedMixin):
 
     role = relationship("Role", back_populates="permission_links")
     permission = relationship("Permission", back_populates="role_links")
+
+
+class UserPermission(Base, OrganizationScopedMixin):
+    """Additional permission grants assigned directly to one workspace user."""
+
+    __tablename__ = "user_permissions"
+    __table_args__ = (UniqueConstraint("user_id", "permission_id", name="uq_user_permission"),)
+
+    user_permission_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    permission_id = Column(UUID(as_uuid=True), ForeignKey("permissions.permission_id", ondelete="CASCADE"), nullable=False, index=True)
+    assigned_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    assigned_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

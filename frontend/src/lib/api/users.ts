@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import { createCrudApi } from "./crud-factory";
 import type { User, UserCreate, UserUpdate } from "@/types/user";
+import type { Permission, UserPermissions } from "@/types/role";
 
 const base = createCrudApi<User, UserCreate, UserUpdate>("/users", "user_id");
 
@@ -45,4 +46,13 @@ export const usersApi = {
     const { data } = await apiClient.get<Blob>(`/users/${userId}/profile-picture`, { responseType: "blob" });
     return data;
   },
+
+  getPermissionCatalog: async (): Promise<Permission[]> =>
+    (await apiClient.get<Permission[]>("/users/permissions/catalog")).data,
+
+  getPermissions: async (userId: string): Promise<UserPermissions> =>
+    (await apiClient.get<UserPermissions>(`/users/${userId}/permissions`)).data,
+
+  setPermissions: async (userId: string, permission_ids: string[]): Promise<UserPermissions> =>
+    (await apiClient.put<UserPermissions>(`/users/${userId}/permissions`, { permission_ids })).data,
 };

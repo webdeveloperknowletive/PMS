@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { WORKFLOW_STATUSES, WORKFLOW_TYPES } from "@/lib/constants";
+import { TASK_STATUSES, TASK_STATUS_LABEL, WORKFLOW_STATUSES, WORKFLOW_TYPES } from "@/lib/constants";
 import { useCreateWorkflow, useUpdateWorkflow } from "@/hooks/queries/use-workflows";
 import { useProjects } from "@/hooks/queries/use-projects";
 import { useTeamLeads, usePromoteToTeamLead } from "@/hooks/queries/use-teams";
@@ -28,6 +28,16 @@ import { useUsers } from "@/hooks/queries/use-users";
 import { isTeamLeadOnly } from "@/lib/member-visibility";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { Workflow } from "@/types/workflow";
+import type { TaskStatus } from "@/lib/constants";
+
+const DEFAULT_ALLOWED_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
+  TODO: ["IN_PROGRESS", "BLOCKED", "CANCELLED"],
+  IN_PROGRESS: ["TODO", "IN_REVIEW", "BLOCKED", "DONE", "CANCELLED"],
+  IN_REVIEW: ["IN_PROGRESS", "BLOCKED", "DONE"],
+  DONE: ["IN_PROGRESS"],
+  BLOCKED: ["TODO", "IN_PROGRESS", "CANCELLED"],
+  CANCELLED: ["TODO"],
+};
 
 const schema = z.object({
   project_id: z.string().min(1, "Project is required"),
@@ -37,6 +47,7 @@ const schema = z.object({
   lead_user_id: z.string().min(1, "Owner is required"),
   is_default: z.boolean(),
   status: z.enum(WORKFLOW_STATUSES),
+  allowed_transitions: z.record(z.string(), z.array(z.enum(TASK_STATUSES))),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -66,6 +77,8 @@ export function WorkflowFormDialog({
     control,
     reset,
     setError,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -77,6 +90,7 @@ export function WorkflowFormDialog({
       lead_user_id: "",
       is_default: false,
       status: "ACTIVE",
+      allowed_transitions: DEFAULT_ALLOWED_TRANSITIONS,
     },
   });
 
@@ -95,6 +109,7 @@ export function WorkflowFormDialog({
               lead_user_id: existingLeadUserId,
               is_default: workflow.is_default,
               status: workflow.status as (typeof WORKFLOW_STATUSES)[number],
+              allowed_transitions: workflow.allowed_transitions ?? DEFAULT_ALLOWED_TRANSITIONS,
             }
           : {
               project_id: defaultProjectId ?? "",
@@ -104,6 +119,7 @@ export function WorkflowFormDialog({
               lead_user_id: "",
               is_default: false,
               status: "ACTIVE",
+              allowed_transitions: DEFAULT_ALLOWED_TRANSITIONS,
             }
       );
     }
@@ -122,6 +138,7 @@ export function WorkflowFormDialog({
         workflow_type: values.workflow_type,
         is_default: values.is_default,
         status: values.status,
+        allowed_transitions: values.allowed_transitions as Record<TaskStatus, TaskStatus[]>,
       };
 
       if (isEditing && workflow) {
@@ -136,6 +153,8 @@ export function WorkflowFormDialog({
       setError("root", { message: getApiErrorMessage(err) });
     }
   };
+
+  const transitionRules = watch("allowed_transitions");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -268,6 +287,57 @@ export function WorkflowFormDialog({
               />
             </div>
           </div>
+
+          <details className="rounded-md border px-3 py-2">
+            <summary className="cursor-pointer text-sm font-medium">Allowed task status moves</summary>
+            <p className="mt-2 text-xs text-muted-foreground">
+              These rules apply while this is the project&apos;s active default workflow. Review approval rules still apply.
+            </p>
+            <div className="mt-3 max-h-64 overflow-auto">
+              <table className="min-w-[620px] border-collapse text-xs">
+                <thead>
+                  <tr>
+                    <th className="sticky left-0 bg-background p-2 text-left">From \ To</th>
+                    {TASK_STATUSES.map((status) => (
+                      <th key={status} className="p-2 text-center font-medium">{TASK_STATUS_LABEL[status]}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {TASK_STATUSES.map((source) => (
+                    <tr key={source} className="border-t">
+                      <th className="sticky left-0 bg-background p-2 text-left font-medium">
+                        {TASK_STATUS_LABEL[source]}
+                      </th>
+                      {TASK_STATUSES.map((target) => {
+                        const disabled = source === target;
+                        const checked = transitionRules?.[source]?.includes(target) ?? false;
+                        return (
+                          <td key={target} className="p-2 text-center">
+                            <Checkbox
+                              aria-label={`${TASK_STATUS_LABEL[source]} can move to ${TASK_STATUS_LABEL[target]}`}
+                              disabled={disabled}
+                              checked={!disabled && checked}
+                              onCheckedChange={(value) => {
+                                const current = transitionRules?.[source] ?? [];
+                                const next = value
+                                  ? [...current, target]
+                                  : current.filter((status) => status !== target);
+                                setValue("allowed_transitions", { ...transitionRules, [source]: next }, {
+                                  shouldDirty: true,
+                                  shouldValidate: true,
+                                });
+                              }}
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
 
           {errors.root && (
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{errors.root.message}</p>

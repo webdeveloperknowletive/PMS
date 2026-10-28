@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Pencil, Trash2, FolderKanban, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Pencil, Trash2, FolderKanban, Search, Target } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -21,14 +22,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useDeleteProject, useProjects } from "@/hooks/queries/use-projects";
+import { useDeleteProject, useGoalPortfolio, useProjects } from "@/hooks/queries/use-projects";
 import { usePermissions } from "@/hooks/use-permissions";
 import { formatDate } from "@/lib/utils";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { Project } from "@/types/project";
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const { data: projects, isLoading } = useProjects();
+  const { data: goalPortfolio = [] } = useGoalPortfolio();
   const deleteMutation = useDeleteProject();
   const { canManageProjects } = usePermissions();
 
@@ -39,7 +42,7 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "ON_HOLD">("ALL");
 
   const filtered = (projects ?? []).filter((p) =>
-    p.project_name.toLowerCase().includes(search.toLowerCase()) && (statusFilter === "ALL" || p.status === statusFilter)
+    (p.project_name.toLowerCase().includes(search.toLowerCase()) || p.project_key.toLowerCase().includes(search.toLowerCase())) && (statusFilter === "ALL" || p.status === statusFilter)
   );
 
   const total = projects?.length ?? 0;
@@ -102,6 +105,8 @@ export default function ProjectsPage() {
         ))}
       </div>
 
+      {goalPortfolio.length > 0 && <Card><CardContent className="space-y-3 p-4"><div className="flex items-center gap-2"><Target className="h-4 w-4 text-violet-700" /><h2 className="text-sm font-semibold">Goals across your projects</h2><span className="ml-auto text-xs text-muted-foreground">{goalPortfolio.length} goals</span></div><div className="grid gap-2 md:grid-cols-2">{goalPortfolio.slice(0, 6).map((goal) => <Link key={goal.goal_id} href={`/projects/${goal.project_id}#project-goals`} className="rounded-lg border p-3 transition hover:border-violet-300"><div className="flex justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{goal.name}</p><p className="truncate text-xs text-muted-foreground">{goal.project_name}{goal.target_date ? ` · target ${formatDate(goal.target_date)}` : ""}</p></div><span className="shrink-0 text-xs text-muted-foreground">{goal.progress_percent}%</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-violet-600" style={{ width: `${goal.progress_percent}%` }} /></div></Link>)}</div></CardContent></Card>}
+
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -142,14 +147,28 @@ export default function ProjectsPage() {
             </TableHeader>
             <TableBody>
               {filtered.map((project) => (
-                <TableRow key={project.project_id}>
+                <TableRow
+                  key={project.project_id}
+                  className="group cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500"
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`Open project ${project.project_name}`}
+                  onClick={() => router.push(`/projects/${project.project_id}`)}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      router.push(`/projects/${project.project_id}`);
+                    }
+                  }}
+                >
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
                         <FolderKanban className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <Link href={`/projects/${project.project_id}`} className="font-medium text-foreground hover:text-violet-700 hover:underline">{project.project_name}</Link>
+                        <span className="font-medium text-foreground group-hover:text-violet-700"><span className="mr-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">{project.project_key}</span>{project.project_name}</span>
                         {project.description && (
                           <p className="line-clamp-1 max-w-xs text-xs text-muted-foreground">
                             {project.description}
@@ -166,8 +185,8 @@ export default function ProjectsPage() {
                   {canManageProjects && (
                     <TableCell>
                       <div className="flex flex-nowrap items-center gap-1">
-                          <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit project" title="Edit project" onClick={() => openEdit(project)}><Pencil className="h-4 w-4" /></Button>
-                          <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete project" title="Delete project" onClick={() => setDeletingProject(project)}><Trash2 className="h-4 w-4" /></Button>
+                          <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit project" title="Edit project" onClick={(event) => { event.stopPropagation(); openEdit(project); }}><Pencil className="h-4 w-4" /></Button>
+                          <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete project" title="Delete project" onClick={(event) => { event.stopPropagation(); setDeletingProject(project); }}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </TableCell>
                   )}

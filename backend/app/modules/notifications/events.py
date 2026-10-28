@@ -8,6 +8,7 @@ from app.core.logger import logger
 from app.modules.notifications.model import Notification
 from app.modules.roles.model import Permission, RolePermission, UserRole
 from app.modules.teams.model import Team, TeamLead, TeamMember
+from app.modules.users.model import User
 
 
 def project_recipient_ids(db: Session, project_id: UUID) -> set[UUID]:
@@ -28,13 +29,15 @@ def project_recipient_ids(db: Session, project_id: UUID) -> set[UUID]:
     } | {row[0] for row in manager_ids.all()}
 
 
-def users_with_permissions(db: Session, *codes: str) -> set[UUID]:
+def users_with_permissions(db: Session, *codes: str, organization_id: UUID | None = None) -> set[UUID]:
     rows = db.query(UserRole.user_id).join(
         RolePermission, RolePermission.role_id == UserRole.role_id
     ).join(
         Permission, Permission.permission_id == RolePermission.permission_id
-    ).filter(Permission.code.in_(codes)).distinct().all()
-    return {row[0] for row in rows}
+    ).join(User, User.user_id == UserRole.user_id).filter(Permission.code.in_(codes))
+    if organization_id is not None:
+        rows = rows.filter(User.organization_id == organization_id)
+    return {row[0] for row in rows.distinct().all()}
 
 
 def notify_users(

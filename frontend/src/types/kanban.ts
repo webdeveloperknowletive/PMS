@@ -3,6 +3,7 @@ export interface KanbanColumnBase {
   column_name: string;
   position: number;
   color?: string | null;
+  wip_limit?: number | null;
 }
 
 export interface KanbanColumnCreate extends KanbanColumnBase {}
@@ -11,6 +12,7 @@ export interface KanbanColumnUpdate {
   column_name?: string;
   position?: number;
   color?: string | null;
+  wip_limit?: number | null;
 }
 
 export interface KanbanColumn extends KanbanColumnBase {
@@ -43,4 +45,30 @@ export interface KanbanTaskMovePayload {
 export interface KanbanTask extends KanbanTaskBase {
   kanban_task_id: string;
   moved_at: string;
+}
+
+export interface KanbanCardMemberOption {
+  user_id: string;
+  name: string;
+  profile_picture_url?: string | null;
+  is_active: boolean;
+  is_eligible: boolean;
+}
+
+export interface KanbanLabel {
+  label_id: string;
+  label_key: string;
+  name: string;
+  color: string;
+  created_at: string;
+}
+
+export interface KanbanLabelCreate {
+  name: string;
+  color: string;
+}
+
+export interface KanbanLabelUpdate {
+  name?: string;
+  color?: string;
 }

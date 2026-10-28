@@ -61,6 +61,14 @@ def create_calendar_event(db: Session, payload: CalendarEventCreate, actor: User
 
 def update_calendar_event(db: Session, event_id: UUID, payload: CalendarEventUpdate, actor: User) -> CalendarEvent:
     """Update an existing calendar event, or raise 404."""
+    current = get_calendar_event(db, event_id, actor)
+    values = payload.model_dump(exclude_unset=True)
+    start_datetime = values.get("start_datetime", current.start_datetime)
+    end_datetime = values.get("end_datetime", current.end_datetime)
+    if (start_datetime.tzinfo is None) != (end_datetime.tzinfo is None):
+        raise HTTPException(status_code=400, detail="Start and end times must use compatible timezone formats")
+    if end_datetime < start_datetime:
+        raise HTTPException(status_code=400, detail="End time must be on or after start time")
     event = repository.update_calendar_event(db, event_id, payload)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Calendar event not found")

@@ -25,9 +25,10 @@ router = APIRouter(
 async def get_gantt_tasks(
     skip: int = 0,
     limit: int = 100,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_gantt_tasks(db, skip=skip, limit=limit)
+    return service.get_gantt_tasks(db, current_user=current_user, skip=skip, limit=limit)
 
 
 @router.get(
@@ -38,9 +39,10 @@ async def get_gantt_tasks(
 )
 async def get_gantt_task(
     gantt_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_gantt_task(db, gantt_id)
+    return service.get_gantt_task(db, gantt_id, current_user)
 
 
 @router.post(
