@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.modules.auth.service import decode_token
 from app.modules.users.model import User
+from app.modules.platform.model import PlatformAdmin
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/api/v1/auth/login",
@@ -73,6 +74,27 @@ def get_current_active_user(
 ) -> User:
 
     return current_user
+
+
+def get_current_platform_admin(
+    request: Request,
+    token: str = Security(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> PlatformAdmin:
+    payload = decode_token(token, expected_purpose="platform_access")
+    try:
+        admin_id = UUID(payload["sub"])
+    except (KeyError, ValueError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid platform token")
+    admin = db.get(PlatformAdmin, admin_id)
+    if admin is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Platform admin not found")
+    if not admin.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive platform account")
+    request.state.audit_actor = admin.name
+    request.state.audit_actor_id = str(admin.platform_admin_id)
+    request.state.audit_roles = ["Super Admin"]
+    return admin
 
 
 # Authorization is handled by app.core.permissions.require_permission,

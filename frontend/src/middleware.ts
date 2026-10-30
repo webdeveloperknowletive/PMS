@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 
 const AUTH_PATHS = [
   "/login",
+  "/platform/login",
   "/register",
   "/forgot-password",
   "/reset-password",
@@ -65,7 +66,7 @@ export function middleware(request: NextRequest) {
   }
 
   if (!hasSession && !isPublicPath && pathname !== "/" && !isPublicAsset) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = new URL(pathname.startsWith("/platform") ? "/platform/login" : "/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     if (workspaceSlug) loginUrl.searchParams.set("workspace_slug", workspaceSlug);
     return NextResponse.redirect(loginUrl);

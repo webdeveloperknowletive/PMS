@@ -34,6 +34,10 @@ Keep these current backend modules and build on them:
 
 Keep the seeded role names `Admin`, `Project Manager`, `Team Lead`, `Developer`, `Tester`, and `Viewer` as compatible presets. Add new capabilities and scopes around them rather than renaming or removing them.
 
+### Workspace role access model
+
+Workspace module visibility is controlled by workspace-scoped `modules.<module>.access` permission records stored in the existing permission catalog and assigned through `RolePermission` or `UserPermission`. These module grants are independent of action grants such as `tasks.create`: opening a module does not automatically permit actions, and action grants do not bypass a missing module grant. The workspace role editor manages both sets. Frontend navigation and route guards use effective grants, while backend endpoints require the module grant and their existing action grant. Platform Super Admin accounts and routes use their separate authentication and are not part of this workspace permission catalog. Existing workspaces are backfilled idempotently from their current action grants without replacing custom role configurations.
+
 ## Development phases
 
 ### Phase 0: Protect the current application

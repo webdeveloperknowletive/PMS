@@ -44,30 +44,21 @@ export function getCapabilities(codes: string[]): Capabilities {
 }
 
 export function canAccessModule(pathname: string, codes: string[]): boolean {
-  if (pathname === "/dashboard") return codes.length > 0;
-  const required: Record<string, string[]> = {
-    "/ai/sprint-planning": ["ai.sprint_plans.view"],
-    "/ai/task-estimation": ["ai.task_estimations.view"],
-    "/ai/risk-prediction": ["ai.risk_predictions.view"],
-    "/ai/doc-generator": ["ai.documentation.view"],
-    "/ai/meeting-summary": ["ai.meeting_summaries.view"],
-    "/projects": ["projects.view", "tasks.view", "tasks.comments.view", "gantt.view", "roles.manage"],
-    "/tasks": ["tasks.view"],
-    "/teams": ["teams.view", "teams.members.view"],
-    "/milestones": ["milestones.view", "gantt.view"],
-    "/calendar": ["calendar.view"],
-    "/documentation": ["documents.view"],
-    "/workflow": ["workflow.view"],
-    "/kanban": ["kanban.columns.view", "kanban.tasks.view"],
-    "/gantt": ["gantt.view"],
-    "/reports": ["reports.view"],
-    "/users": ["users.view"],
-    "/roles": ["roles.view"],
-    "/audit-logs": ["roles.manage"],
-    "/organization": ["organizations.view"],
+  if (pathname === "/settings") return true; // personal account settings
+  const modules: Record<string, string> = {
+    "/dashboard": "dashboard", "/projects": "projects", "/tasks": "tasks", "/teams": "teams",
+    "/milestones": "milestones", "/calendar": "calendar", "/documentation": "documentation",
+    "/workflow": "workflow", "/kanban": "kanban", "/gantt": "gantt", "/reports": "reports",
+    "/ai": "ai_studio", "/notifications": "notifications", "/users": "users", "/roles": "roles",
+    "/audit-logs": "audit_log", "/organization": "organization", "/platform": "platform",
   };
-  const modulePath = Object.keys(required).find((path) => pathname === path || pathname.startsWith(`${path}/`));
-  return pathname === "/roles" && codes.includes("roles.manage") || !modulePath || required[modulePath].some((code) => codes.includes(code));
+  const route = Object.keys(modules).find((path) => pathname === path || pathname.startsWith(`${path}/`));
+  if (!route) return true;
+  const accessCode = `modules.${modules[route]}.access`;
+  // Keep a safe home page when an administrator deliberately removes every
+  // workspace module. It contains no permission bypass for module APIs.
+  if (route === "/dashboard" && !codes.some((code) => code.startsWith("modules.") && code.endsWith(".access"))) return true;
+  return codes.includes(accessCode);
 }
 
 export function canUpdateTask(assigneeId: string | null | undefined, userId: string, codes: string[]): boolean {

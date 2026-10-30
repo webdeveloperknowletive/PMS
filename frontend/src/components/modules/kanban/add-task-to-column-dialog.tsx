@@ -15,7 +15,7 @@ import { useCreateKanbanCard, useCreateKanbanTaskPlacement } from "@/hooks/queri
 import { useProjectAssigneeCandidates } from "@/hooks/queries/use-tasks";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { TASK_PRIORITIES, PRIORITY_LABEL, COLUMN_NAME_TO_STATUS, type TaskPriority } from "@/lib/constants";
-import type { Task, TaskType } from "@/types/task";
+import type { Task, TaskAssigneeCandidate, TaskType } from "@/types/task";
 
 export function AddTaskToColumnDialog({
   open,
@@ -55,12 +55,15 @@ export function AddTaskToColumnDialog({
   const { data: projectCandidates = [], isLoading: membersLoading } = useProjectAssigneeCandidates(
     open && mode === "create" ? projectId : undefined,
   );
-  const assignableTeams = [...new Map(projectCandidates.map((member) => [member.team_id, {
+  const projectTeamCandidates = projectCandidates.filter(
+    (member): member is TaskAssigneeCandidate & { team_id: string; team_name: string } => member.team_id !== null && member.team_name !== null,
+  );
+  const assignableTeams = [...new Map(projectTeamCandidates.map((member) => [member.team_id, {
     team_id: member.team_id,
     team_name: member.team_name,
   }])).values()];
   const selectedTeam = assignableTeams.find((team) => team.team_id === selectedTeamId) ?? assignableTeams[0];
-  const teamMembers = projectCandidates.filter((member) => member.team_id === selectedTeam?.team_id);
+  const teamMembers = projectTeamCandidates.filter((member) => member.team_id === selectedTeam?.team_id);
   const createPlacement = useCreateKanbanTaskPlacement();
   const createTask = useCreateKanbanCard();
 

@@ -61,7 +61,7 @@ apiClient.interceptors.response.use(
     }
 
     // Don't try to refresh when the failing call *is* the auth endpoints.
-    const publicAuthEndpoints = ["/auth/login", "/auth/refresh-token", "/auth/forgot-password", "/auth/reset-password", "/auth/verify-email", "/auth/resend-verification", "/organizations/register", "/organizations/invitations/accept"];
+    const publicAuthEndpoints = ["/auth/login", "/auth/platform-login", "/auth/refresh-token", "/auth/forgot-password", "/auth/reset-password", "/auth/verify-email", "/auth/resend-verification", "/organizations/register", "/organizations/invitations/accept"];
     if (publicAuthEndpoints.some((endpoint) => originalRequest.url?.includes(endpoint))) {
       return Promise.reject(error);
     }

@@ -45,6 +45,7 @@ export function KanbanCard({
   labelNames,
   onCardFeature,
   isInWorkSession = false,
+  isAwaitingPmApproval = false,
   workTime,
   clockNow,
 }: {
@@ -76,6 +77,7 @@ export function KanbanCard({
   labelNames?: Record<string, string>;
   onCardFeature?: (task: Task, feature: KanbanCardFeature) => void;
   isInWorkSession?: boolean;
+  isAwaitingPmApproval?: boolean;
   workTime?: TaskWorkTime;
   clockNow?: number;
 }) {
@@ -206,7 +208,7 @@ export function KanbanCard({
           <div className={`mt-2 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold ${workTime?.is_tracking ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200" : elapsed > 0 ? "bg-slate-100 text-slate-700" : "bg-slate-50 text-slate-500"}`}>
             <Timer className="h-3.5 w-3.5 shrink-0" />
             <span className="font-mono tabular-nums">{timerText}</span>
-            <span className="ml-auto">{workTime?.is_tracking ? "Running" : workTime?.pending_review_seconds ? "Pending PM approval" : elapsed > 0 ? "Saved" : "Not started"}</span>
+            <span className="ml-auto">{workTime?.is_tracking ? "Running" : workTime?.pending_review_seconds ? isAwaitingPmApproval ? "Pending PM approval" : "Logged" : elapsed > 0 ? "Saved" : "Not started"}</span>
           </div>
 
           <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2" aria-label="Assigned card members">

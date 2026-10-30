@@ -14,7 +14,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function bootstrap() {
       try {
         if (tokenStorage.getAccessToken()) {
-          const user = await authApi.getMe();
+          const user = window.location.pathname.startsWith("/platform")
+            ? await authApi.getPlatformMe()
+            : await authApi.getMe();
           setUser(user);
         }
       } catch {

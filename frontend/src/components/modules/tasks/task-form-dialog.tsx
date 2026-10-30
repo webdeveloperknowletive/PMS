@@ -35,6 +35,12 @@ const NO_REMINDER = "none";
 const TASK_TYPES = ["EPIC", "STORY", "TASK", "BUG", "SPIKE"] as const;
 const TASK_TYPE_VALUES = [...TASK_TYPES, "SUBTASK"] as const;
 
+function isValidDateInput(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 const schema = z.object({
   project_id: z.string().min(1, "Project is required"),
   goal_id: z.string().optional(),
@@ -47,15 +53,8 @@ const schema = z.object({
   priority: z.enum(TASK_PRIORITIES),
   task_type: z.enum(TASK_TYPE_VALUES),
   user_id: z.string().optional(),
-  start_date: z.string().optional().refine((value) => {
-    if (!value) return true;
-    const date = new Date(`${value}T00:00:00`);
-    return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
-  }, "Enter a valid start date"),
-  due_date: z.string().min(1, "Due date is required").refine((value) => {
-    const date = new Date(`${value}T00:00:00`);
-    return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
-  }, "Enter a valid due date"),
+  start_date: z.string().optional().refine((value) => !value || isValidDateInput(value), "Enter a valid start date"),
+  due_date: z.string().min(1, "Due date is required").refine(isValidDateInput, "Enter a valid due date"),
   reminder_days_before: z.enum([NO_REMINDER, "0", "1", "2", "7"]),
   checklist_items: z.array(z.object({
     item_id: z.string(),
@@ -107,7 +106,7 @@ export function TaskFormDialog({
       status: "TODO",
       priority: "MEDIUM",
       task_type: "TASK",
-      user_id: UNASSIGNED,
+      user_id: "",
       start_date: "",
       due_date: "",
       reminder_days_before: NO_REMINDER,
@@ -132,13 +131,13 @@ export function TaskFormDialog({
   const assigneeTeam = assigneeOptions.find((member) => member.user_id === selectedAssigneeId);
 
   useEffect(() => {
-    if (!isEditing && selectedProjectId) setValue("user_id", UNASSIGNED);
+    if (!isEditing && selectedProjectId) setValue("user_id", "");
   }, [isEditing, selectedProjectId, setValue]);
 
   useEffect(() => {
     if (isEditing || selectedAssigneeId === UNASSIGNED || !selectedAssigneeId) return;
     if (!assigneeOptions.some((member) => member.user_id === selectedAssigneeId)) {
-      setValue("user_id", UNASSIGNED);
+      setValue("user_id", "");
     }
   }, [isEditing, selectedAssigneeId, assigneeOptions, setValue]);
   useEffect(() => {
@@ -194,7 +193,7 @@ export function TaskFormDialog({
               status: "TODO",
               priority: "MEDIUM",
               task_type: "TASK",
-              user_id: UNASSIGNED,
+              user_id: "",
               start_date: "",
               due_date: "",
               reminder_days_before: NO_REMINDER,
@@ -216,6 +215,10 @@ export function TaskFormDialog({
   }, [customFieldsFetched, getValues, open, projectCustomFields, selectedProjectId, setValue]);
 
   const onSubmit = async (values: FormValues) => {
+    if (!isEditing && (!values.user_id || values.user_id === UNASSIGNED)) {
+      setError("user_id", { message: "Choose an assignee before creating the task." });
+      return;
+    }
     const labels = [...new Set((values.labels ?? "").split(",").map((label) => label.trim().toLocaleLowerCase()).filter(Boolean))];
     if (!isEditing && labels.length === 0) {
       setError("labels", { message: "Choose a task color before creating the task." });
@@ -442,13 +445,13 @@ export function TaskFormDialog({
                 name="user_id"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange} disabled={!selectedProjectId || assigneesLoading}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Unassigned" />
+                    <SelectTrigger aria-invalid={!!errors.user_id}>
+                      <SelectValue placeholder={isEditing ? "Unassigned" : "Select a Developer or Tester"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+                      {isEditing && <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>}
                       {task?.user_id && !assigneeOptions.some((user) => user.user_id === task.user_id) && (
-                        <SelectItem value={task.user_id}>
+                        <SelectItem value={task.user_id} disabled>
                           {task.assignee_name ?? "Assigned member"} (current assignee)
                         </SelectItem>
                       )}
@@ -461,8 +464,9 @@ export function TaskFormDialog({
                   </Select>
                 )}
               />
+              {errors.user_id && <p className="text-xs text-destructive">{errors.user_id.message}</p>}
               <p className="text-xs text-muted-foreground">
-                {!selectedProjectId ? "Select a project to load its developers." : assigneesLoading ? "Loading project developers…" : assigneeOptions.length ? "Only developers assigned to a team in this project are listed." : "No developers are assigned to a team in this project yet."}
+                {!selectedProjectId ? "Select a project to load its Developers and Testers." : assigneesLoading ? "Loading project assignees…" : assigneeOptions.length ? "Only active Developers and Testers are listed. Team Leads see members of the teams they lead." : "No eligible Developers or Testers are available for this project."}
               </p>
             </div>
           </div>

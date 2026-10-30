@@ -34,7 +34,12 @@ async def get_roles(
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_roles(db, skip=skip, limit=limit)
+    roles = service.get_roles(db, skip=skip, limit=limit)
+    # Super Admin is a developer-company platform role, not a customer
+    # workspace role. Keep it out of workspace role administration.
+    if not any(assignment.role and assignment.role.role_name == "Super Admin" for assignment in current_user.user_roles):
+        roles = [role for role in roles if role.role_name != "Super Admin"]
+    return roles
 
 
 @router.get("/permissions", response_model=list[PermissionRead], status_code=status.HTTP_200_OK)

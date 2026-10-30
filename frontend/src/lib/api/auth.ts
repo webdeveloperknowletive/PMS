@@ -32,6 +32,17 @@ export const authApi = {
     });
     return data;
   },
+  platformLogin: async (username: string, password: string): Promise<LoginResponse> => {
+    const form = new URLSearchParams();
+    form.append("username", username);
+    form.append("password", password);
+    const { data } = await apiClient.post<LoginResponse>("/auth/platform-login", form, { headers: { "Content-Type": "application/x-www-form-urlencoded" } });
+    return data;
+  },
+  platformLogout: async (): Promise<SimpleMessageResponse> => {
+    const { data } = await apiClient.post<SimpleMessageResponse>("/auth/platform/logout");
+    return data;
+  },
 
   register: async (payload: RegisterRequest): Promise<RegisterResponse> => {
     const { data } = await apiClient.post<RegisterResponse>("/organizations/register", {
@@ -77,6 +88,10 @@ export const authApi = {
 
   getMe: async (): Promise<User> => {
     const { data } = await apiClient.get<User>("/auth/me", { timeout: SESSION_REQUEST_TIMEOUT_MS });
+    return data;
+  },
+  getPlatformMe: async (): Promise<User> => {
+    const { data } = await apiClient.get<User>("/auth/platform/me", { timeout: SESSION_REQUEST_TIMEOUT_MS });
     return data;
   },
 };

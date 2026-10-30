@@ -42,6 +42,7 @@ const ADMIN_MODULES = [
   { label: "Audit Log", href: "/audit-logs", icon: Activity },
 ];
 const ORGANIZATION_MODULE = { label: "Organization", href: "/organization", icon: Building2 };
+const PLATFORM_MODULE = { label: "Platform administration", href: "/platform", icon: Building2 };
 
 function NavLink({ href, label, icon: Icon, onClick }: {
   href: string; label: string; icon: LucideIcon; onClick?: () => void;
@@ -70,9 +71,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
   const permissions = usePermissions();
   const { canManageOrganization } = permissions;
+  const isPlatformAdmin = permissions.roleNames.some((role) => role.trim().toLowerCase() === "super admin");
   const { data: organization } = useCurrentOrganization();
   const close = () => onClose?.();
   const canOpen = (href: string) => canAccessModule(href, permissions.permissionCodes);
+  const firstAvailableHref = [...CORE_MODULES.slice(1), ...AI_MODULES, ...ADMIN_MODULES, ORGANIZATION_MODULE]
+    .find((item) => canOpen(item.href))?.href ?? "/dashboard";
+  const homeHref = canOpen("/dashboard") ? "/dashboard" : firstAvailableHref;
 
   return (
     <>
@@ -82,7 +87,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
         open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         <div className="flex h-[76px] shrink-0 items-center justify-between border-b border-white/[0.07] px-5">
-          <Link href="/dashboard" onClick={close} className="flex items-center gap-3">
+          <Link href={homeHref} onClick={close} className="flex items-center gap-3">
             <div className="h-10 w-10 shrink-0 overflow-hidden rounded-2xl bg-white p-0.5 shadow-lg shadow-violet-950/40 ring-1 ring-white/20">
               <img src="/sprintix-logo-hd.png" alt="SprintIX logo" className="h-full w-full rounded-[14px] object-contain" />
             </div>
@@ -95,20 +100,24 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
         </div>
 
         <nav className="scrollbar-thin flex-1 overflow-y-auto px-3 pb-5 pt-3">
-          <div className="space-y-1"><NavLink {...CORE_MODULES[0]} onClick={close} /></div>
+          {canOpen(CORE_MODULES[0].href) && <div className="space-y-1"><NavLink {...CORE_MODULES[0]} onClick={close} /></div>}
           <SectionLabel>Workspace</SectionLabel>
           <div className="space-y-1">{CORE_MODULES.slice(1).filter((item) => canOpen(item.href)).map((item) => <NavLink key={item.href} {...item} onClick={close} />)}</div>
           {AI_MODULES.some((item) => canOpen(item.href)) && <><SectionLabel>AI Studio</SectionLabel>
           <div className="space-y-1">{AI_MODULES.filter((item) => canOpen(item.href)).map((item) => <NavLink key={item.href} {...item} onClick={close} />)}</div></>}
           <SectionLabel>Updates</SectionLabel>
-          <div className="space-y-1"><NavLink href="/notifications" label="Notifications" icon={Bell} onClick={close} /></div>
+          {canOpen("/notifications") && <div className="space-y-1"><NavLink href="/notifications" label="Notifications" icon={Bell} onClick={close} /></div>}
           {ADMIN_MODULES.some((item) => canOpen(item.href)) && <>
             <SectionLabel>Administration</SectionLabel>
             <div className="space-y-1">{ADMIN_MODULES.filter((item) => canOpen(item.href)).map((item) => <NavLink key={item.href} {...item} onClick={close} />)}</div>
           </>}
-          {canManageOrganization && <>
+          {canManageOrganization && canOpen(ORGANIZATION_MODULE.href) && <>
             <SectionLabel>Workspace settings</SectionLabel>
             <div className="space-y-1"><NavLink {...ORGANIZATION_MODULE} onClick={close} /></div>
+          </>}
+          {isPlatformAdmin && <>
+            <SectionLabel>Platform administration</SectionLabel>
+            <div className="space-y-1"><NavLink {...PLATFORM_MODULE} onClick={close} /></div>
           </>}
         </nav>
 

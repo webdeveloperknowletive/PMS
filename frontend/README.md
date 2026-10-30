@@ -11,7 +11,11 @@ npm run dev
 ```
 
 Backend must be running with CORS allowing this app's origin (see `backend/app/core/config.py`).
-Default expected backend URL: `http://localhost:8001/api/v1`.
+Default expected backend URL: `http://localhost:8000/api/v1`.
+
+## Workspace permissions
+
+Workspace roles have separate database-backed module grants (`modules.<module>.access`) and action grants (for example, `tasks.create`). The Roles & Permissions editor manages both. Module grants control navigation and route access; action grants continue to control operations within an enabled module. Effective grants combine role permissions and direct user permissions. Platform Super Admin access remains on its separate platform flow.
 
 ## What this mirrors from the backend
 

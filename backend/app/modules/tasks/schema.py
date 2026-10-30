@@ -24,8 +24,8 @@ class TaskAssigneeCandidateRead(BaseModel):
     user_id: uuid.UUID
     name: str
     role_name: str = "Developer"
-    team_id: uuid.UUID
-    team_name: str
+    team_id: uuid.UUID | None = None
+    team_name: str | None = None
 
 
 class TaskCardMemberRead(BaseModel):
@@ -79,7 +79,9 @@ class TaskBase(BaseModel):
 
 
 class TaskCreate(TaskBase):
-    labels: list[str] = Field(..., min_length=1, max_length=20)
+    # Labels are optional at creation; an empty list means the task starts
+    # without labels and can be edited later.
+    labels: list[str] = Field(default_factory=list, max_length=20)
     kanban_column_id: uuid.UUID | None = None
     kanban_position: int | None = Field(None, ge=0)
 

@@ -63,8 +63,8 @@ export interface TaskAssigneeCandidate {
   user_id: string;
   name: string;
   role_name: string;
-  team_id: string;
-  team_name: string;
+  team_id: string | null;
+  team_name: string | null;
 }
 
 export interface TaskCreate extends TaskBase {

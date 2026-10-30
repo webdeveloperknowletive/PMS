@@ -179,6 +179,7 @@ export function KanbanColumn({
                 labelNames={labelNames}
                 onCardFeature={onCardFeature}
                 isInWorkSession={activeTaskIds?.has(card.task.task_id)}
+                isAwaitingPmApproval={card.task.status === "IN_REVIEW" && isReviewColumn}
                 workTime={taskWorkTimes?.get(card.task.task_id)}
                 clockNow={clockNow}
               />

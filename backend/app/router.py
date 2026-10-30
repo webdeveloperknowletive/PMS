@@ -20,6 +20,7 @@ from app.core.permissions import authorize_api_action
 from app.modules.auth.router import router as auth_router
 from app.modules.audit.router import router as audit_router
 from app.modules.organizations.router import router as organizations_router
+from app.modules.platform.router import router as platform_router
 from app.modules.organizations import model as organizations_model
 from app.modules.users.router import router as users_router
 from app.modules.roles.router import router as roles_router
@@ -51,6 +52,7 @@ api_router = APIRouter(dependencies=[Depends(authorize_api_action)])
 api_router.include_router(auth_router)
 api_router.include_router(audit_router)
 api_router.include_router(organizations_router)
+api_router.include_router(platform_router)
 api_router.include_router(users_router)
 api_router.include_router(roles_router)
 

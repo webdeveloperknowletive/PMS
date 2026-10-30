@@ -80,31 +80,32 @@ export default function DashboardPage() {
   const [clockNow, setClockNow] = useState(Date.now());
   const user = useAuthStore((s) => s.user);
   const { permissionCodes, isLoading: permissionsLoading } = usePermissions();
+  const isWorkspaceAdministrator = (user?.role_names ?? []).some((role) => ["workspace owner", "admin"].includes(role.trim().toLowerCase()));
   const isProjectManager = (user?.role_names ?? []).some((role) => role.trim().toLowerCase() === "project manager");
-  const canCreateProject = permissionCodes.includes("projects.create");
-  const canCreateTeam = permissionCodes.includes("teams.create") || ["teams.members.create", "teams.members.update", "teams.members.delete"].some((code) => permissionCodes.includes(code));
-  const canCreateInvitation = permissionCodes.includes("invitations.create") && permissionCodes.includes("users.view");
-  const canViewTeams = ["teams.view", "teams.manage", "teams.members.view", "teams.members.manage", "teams.leads.view"].some((code) => permissionCodes.includes(code));
+  const canCreateProject = permissionCodes.includes("modules.projects.access") && permissionCodes.includes("projects.create");
+  const canCreateTeam = permissionCodes.includes("modules.teams.access") && (permissionCodes.includes("teams.create") || ["teams.members.create", "teams.members.update", "teams.members.delete"].some((code) => permissionCodes.includes(code)));
+  const canCreateInvitation = permissionCodes.includes("modules.users.access") && (isWorkspaceAdministrator || (permissionCodes.includes("invitations.create") && permissionCodes.includes("users.view")));
+  const canViewTeams = permissionCodes.includes("modules.teams.access") && ["teams.view", "teams.manage", "teams.members.view", "teams.members.manage", "teams.leads.view"].some((code) => permissionCodes.includes(code));
   // The flexible permission API returns the selected CRUD codes, not the legacy
   // `*.manage` aliases. Treat project CRUD as sufficient to load the user's
   // assigned project list on their dashboard.
-  const canViewProjects = permissionCodes.includes("roles.manage") || canViewTeams || ["projects.view", "projects.create", "projects.update", "projects.delete", "tasks.view", "tasks.create", "tasks.update", "tasks.delete"].some((code) => permissionCodes.includes(code));
+  const canViewProjects = permissionCodes.includes("modules.projects.access") && (permissionCodes.includes("roles.manage") || ["projects.view", "projects.create", "projects.update", "projects.delete", "tasks.view", "tasks.create", "tasks.update", "tasks.delete"].some((code) => permissionCodes.includes(code)));
   const canOpenProjects = canAccessModule("/projects", permissionCodes);
-  const canCreateTask = permissionCodes.includes("tasks.create") && canViewProjects;
-  const canCreateEvent = permissionCodes.includes("calendar.create") && canViewProjects;
+  const canCreateTask = permissionCodes.includes("modules.tasks.access") && permissionCodes.includes("tasks.create") && canViewProjects;
+  const canCreateEvent = permissionCodes.includes("modules.calendar.access") && permissionCodes.includes("calendar.create") && canViewProjects;
   const canAccessCalendar = canAccessModule("/calendar", permissionCodes);
-  const hasQuickActions = canCreateProject || canCreateTeam || canCreateTask || canCreateEvent || canCreateInvitation || permissionCodes.includes("roles.manage");
-  const canViewTasks = permissionCodes.includes("tasks.view");
+  const hasQuickActions = canCreateProject || canCreateTeam || canCreateTask || canCreateEvent || canCreateInvitation || (permissionCodes.includes("modules.roles.access") && permissionCodes.includes("roles.manage"));
+  const canViewTasks = permissionCodes.includes("modules.tasks.access") && permissionCodes.includes("tasks.view");
   // Assigned developers/testers can read their own tasks with this permission;
   // the API scopes their task list to assignments for the signed-in user.
-  const canViewAssignedTasks = permissionCodes.includes("tasks.update_assigned");
+  const canViewAssignedTasks = permissionCodes.includes("modules.tasks.access") && permissionCodes.includes("tasks.update_assigned");
   const canAccessTasks = canViewTasks || canViewAssignedTasks;
-  const canViewUsers = permissionCodes.includes("users.view");
-  const canViewWork = permissionCodes.includes("tasks.work_sessions.view");
+  const canViewUsers = permissionCodes.includes("modules.users.access") && permissionCodes.includes("users.view");
+  const canViewWork = permissionCodes.includes("modules.tasks.access") && permissionCodes.includes("tasks.work_sessions.view");
   const { data: projects, isLoading: projectsLoading } = useProjects({ limit: 500 }, canViewProjects);
-  const showSharedResources = permissionCodes.includes("documents.view");
+  const showSharedResources = permissionCodes.includes("modules.documentation.access") && permissionCodes.includes("documents.view");
   const { data: sharedResources, isLoading: resourcesLoading } = useDocuments(showSharedResources);
-  const canMoveKanban = permissionCodes.includes("kanban.tasks.move");
+  const canMoveKanban = permissionCodes.includes("modules.kanban.access") && permissionCodes.includes("kanban.tasks.move");
   const { data: teams } = useTeams(canViewTeams);
   const { data: teamLeads } = useTeamLeads(canViewTeams);
   const myTeamLeadIds = new Set((teamLeads ?? []).filter((lead) => lead.user_id === user?.user_id).map((lead) => lead.team_lead_id));
@@ -113,7 +114,7 @@ export default function DashboardPage() {
   const { data: teamMemberCandidates = [] } = useTeamMemberCandidates(canViewTeams);
   // Team Leads need read-only placements to report each developer's actual
   // column even when their role cannot move Kanban cards.
-  const canReadTeamKanban = myTeamLeadIds.size > 0;
+  const canReadTeamKanban = permissionCodes.includes("modules.kanban.access") && myTeamLeadIds.size > 0;
   const { data: kanbanColumns = [] } = useKanbanColumns(canReadTeamKanban);
   const { data: kanbanPlacements = [] } = useKanbanTaskPlacements(canReadTeamKanban);
   const approveKanbanReview = useApproveKanbanReview();
@@ -322,8 +323,8 @@ export default function DashboardPage() {
               {canCreateTeam && <Button size="sm" variant="outline" onClick={() => setTeamDialogOpen(true)}><UsersRound className="h-4 w-4" /> Add team</Button>}
               {canCreateTask && <Button size="sm" variant="outline" onClick={() => setTaskDialogOpen(true)}><CheckSquare className="h-4 w-4" /> New task</Button>}
               {canCreateEvent && <Button size="sm" variant="outline" onClick={() => setEventDialogOpen(true)}><CalendarDays className="h-4 w-4" /> Schedule event</Button>}
-              {canCreateInvitation && <Button asChild size="sm" variant="outline"><Link href="/users#invite-employee"><MailPlus className="h-4 w-4" /> Create invitation</Link></Button>}
-              {permissionCodes.includes("roles.manage") && <Button asChild size="sm" variant="outline"><Link href="/roles"><Eye className="h-4 w-4" /> Review roles</Link></Button>}
+              {canCreateInvitation && <Button asChild size="sm" variant="outline"><Link href="/users#invite-employee"><MailPlus className="h-4 w-4" /> Invite employee</Link></Button>}
+              {permissionCodes.includes("modules.roles.access") && permissionCodes.includes("roles.manage") && <Button asChild size="sm" variant="outline"><Link href="/roles"><Eye className="h-4 w-4" /> Review roles</Link></Button>}
               {!hasQuickActions && <p className="self-center text-xs text-slate-500">Open your workspace modules to manage your work.</p>}
             </>}
           </div>

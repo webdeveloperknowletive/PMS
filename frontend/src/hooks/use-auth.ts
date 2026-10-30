@@ -12,12 +12,25 @@ export function useAuth() {
   const { user, isAuthenticated, isInitializing, setUser, logout: clearStore } = useAuthStore();
 
   const loginMutation = useMutation({
-    mutationFn: (payload: LoginRequest) => authApi.login(payload),
-    onSuccess: async (data) => {
+    mutationFn: async (payload: LoginRequest) => {
+      // The root login is also a convenient entry point for the developer
+      // company administrator. Workspace-scoped logins always use the
+      // customer flow and can never be treated as platform accounts.
+      if (!payload.workspace_slug) {
+        try {
+          return { data: await authApi.platformLogin(payload.username, payload.password), platform: true };
+        } catch (error) {
+          const status = (error as { response?: { status?: number } }).response?.status;
+          if (status !== 401) throw error;
+        }
+      }
+      return { data: await authApi.login(payload), platform: false };
+    },
+    onSuccess: async ({ data, platform }) => {
       tokenStorage.setTokens(data.access_token, data.refresh_token);
-      const me = await authApi.getMe();
+      const me = platform ? await authApi.getPlatformMe() : await authApi.getMe();
       setUser(me);
-      router.push("/dashboard");
+      router.push(platform ? "/platform" : "/dashboard");
     },
   });
 

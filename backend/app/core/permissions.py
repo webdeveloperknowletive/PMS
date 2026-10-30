@@ -6,9 +6,9 @@ from uuid import UUID as UUIDType
 
 from db.session import get_db
 from app.core.config import API_V1_PREFIX
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, get_current_platform_admin
 from app.core.exceptions import ForbiddenException
-from app.modules.roles.model import Permission, RolePermission, UserPermission, UserRole
+from app.modules.roles.model import Permission, Role, RolePermission, UserPermission, UserRole
 from app.modules.users.model import User
 
 
@@ -83,6 +83,74 @@ PERMISSION_CATALOG = [
     for action in actions
 ]
 PERMISSION_CODES = {row[0] for row in PERMISSION_CATALOG}
+
+# Workspace modules are independent grants from the action catalog. A module
+# grant permits opening its screens; the existing action grants still decide
+# what the user can do after opening them.
+def _action_codes(*prefixes: str) -> tuple[str, ...]:
+    return tuple(code for code in PERMISSION_CODES if any(code.startswith(prefix) for prefix in prefixes))
+
+
+WORKSPACE_MODULE_ACTIONS: dict[str, tuple[str, ...]] = {
+    "dashboard": (), "projects": _action_codes("projects."), "tasks": _action_codes("tasks."),
+    "teams": _action_codes("teams."), "milestones": _action_codes("milestones."),
+    "calendar": _action_codes("calendar."), "documentation": _action_codes("documents."),
+    "workflow": _action_codes("workflow."), "kanban": _action_codes("kanban."),
+    "gantt": _action_codes("gantt."), "reports": _action_codes("reports."),
+    "ai_studio": _action_codes("ai."), "notifications": _action_codes("notifications."),
+    "users": _action_codes("users.", "invitations."),
+    "roles": _action_codes("roles."), "audit_log": ("roles.manage",),
+    "organization": _action_codes("organizations."), "chat": _action_codes("chat."),
+}
+MODULE_PERMISSION_CATALOG = [
+    (f"modules.{key}.access", f"{label}: Module access", f"Allow users to open the {label} workspace module.", "Module access")
+    for key, label in (
+        ("dashboard", "Dashboard"), ("projects", "Projects"), ("tasks", "Tasks"), ("teams", "Teams"),
+        ("milestones", "Milestones"), ("calendar", "Calendar"), ("documentation", "Documentation"),
+        ("workflow", "Workflow"), ("kanban", "Kanban Board"), ("gantt", "Gantt Chart"),
+        ("reports", "Reports"), ("ai_studio", "AI Studio"), ("notifications", "Notifications"),
+        ("users", "Users"), ("roles", "Roles & Permissions"), ("audit_log", "Audit Log"),
+        ("organization", "Organization Settings"), ("chat", "Chat"),
+    )
+]
+PERMISSION_CATALOG.extend(MODULE_PERMISSION_CATALOG)
+PERMISSION_CODES.update(row[0] for row in MODULE_PERMISSION_CATALOG)
+
+
+def module_code_for_request(request: Request) -> str | None:
+    """Return the module grant required for this workspace API request."""
+    path = request.scope.get("route")
+    path = getattr(path, "path", request.url.path)
+    prefix = API_V1_PREFIX.rstrip("/")
+    if path.startswith(prefix + "/"):
+        path = path[len(prefix) + 1:]
+    parts = [part for part in path.strip("/").split("/") if part]
+    if not parts:
+        return None
+    module = parts[0]
+    if module == "auth": return None
+    if module == "organizations":
+        if parts[1:2] == ["register"] or parts[1:2] == ["accept"] or parts[1:2] == ["invitations"] and len(parts) > 2 and parts[2] in {"accept", "preview"}:
+            return None
+        if parts[1:2] == ["current"] and request.method.upper() == "GET":
+            return None
+        return "modules.users.access" if parts[1:2] == ["invitations"] else "modules.organization.access"
+    if module == "users" and len(parts) > 2 and parts[2] in {"profile", "password", "profile-picture"}:
+        return None  # personal account settings are available outside the Users directory module
+    if module == "roles" and (parts[1:2] == ["me"] or parts[1:2] == ["users"] and len(parts) == 3):
+        return None
+    if module == "roles": return "modules.roles.access"
+    if module == "audit-logs": return "modules.audit_log.access"
+    if module == "search": return "modules.projects.access"
+    if module == "ai": return "modules.ai_studio.access"
+    mapping = {
+        "projects": "projects", "tasks": "tasks", "teams": "teams", "milestones": "milestones",
+        "calendar": "calendar", "documentation": "documentation", "workflow": "workflow",
+        "workflows": "workflow", "kanban": "kanban", "gantt": "gantt", "reports": "reports",
+        "notifications": "notifications", "users": "users", "chat": "chat",
+    }
+    key = mapping.get(module)
+    return f"modules.{key}.access" if key else None
 
 
 # Compatibility for checks in older module-level guards. Route-level
@@ -295,6 +363,18 @@ def permission_code_for_request(request: Request) -> str | None:
 
 
 def has_permission(db: Session, user: User, code: str) -> bool:
+    # Workspace Owner and Admin are the organization administrators. Their
+    # invitation capability is intentionally unlimited and should remain
+    # available even if an older workspace is missing a copied grant row.
+    if code.startswith("invitations."):
+        administrator_role = db.query(UserRole.user_role_id).join(
+            Role, Role.role_id == UserRole.role_id
+        ).filter(
+            UserRole.user_id == user.user_id,
+            Role.role_name.in_(("Workspace Owner", "Admin")),
+        ).first()
+        if administrator_role is not None:
+            return True
     candidates = LEGACY_PERMISSION_ALIASES.get(code, (code,))
     # One explicit permission can delegate complete RBAC administration.
     if code.startswith("roles.") and code != "roles.manage":
@@ -347,6 +427,14 @@ def get_user_permission_codes(db: Session, user: User) -> list[str]:
     direct_codes = {row[0] for row in db.query(Permission.code).join(
         UserPermission, Permission.permission_id == UserPermission.permission_id
     ).filter(UserPermission.user_id == user.user_id).distinct().all()}
+    administrator_role = db.query(UserRole.user_role_id).join(
+        Role, Role.role_id == UserRole.role_id
+    ).filter(
+        UserRole.user_id == user.user_id,
+        Role.role_name.in_(("Workspace Owner", "Admin")),
+    ).first()
+    if administrator_role is not None:
+        role_codes.update(f"invitations.{action}" for action in ("view", "create", "update", "delete", "resend"))
     return sorted(role_codes | direct_codes)
 
 
@@ -388,6 +476,14 @@ async def authorize_api_action(
     request: Request,
     db: Session = Depends(get_db),
 ) -> User | None:
+    # Platform endpoints use the separate developer-company account table and
+    # platform_access JWTs; they must never be checked against workspace roles.
+    if request.url.path.startswith(f"{API_V1_PREFIX}/platform"):
+        authorization = request.headers.get("authorization", "")
+        scheme, _, token = authorization.partition(" ")
+        if scheme.lower() != "bearer" or not token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+        return get_current_platform_admin(request=request, token=token, db=db)
     code = permission_code_for_request(request)
     if code == "":
         return None
@@ -404,6 +500,9 @@ async def authorize_api_action(
     if scheme.lower() != "bearer" or not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     current_user = get_current_user(request=request, token=token, db=db)
+    module_code = module_code_for_request(request)
+    if module_code and not has_permission(db, current_user, module_code):
+        raise ForbiddenException(message=f"Missing required module access: {module_code}")
     project_id = await _project_id_for_request(request, db)
     is_assigned_work_session_start = False
     if code == "tasks.work_sessions.start" and request.method == "POST" and (

@@ -92,6 +92,12 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          Developer company administrator?{" "}
+          <Link href="/platform/login" className="font-medium text-primary hover:underline">
+            Platform Super Admin login
+          </Link>
+        </p>
       </CardContent>
     </Card>
   );

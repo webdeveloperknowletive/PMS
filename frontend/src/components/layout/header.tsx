@@ -68,43 +68,43 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     queryKey: [NOTIFICATIONS_KEY, user?.user_id],
     queryFn: () => notificationsApi.list({ limit: 500 }),
     // The API returns only the signed-in user's personal notification feed.
-    enabled: !!user,
+    enabled: !!user && permissionCodes.includes("modules.notifications.access"),
     refetchInterval: 1_500,
     select: (data) => data.filter((n) => !n.is_read && n.user_id === user?.user_id),
   });
   const { data: toastDurationSetting } = useQuery({
     queryKey: ["notification-toast-duration"],
     queryFn: notificationSettingsApi.getToastDuration,
-    enabled: !!user && permissionCodes.includes("notifications.settings.view"),
+    enabled: !!user && permissionCodes.includes("modules.notifications.access") && permissionCodes.includes("notifications.settings.view"),
   });
   const { data: notificationSoundSetting } = useQuery({
     queryKey: ["notification-sound-setting"],
     queryFn: notificationSettingsApi.getSound,
-    enabled: !!user && permissionCodes.includes("notifications.settings.view"),
+    enabled: !!user && permissionCodes.includes("modules.notifications.access") && permissionCodes.includes("notifications.settings.view"),
     refetchInterval: 30_000,
   });
   const { data: notificationVolumeSetting } = useQuery({
     queryKey: ["notification-volume-setting", user?.user_id],
     queryFn: notificationSettingsApi.getVolume,
-    enabled: !!user && permissionCodes.includes("notifications.personal_settings.view"),
+    enabled: !!user && permissionCodes.includes("modules.notifications.access") && permissionCodes.includes("notifications.personal_settings.view"),
     refetchInterval: 30_000,
   });
   const { data: chatSettings } = useQuery({
     queryKey: ["chat-settings", user?.user_id],
     queryFn: chatApi.settings,
-    enabled: !!user && permissionCodes.includes("chat.settings.view"),
+    enabled: !!user && permissionCodes.includes("modules.chat.access") && permissionCodes.includes("chat.settings.view"),
     refetchInterval: 30_000,
   });
   const { data: chatOrganizationSettings } = useQuery({
     queryKey: ["chat-organization-settings"],
     queryFn: chatApi.organizationSettings,
-    enabled: !!user && permissionCodes.includes("chat.organization_settings.view"),
+    enabled: !!user && permissionCodes.includes("modules.chat.access") && permissionCodes.includes("chat.organization_settings.view"),
     refetchInterval: 30_000,
   });
   const { data: searchResults = [], isFetching: isSearching } = useQuery({
     queryKey: ["global-search", user?.user_id, debouncedSearch],
     queryFn: () => searchApi.global(debouncedSearch),
-    enabled: !!user && ["tasks.view", "tasks.team_view", "roles.manage", "users.view", "calendar.view", "chat.messages.view", "documents.view", "reports.view"].some((code) => permissionCodes.includes(code)) && searchOpen && debouncedSearch.length >= 2,
+    enabled: !!user && permissionCodes.includes("modules.projects.access") && ["tasks.view", "tasks.team_view", "roles.manage", "users.view", "calendar.view", "chat.messages.view", "documents.view", "reports.view"].some((code) => permissionCodes.includes(code)) && searchOpen && debouncedSearch.length >= 2,
     staleTime: 15_000,
   });
   const unreadCount = notifications?.length ?? 0;
@@ -221,10 +221,10 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               <DropdownMenuItem onClick={() => logout()} className="text-destructive focus:text-destructive"><LogOut /> Log out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link href="/notifications" aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"} title="Notifications" className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+          {permissionCodes.includes("modules.notifications.access") && <Link href="/notifications" aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"} title="Notifications" className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
             <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-rose-500 px-1 text-[9px] font-bold leading-none text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}
-          </Link>
+          </Link>}
         </div>
       </header>
 

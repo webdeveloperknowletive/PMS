@@ -13,7 +13,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from statistics import median
 from uuid import UUID
 
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
@@ -130,7 +130,7 @@ def deliver_task_deadline_reminders(db: Session, current_user: User, local_date:
 
 
 def get_project_assignee_candidates(db: Session, project_id: UUID, current_user: User) -> list[TaskAssigneeCandidateRead]:
-    """Return active Developers assigned to a team in a visible project."""
+    """Return active workspace Developers/Testers; restrict team leads to their project teams."""
     from app.modules.projects.service import get_project
 
     project = get_project(db, project_id, current_user)
@@ -138,31 +138,60 @@ def get_project_assignee_candidates(db: Session, project_id: UUID, current_user:
     lead_ids = None if is_project_manager or has_permission(db, current_user, "roles.manage") else db.query(
         TeamLead.team_lead_id
     ).filter(TeamLead.user_id == current_user.user_id).subquery()
-    query = db.query(User, Team.team_id, Team.team_name).join(
+    query = db.query(User, Team.team_id, Team.team_name, Role.role_name).join(
         TeamMember, TeamMember.user_id == User.user_id,
-    ).join(
-        Team, Team.team_id == TeamMember.team_id,
+    ) if lead_ids is not None else db.query(User, Team.team_id, Team.team_name, Role.role_name).outerjoin(
+        TeamMember,
+        and_(TeamMember.user_id == User.user_id, TeamMember.organization_id == User.organization_id),
+    )
+    query = query.outerjoin(
+        Team,
+        and_(
+            Team.team_id == TeamMember.team_id,
+            Team.project_id == project_id,
+            Team.organization_id == current_user.organization_id,
+        ),
     ).join(
         UserRole, UserRole.user_id == User.user_id,
     ).join(
         Role, Role.role_id == UserRole.role_id,
     ).filter(
-        Team.project_id == project_id,
-        Team.organization_id == current_user.organization_id,
         User.organization_id == current_user.organization_id,
         User.is_active.is_(True),
-        func.lower(Role.role_name) == "developer",
+        func.lower(Role.role_name).in_(("developer", "tester")),
     )
     if lead_ids is not None:
-        query = query.filter(Team.team_lead_id.in_(lead_ids))
-    rows = query.order_by(User.name.asc(), Team.created_at.asc()).all()
+        query = query.filter(
+            Team.project_id == project_id,
+            Team.organization_id == current_user.organization_id,
+            Team.team_lead_id.in_(lead_ids),
+        )
+    rows = query.order_by(User.name.asc(), Role.role_name.asc(), Team.created_at.asc().nulls_last()).all()
 
-    candidates = []
-    for user, team_id, team_name in rows:
-        candidates.append(TaskAssigneeCandidateRead(
-            user_id=user.user_id, name=user.name, team_id=team_id, team_name=team_name,
-        ))
-    return candidates
+    candidates_by_user = {}
+    for user, team_id, team_name, role_name in rows:
+        candidate = candidates_by_user.get(user.user_id)
+        if candidate is None:
+            candidate = {
+                "user_id": user.user_id,
+                "name": user.name,
+                "team_id": team_id,
+                "team_name": team_name,
+                "role_names": set(),
+            }
+            candidates_by_user[user.user_id] = candidate
+        candidate["role_names"].add(role_name)
+
+    return [
+        TaskAssigneeCandidateRead(
+            user_id=candidate["user_id"],
+            name=candidate["name"],
+            role_name=" / ".join(sorted(candidate["role_names"])),
+            team_id=candidate["team_id"],
+            team_name=candidate["team_name"],
+        )
+        for candidate in candidates_by_user.values()
+    ]
 
 
 def get_checklist_member_options(db: Session, project_id: UUID, current_user: User) -> list[TaskChecklistMemberOptionRead]:

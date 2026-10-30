@@ -17,11 +17,36 @@ from app.modules.notifications.model import NotificationSetting
 from app.modules.organizations.model import Organization, OrganizationInvitation, OrganizationSubscription
 from app.modules.organizations.schema import InvitationAccept, WorkspaceOwnerCreate, WorkspaceUpdate
 from app.modules.roles.model import Permission, Role, RolePermission, UserRole
+from app.modules.roles.bootstrap import ensure_employee_roles
 from app.modules.users.model import User
 
 logger = logging.getLogger(__name__)
 INVITATION_EXPIRE_HOURS = 72
 RESERVED_SLUGS = {"www", "api", "admin", "app", "mail", "support", "status", "help"}
+
+
+def _pending_invitation_for_token(db: Session, raw_token: str) -> OrganizationInvitation:
+    """Return a usable invitation and explain why an old link cannot be used."""
+    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+    invitation = db.query(OrganizationInvitation).filter(
+        OrganizationInvitation.token_hash == token_hash
+    ).one_or_none()
+    if invitation is None:
+        raise HTTPException(status_code=410, detail="This invitation link is invalid or has been replaced. Ask the workspace owner to resend it.")
+    if invitation.accepted_at is not None:
+        raise HTTPException(status_code=409, detail="This invitation was already accepted. Sign in to the workspace instead.")
+    if invitation.revoked_at is not None:
+        raise HTTPException(status_code=410, detail="This invitation was revoked. Ask the workspace owner to send a new invitation.")
+
+    now = datetime.now(timezone.utc)
+    expires_at = invitation.expires_at
+    # Some existing SQLite development databases return naive datetimes even
+    # for timezone-aware columns. Treat those stored values as UTC consistently.
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at <= now:
+        raise HTTPException(status_code=410, detail="This invitation expired. Ask the workspace owner to resend it.")
+    return invitation
 
 
 def register_workspace_owner(db: Session, payload: WorkspaceOwnerCreate) -> tuple[User, Organization, bool, str | None]:
@@ -68,11 +93,29 @@ def register_workspace_owner(db: Session, payload: WorkspaceOwnerCreate) -> tupl
         permission_map[code] = permission
     db.flush()
 
-    owner_role = Role(role_name="Super Admin", description="Workspace owner", is_system=True)
-    db.add(owner_role)
+    super_admin_role = Role(
+        organization_id=organization.organization_id,
+        role_name="Super Admin",
+        description="Platform administrator",
+        is_system=True,
+    )
+    owner_role = Role(
+        organization_id=organization.organization_id,
+        role_name="Workspace Owner",
+        description="Workspace owner",
+        is_system=True,
+    )
+    db.add_all([super_admin_role, owner_role])
     db.flush()
-    for permission in permission_map.values():
-        db.add(RolePermission(role=owner_role, permission=permission))
+    for role in (super_admin_role, owner_role):
+        for permission in permission_map.values():
+            db.add(RolePermission(
+                organization_id=organization.organization_id,
+                role_id=role.role_id,
+                permission_id=permission.permission_id,
+            ))
+    db.flush()
+    ensure_employee_roles(db, organization.organization_id)
 
     user = User(
         name=payload.name.strip(),
@@ -216,13 +259,8 @@ def resend_invitation(db: Session, invitation: OrganizationInvitation) -> tuple[
 
 
 def accept_invitation(db: Session, payload: InvitationAccept) -> tuple[User, Organization]:
-    token_hash = hashlib.sha256(payload.token.encode("utf-8")).hexdigest()
-    invitation = db.query(OrganizationInvitation).filter(
-        OrganizationInvitation.token_hash == token_hash
-    ).one_or_none()
+    invitation = _pending_invitation_for_token(db, payload.token)
     now = datetime.now(timezone.utc)
-    if invitation is None or invitation.accepted_at is not None or invitation.revoked_at is not None or invitation.expires_at <= now:
-        raise HTTPException(status_code=410, detail="This invitation is invalid or has expired")
 
     # Accounts currently belong to one customer workspace. Do not silently
     # move or merge an account that already belongs to a different company.
@@ -262,13 +300,7 @@ def accept_invitation(db: Session, payload: InvitationAccept) -> tuple[User, Org
 
 def preview_invitation(db: Session, raw_token: str) -> dict:
     """Show a prospective member the workspace and role attached to a link."""
-    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
-    invitation = db.query(OrganizationInvitation).filter(
-        OrganizationInvitation.token_hash == token_hash
-    ).one_or_none()
-    now = datetime.now(timezone.utc)
-    if invitation is None or invitation.accepted_at is not None or invitation.revoked_at is not None or invitation.expires_at <= now:
-        raise HTTPException(status_code=410, detail="This invitation is invalid or has expired")
+    invitation = _pending_invitation_for_token(db, raw_token)
     organization = db.query(Organization).filter_by(organization_id=invitation.organization_id).one_or_none()
     role = db.query(Role).filter(
         Role.role_id == invitation.role_id,

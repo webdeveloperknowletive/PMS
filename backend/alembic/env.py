@@ -26,6 +26,7 @@ from db.base import Base
 from app.modules.auth import model as auth_model
 from app.modules.audit import model as audit_model
 from app.modules.organizations import model as organizations_model
+from app.modules.platform import model as platform_model
 from app.modules.users import model as users_model
 from app.modules.teams import model as teams_model
 from app.modules.projects import model as projects_model
@@ -76,6 +77,12 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def do_run_migrations(connection) -> None:
+    context.configure(connection=connection, target_metadata=target_metadata)
+    with context.begin_transaction():
+        context.run_migrations()
+
+
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
@@ -83,6 +90,13 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # An explicit connection lets migration tests run in an isolated schema
+    # inside a transaction that is rolled back after verification.
+    connection = config.attributes.get("connection")
+    if connection is not None:
+        do_run_migrations(connection)
+        return
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -90,12 +104,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
+        do_run_migrations(connection)
 
 
 if context.is_offline_mode():

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import Base, engine
 from app.modules.organizations.model import Organization
+from db.migration_baseline import create_baseline_tables
 
 LEGACY_SLUG = "existing-workspace"
 
@@ -17,12 +18,11 @@ def migrate_organization_schema(connection: Connection):
     This is called by the explicit Alembic revision. It accepts Alembic's
     connection so DDL and the data backfill are part of the same migration.
     """
-    # Register every product table before create_all and find which tables need
-    # their first organization_id column.
+    # Register models for tenant backfilling, but create only the frozen initial
+    # schema. Later Alembic revisions own their tables, columns, and constraints.
     import app.router  # noqa: F401
 
-    Organization.__table__.create(bind=connection, checkfirst=True)
-    Base.metadata.create_all(bind=connection, checkfirst=True)
+    create_baseline_tables(connection)
 
     inspector = inspect(connection)
     scoped_tables = [
@@ -130,5 +130,7 @@ def migrate_organization_schema(connection: Connection):
 
 def get_default_organization_id():
     with Session(bind=engine) as db:
-        organization = db.query(Organization).filter_by(slug=LEGACY_SLUG).one()
-        return organization.organization_id
+        # A platform-only installation may legitimately have no customer
+        # workspaces yet. Startup should not fail in that state.
+        organization = db.query(Organization).filter_by(slug=LEGACY_SLUG).first()
+        return organization.organization_id if organization else None

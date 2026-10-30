@@ -51,12 +51,9 @@ async def lifespan(app: FastAPI):
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
 
-        try:
-            get_default_organization_id()
-        except Exception as exc:
-            raise RuntimeError(
-                "Workspace database migration is missing. Run `alembic upgrade head` from the backend directory before starting SprintIX."
-            ) from exc
+        # No customer workspace is valid immediately after a platform reset;
+        # migrations are already checked separately by deployment tooling.
+        get_default_organization_id()
         initialize_role_permissions()
 
         logger.info("Database connection established.")

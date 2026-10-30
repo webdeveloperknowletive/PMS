@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Building2, Check, Loader2, LockKeyhole, Mail, UserRound, Link2, ShieldCheck, BriefcaseBusiness, UsersRound, UserRoundSearch, Info, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Building2, Check, Loader2, LockKeyhole, Mail, UserRound, Link2, ShieldCheck, Info, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,18 +88,17 @@ export default function RegisterPage() {
 
   return (
     <Card className="mx-auto w-full max-w-6xl overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl shadow-blue-950/10">
-      <CardHeader className="px-6 pb-5 pt-6 sm:px-8">
+      <CardHeader className="px-5 pb-4 pt-5 sm:px-7">
         <CardTitle className="text-2xl">Create your SprintIX workspace</CardTitle>
         <CardDescription>Set up your company workspace. You will be its first Workspace Owner.</CardDescription>
       </CardHeader>
-      <CardContent className="px-6 pb-6 sm:px-8 sm:pb-8">
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5 lg:grid-cols-2">
-          <section className="overflow-hidden rounded-xl border border-slate-200">
+      <CardContent className="px-5 pb-5 sm:px-7 sm:pb-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 lg:grid-cols-2">
+          <section className="overflow-hidden rounded-xl bg-slate-50/40">
             <header className="flex items-center gap-3 border-b bg-gradient-to-r from-blue-50 to-indigo-50/70 px-5 py-4">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-sm font-bold text-white shadow-sm">1</span>
               <div><h2 className="font-bold uppercase tracking-wide text-slate-900">Account setup</h2><p className="text-xs text-slate-500">Your personal sign-in details</p></div>
             </header>
-            <div className="space-y-4 p-5">
+            <div className="space-y-3 p-4 sm:p-5">
               <div className="space-y-1.5">
                 <Label htmlFor="name">Full name</Label>
                 <div className="relative"><FieldIcon><UserRound className="h-4 w-4" /></FieldIcon><Input id="name" autoComplete="name" placeholder="Jane Doe" aria-invalid={!!errors.name} className={`pl-10 ${errors.name ? "border-red-500 bg-red-50/40 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}`} {...register("name")} /></div>
@@ -120,27 +119,15 @@ export default function RegisterPage() {
                 <Input id="confirmPassword" type="password" autoComplete="new-password" placeholder="Enter your password again" aria-invalid={!!errors.confirmPassword} className={errors.confirmPassword ? "border-red-500 bg-red-50/40 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""} {...confirmPasswordRegistration} />
                 <FieldError>{errors.confirmPassword?.message}</FieldError>
               </div>
-              <label className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm ${acceptedTerms ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
-                <input type="checkbox" className="mt-1 accent-emerald-600" aria-invalid={!!errors.acceptedTerms} {...register("acceptedTerms")} />
-                <span className="flex-1">I agree to the <Link href="/terms" className="font-medium text-blue-700 hover:underline">Terms of Service</Link>.</span>
-                {acceptedTerms && <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />}
-              </label>
-              <FieldError>{errors.acceptedTerms?.message}</FieldError>
               {errors.root && <p role="alert" className="flex gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{errors.root.message}</p>}
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isRegistering || !acceptedTerms}>
-                {isRegistering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Create workspace
-              </Button>
-              <p className="text-center text-sm text-muted-foreground">Already have an account? <Link href="/login" className="font-medium text-primary hover:underline">Log in</Link></p>
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-xl border border-slate-200">
+          <section className="overflow-hidden rounded-xl bg-slate-50/40">
             <header className="flex items-center gap-3 border-b bg-gradient-to-r from-violet-50 to-indigo-50/70 px-5 py-4">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-sm font-bold text-white shadow-sm">2</span>
               <div><h2 className="font-bold uppercase tracking-wide text-indigo-900">Your workspace preview</h2><p className="text-xs text-slate-500">Company space and access roles</p></div>
             </header>
-            <div className="space-y-5 p-5">
+            <div className="space-y-4 p-4 sm:p-5">
               <div className="space-y-1.5">
                 <Label htmlFor="organizationName">Organization name</Label>
                 <div className="relative"><FieldIcon><Building2 className="h-4 w-4" /></FieldIcon><Input id="organizationName" placeholder="Acme Technologies" aria-invalid={!!errors.organizationName} className={`pl-10 ${errors.organizationName ? "border-red-500 bg-red-50/40 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}`} {...nameRegistration} onChange={(event) => {
@@ -169,20 +156,37 @@ export default function RegisterPage() {
                   <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-900">Workspace Owner / Creator</p><p className="text-xs text-slate-500">Manage the company workspace and invite your team.</p></div>
                   <span className="whitespace-nowrap rounded-full bg-violet-100 px-2 py-1 text-[10px] font-semibold text-violet-700">First account</span>
                 </div>
-                <div className="space-y-1.5 pt-1">
-                  {[
-                    { label: "Custom role access", icon: BriefcaseBusiness, note: "Configured by workspace admin" },
-                    { label: "Team Member", icon: UsersRound, note: "Requires invite" },
-                    { label: "External Guest / Client", icon: UserRoundSearch, note: "Requires invite" },
-                  ].map(({ label, icon: Icon, note }) => <div key={label} className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600"><span className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 bg-white" /><Icon className="h-4 w-4 shrink-0 text-slate-400" /><span className="flex-1 text-sm">{label}</span><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-500">{note}</span></div>)}
-                </div>
-              </div>
-              <div className="flex gap-3 rounded-lg border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50/70 p-4 text-xs leading-5 text-slate-600">
-                <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-                <div><p className="font-semibold text-slate-800">What happens next?</p><p className="mt-1">Verify your work email, then create a project and invite employees. Choose each person’s role when you send their invitation.</p></div>
               </div>
             </div>
           </section>
+
+          <section className={`flex items-center gap-3 rounded-xl border p-3 text-sm lg:col-span-2 ${acceptedTerms ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
+            <input id="acceptedTerms" type="checkbox" className="h-4 w-4 accent-emerald-600" aria-invalid={!!errors.acceptedTerms} {...register("acceptedTerms")} />
+            <label htmlFor="acceptedTerms" className="flex-1">I agree to the <Link href="/terms" className="font-semibold text-emerald-700 hover:underline">Terms of Service</Link>.</label>
+            {acceptedTerms && <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />}
+            {errors.acceptedTerms && <FieldError>{errors.acceptedTerms.message}</FieldError>}
+          </section>
+
+          <div className="flex flex-col gap-3 rounded-xl bg-slate-50/80 p-4 lg:col-span-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-1 text-center text-sm sm:text-left"><span className="font-semibold text-slate-800">Finish setup</span><span className="text-xs text-muted-foreground">Create your workspace or choose an existing account.</span></div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isRegistering || !acceptedTerms}>
+                {isRegistering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Create workspace
+              </Button>
+              <span className="hidden text-slate-300 sm:inline">|</span>
+              <Link href="/login" className="text-center text-sm font-medium text-primary hover:underline">Customer login</Link>
+              <span className="hidden text-slate-300 sm:inline">|</span>
+              <Button asChild type="button" variant="outline" className="border-violet-200 text-violet-700 hover:bg-violet-50">
+                <Link href="/platform/login"><ShieldCheck className="h-4 w-4" /> Platform Super Admin login</Link>
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex gap-3 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50/70 p-4 text-xs leading-5 text-slate-600 lg:col-span-2">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+            <div><p className="font-semibold text-slate-800">What happens next?</p><p className="mt-1">Verify your work email, then create a project and invite employees. Choose each person’s role when you send their invitation.</p></div>
+          </div>
         </form>
       </CardContent>
     </Card>

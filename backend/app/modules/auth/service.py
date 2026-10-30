@@ -34,6 +34,7 @@ for the access token in the first place.
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from urllib.parse import quote
+import hashlib
 
 import bcrypt
 from fastapi import HTTPException, status
@@ -50,6 +51,7 @@ from app.core.config import (
 from app.core.config import APP_ENV, PUBLIC_APP_URL, workspace_app_url
 from app.core.email import send_product_email
 from app.modules.auth.model import EmailVerificationToken
+from app.modules.platform.model import PlatformAdmin, PlatformAdminSession
 from app.modules.auth import repository
 from app.modules.organizations.model import Organization
 from app.modules.auth.schema import (
@@ -58,6 +60,7 @@ from app.modules.auth.schema import (
     RefreshTokenCreate,
 )
 from app.modules.users.model import User
+from app.modules.roles.model import Role, UserRole
 from urllib.parse import quote
 
 REFRESH_TOKEN_EXPIRE_MINUTES = ACCESS_TOKEN_EXPIRE_MINUTES * 24 * 7
@@ -191,6 +194,18 @@ def login(
     workspace_slug: str | None = None,
 ):
 
+    # Platform accounts are intentionally isolated from customer workspaces.
+    # Even if someone creates a customer user with the same email, the
+    # developer-company account must use /platform/login exclusively.
+    platform_admin = db.query(PlatformAdmin).filter(
+        func.lower(PlatformAdmin.email) == str(email).strip().lower()
+    ).first()
+    if platform_admin is not None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Use the Platform Super Admin sign-in page.",
+        )
+
     user = (
         db.query(User)
         .filter(func.lower(User.email) == str(email).lower())
@@ -274,6 +289,26 @@ def login(
         "refresh_token": refresh_token_str,
         "token_type": "bearer",
     }
+
+
+def platform_login(db: Session, email: str, password: str, ip_address: str | None = None, user_agent: str | None = None):
+    admin = db.query(PlatformAdmin).filter(func.lower(PlatformAdmin.email) == str(email).strip().lower()).first()
+    if admin is None or not verify_password(password, admin.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
+    if not admin.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Platform account is inactive")
+    access_token, _ = create_token(str(admin.platform_admin_id), ACCESS_TOKEN_EXPIRE_MINUTES, "platform_access")
+    refresh_token_str, refresh_expiry = create_token(str(admin.platform_admin_id), REFRESH_TOKEN_EXPIRE_MINUTES, "platform_refresh")
+    db.add(PlatformAdminSession(platform_admin_id=admin.platform_admin_id, refresh_token_hash=hashlib.sha256(refresh_token_str.encode()).hexdigest(), expires_at=refresh_expiry, ip_address=ip_address, user_agent=user_agent))
+    admin.last_login_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"access_token": access_token, "refresh_token": refresh_token_str, "token_type": "bearer"}
+
+
+def platform_logout(db: Session, admin: PlatformAdmin):
+    count = db.query(PlatformAdminSession).filter(PlatformAdminSession.platform_admin_id == admin.platform_admin_id, PlatformAdminSession.revoked_at.is_(None)).update({PlatformAdminSession.revoked_at: datetime.now(timezone.utc)}, synchronize_session=False)
+    db.commit()
+    return {"success": True, "message": f"Logged out. Revoked {count} platform session(s)."}
 
 
 def logout(

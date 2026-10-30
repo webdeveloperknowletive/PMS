@@ -49,6 +49,8 @@ The guide is a product blueprint, not a set of instructions to copy Jira or Trel
 
 Task create/update validation trims titles, descriptions, comments, and checklist labels, rejects blank required text and descriptions longer than 10,000 characters, and restricts status and priority to values supported by the current task workflow. The task list endpoint also supports server-side text, project, assignee, status, priority, overdue, due-date, and blocked-work filters while retaining its existing permission-scoped query.
 
+The task create/edit assignee picker lists active workspace Developers and Testers, and shows each role beside the person's name. Team Leads only receive candidates on their assigned project teams; users without a team can be assigned by workspace administrators or project managers without automatically joining a team.
+
 Project create/update validation trims and bounds project names, prevents clearing required project fields, and checks the merged start and due dates when only one date is changed.
 
 Sprint names and goals are trimmed and length-bounded; sprint, goal, and release updates reject null values for required names and statuses while still allowing their optional descriptions and dates to be cleared.

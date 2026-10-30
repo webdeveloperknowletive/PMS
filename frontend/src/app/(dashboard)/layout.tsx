@@ -10,6 +10,7 @@ import { useEventReminders } from "@/hooks/use-event-reminders";
 import { ChatWidget } from "@/components/layout/chat-widget";
 import { usePermissions } from "@/hooks/use-permissions";
 import { canAccessModule } from "@/lib/permissions";
+import { PlatformShell } from "@/components/layout/platform-shell";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!isInitializing && !isAuthenticated) {
-      router.replace("/login");
+      router.replace(pathname.startsWith("/platform") ? "/platform/login" : "/login");
     }
   }, [isInitializing, isAuthenticated, router]);
 
@@ -37,6 +38,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!isAuthenticated) return null;
   const accessDenied = !permissions.isLoading && !canAccessModule(pathname, permissions.permissionCodes);
 
+  if (pathname.startsWith("/platform")) {
+    return <PlatformShell>{children}</PlatformShell>;
+  }
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
@@ -46,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="mx-auto min-h-full w-full max-w-[1600px]">{accessDenied ? <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-24 text-center"><ShieldAlert className="mb-4 h-8 w-8 text-destructive" /><h1 className="text-base font-semibold">Access restricted</h1><p className="mt-1 max-w-sm text-sm text-muted-foreground">Your assigned role does not include access to this module.</p></div> : children}</div>
         </main>
       </div>
-      <ChatWidget />
+      {permissions.permissionCodes.includes("modules.chat.access") && <ChatWidget />}
     </div>
   );
 }

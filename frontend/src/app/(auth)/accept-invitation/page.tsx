@@ -21,9 +21,11 @@ export default function AcceptInvitationPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const [workspaceSlug, setWorkspaceSlug] = useState("");
   const [inviteDetails, setInviteDetails] = useState<{ organization_name: string; organization_slug: string; email: string; role_name: string } | null>(null);
   useEffect(() => {
     const inviteToken = new URLSearchParams(window.location.search).get("token") ?? "";
+    setWorkspaceSlug(new URLSearchParams(window.location.search).get("workspace_slug") ?? "");
     setToken(inviteToken);
     if (inviteToken) {
       organizationsApi.previewInvitation(inviteToken)
@@ -63,6 +65,10 @@ export default function AcceptInvitationPage() {
       setWorking(false);
     }
   };
+  const errorText = error.toLowerCase();
+  const invitationAccepted = errorText.includes("already accepted");
+  const invitationExpiredOrRevoked = errorText.includes("expired") || errorText.includes("revoked");
+  const signInHref = workspaceSlug ? `/login?workspace_slug=${encodeURIComponent(workspaceSlug)}` : "/login";
 
   return (
     <Card className="mx-auto max-w-md border-slate-200 bg-white shadow-xl shadow-slate-900/5">
@@ -79,7 +85,7 @@ export default function AcceptInvitationPage() {
           <div className="space-y-1.5"><Label htmlFor="invite-password">Create password</Label><Input id="invite-password" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} /></div>
           <div className="space-y-1.5"><Label htmlFor="invite-confirm-password">Re-enter password</Label><Input id="invite-confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} aria-invalid={!!confirmPassword && password !== confirmPassword} />{confirmPassword && password !== confirmPassword && <p className="text-xs text-destructive">Passwords do not match.</p>}</div>
           <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-600"><input type="checkbox" className="mt-1 accent-blue-600" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} required /><span>I agree to the <Link href="/terms" className="font-medium text-blue-700 hover:underline">Terms of Service</Link>.</span></label>
-          {error && <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+          {error && <div role="alert" className="space-y-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive"><p>{error}</p>{invitationAccepted && <Button asChild variant="outline" className="border-destructive/20 bg-white text-foreground"><Link href={signInHref}>Go to workspace sign in</Link></Button>}{invitationExpiredOrRevoked && <p className="text-xs">Ask the workspace owner to resend the invitation. Resending creates a fresh link and invalidates older links.</p>}</div>}
           <Button type="submit" className="w-full" disabled={!token || !inviteDetails || !acceptedTerms || working}>{working && <Loader2 className="h-4 w-4 animate-spin" />}Accept invitation</Button>
           <p className="text-center text-xs text-muted-foreground">This invitation creates a new SprintIX account for the invited email address.</p>
         </form>

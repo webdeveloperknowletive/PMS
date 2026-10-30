@@ -39,12 +39,12 @@ function saveRemindedKeys(userId: string, keys: Set<string>) {
 export function useEventReminders() {
   const user = useAuthStore((s) => s.user);
   const { permissionCodes } = usePermissions();
-  const calendarAccess = permissionCodes.includes("calendar.view");
+  const calendarAccess = permissionCodes.includes("modules.calendar.access") && permissionCodes.includes("calendar.view");
   const taskReminderAccess = permissionCodes.some((code) => [
     "tasks.view", "tasks.team_view", "tasks.manage", "tasks.update",
     "tasks.update_assigned", "kanban.view", "kanban.move", "roles.manage",
   ].includes(code));
-  const canViewReminderSettings = permissionCodes.includes("notifications.settings.view");
+  const canViewReminderSettings = permissionCodes.includes("modules.notifications.access") && permissionCodes.includes("notifications.settings.view");
   const { data: events } = useCalendarEvents(calendarAccess);
   const { data: reminderSetting } = useQuery({
     queryKey: ["meeting-reminder-setting"],
