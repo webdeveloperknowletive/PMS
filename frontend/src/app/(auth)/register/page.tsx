@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Building2, Check, Loader2, LockKeyhole, Mail, UserRound, Link2, ShieldCheck, Info, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
@@ -111,12 +112,12 @@ export default function RegisterPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">Password</Label>
-                <div className="relative"><FieldIcon><LockKeyhole className="h-4 w-4" /></FieldIcon><Input id="password" type="password" autoComplete="new-password" placeholder="At least 8 characters" aria-invalid={!!errors.password} className={`pl-10 ${errors.password ? "border-red-500 bg-red-50/40 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}`} {...passwordRegistration} /></div>
+                <div className="relative"><FieldIcon><LockKeyhole className="h-4 w-4" /></FieldIcon><PasswordInput id="password" autoComplete="new-password" placeholder="At least 8 characters" aria-invalid={!!errors.password} className={`pl-10 ${errors.password ? "border-red-500 bg-red-50/40 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}`} {...passwordRegistration} /></div>
                 <FieldError>{errors.password?.message}</FieldError>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="confirmPassword">Confirm password</Label>
-                <Input id="confirmPassword" type="password" autoComplete="new-password" placeholder="Enter your password again" aria-invalid={!!errors.confirmPassword} className={errors.confirmPassword ? "border-red-500 bg-red-50/40 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""} {...confirmPasswordRegistration} />
+                <PasswordInput id="confirmPassword" autoComplete="new-password" placeholder="Enter your password again" aria-invalid={!!errors.confirmPassword} className={errors.confirmPassword ? "border-red-500 bg-red-50/40 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""} {...confirmPasswordRegistration} />
                 <FieldError>{errors.confirmPassword?.message}</FieldError>
               </div>
               {errors.root && <p role="alert" className="flex gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{errors.root.message}</p>}

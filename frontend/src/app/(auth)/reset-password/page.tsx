@@ -10,7 +10,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authApi } from "@/lib/api/auth";
@@ -70,13 +70,13 @@ function ResetPasswordForm() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="password">New password</Label>
-            <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
+            <PasswordInput id="password" placeholder="••••••••" {...register("password")} />
             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="confirmPassword">Confirm new password</Label>
-            <Input id="confirmPassword" type="password" placeholder="••••••••" {...register("confirmPassword")} />
+            <PasswordInput id="confirmPassword" placeholder="••••••••" {...register("confirmPassword")} />
             {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
           </div>
 

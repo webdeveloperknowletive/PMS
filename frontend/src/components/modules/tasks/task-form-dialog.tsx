@@ -32,8 +32,9 @@ const NO_RELEASE = "__no_release__";
 const NO_COMPONENT = "__no_component__";
 const NO_CUSTOM_FIELD_VALUE = "__no_custom_field_value__";
 const NO_REMINDER = "none";
-const TASK_TYPES = ["EPIC", "STORY", "TASK", "BUG", "SPIKE"] as const;
-const TASK_TYPE_VALUES = [...TASK_TYPES, "SUBTASK"] as const;
+const TASK_TYPES = ["TASK"] as const;
+// Keep legacy values valid when editing records created before Work Type was restricted to Task.
+const TASK_TYPE_VALUES = ["EPIC", "STORY", "TASK", "BUG", "SPIKE", "SUBTASK"] as const;
 
 function isValidDateInput(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -159,7 +160,7 @@ export function TaskFormDialog({
     control,
     name: "checklist_items",
   });
-  const taskTypeOptions = task?.task_type === "SUBTASK" ? TASK_TYPE_VALUES : TASK_TYPES;
+  const taskTypeOptions = TASK_TYPES;
 
   useEffect(() => {
     if (open) {
@@ -303,7 +304,7 @@ export function TaskFormDialog({
             <div className="space-y-1.5">
               <Label>Work type</Label>
               <Controller control={control} name="task_type" render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <Select value={TASK_TYPES.includes(field.value as "TASK") ? field.value : "TASK"} onValueChange={field.onChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                   {taskTypeOptions.map((type) => <SelectItem key={type} value={type}>{type.charAt(0) + type.slice(1).toLowerCase()}</SelectItem>)}
                 </SelectContent></Select>
               )} />

@@ -1,9 +1,8 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
 
-// Ready-to-use label colors; users can still choose any custom color below.
+// Standard color set used for labels.
 export const READY_KANBAN_COLORS = [
   "#4BCE97", "#F5CD47", "#FEA362", "#F87168",
   "#9F8FEF", "#579DFF", "#00B8D9", "#8590A2",
@@ -12,11 +11,9 @@ export const READY_KANBAN_COLORS = [
 export function KanbanColorPalette({
   value,
   onChange,
-  custom = true,
 }: {
   value: string;
   onChange: (color: string) => void;
-  custom?: boolean;
 }) {
   return <div className="space-y-2" aria-label="Choose a label color">
     <div className="grid grid-cols-8 gap-1.5" role="radiogroup" aria-label="Ready label colors">
@@ -24,6 +21,5 @@ export function KanbanColorPalette({
         {value.toLowerCase() === color.toLowerCase() && <Check className="h-4 w-4 text-slate-900" />}
       </button>)}
     </div>
-    {custom && <label className="flex items-center justify-between gap-2 text-xs font-medium">Custom color<Input type="color" aria-label="Custom label color" className="h-9 w-12 p-1" value={value} onChange={(event) => onChange(event.target.value)} /></label>}
   </div>;
 }

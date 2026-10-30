@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
@@ -72,7 +73,7 @@ export default function LoginPage() {
                 Forgot password?
               </Link>
             </div>
-            <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
+            <PasswordInput id="password" placeholder="••••••••" {...register("password")} />
             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
           </div>
 

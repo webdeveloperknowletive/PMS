@@ -9,7 +9,7 @@ from app.core.dependencies import get_current_platform_admin
 from app.modules.audit.model import AuditEvent
 from app.modules.auth.model import LoginHistory
 from app.modules.organizations.model import Organization, OrganizationSubscription
-from app.modules.roles.model import UserRole
+from app.modules.roles.model import Role, UserRole
 from app.modules.users.model import User
 from app.modules.platform.model import PlatformAdmin
 
@@ -59,25 +59,66 @@ async def platform_organizations(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     search: str | None = Query(None, max_length=120),
+    status: str | None = Query(None, max_length=24),
+    subscription_status: str | None = Query(None, max_length=24),
+    sort_by: str = Query("created_at", pattern="^(name|created_at|user_count|last_activity_at)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     current_admin: PlatformAdmin = Depends(get_current_platform_admin),
     db: Session = Depends(get_db),
 ):
     previous = _global_session(db)
     try:
-        query = db.query(Organization)
+        user_counts = db.query(User.organization_id.label("org_id"), func.count(User.user_id).label("user_count")).group_by(User.organization_id).subquery()
+        activity = db.query(AuditEvent.organization_id.label("org_id"), func.max(AuditEvent.created_at).label("last_activity_at")).group_by(AuditEvent.organization_id).subquery()
+        query = db.query(
+            Organization,
+            func.coalesce(user_counts.c.user_count, 0).label("user_count"),
+            activity.c.last_activity_at,
+        ).outerjoin(user_counts, user_counts.c.org_id == Organization.organization_id)
+        query = query.outerjoin(activity, activity.c.org_id == Organization.organization_id)
+        query = query.outerjoin(OrganizationSubscription, OrganizationSubscription.organization_id == Organization.organization_id)
         if search and search.strip():
             term = f"%{search.strip()}%"
             query = query.filter((Organization.name.ilike(term)) | (Organization.slug.ilike(term)))
-        organizations = query.order_by(Organization.created_at.desc()).offset(skip).limit(limit).all()
-        counts = dict(db.query(User.organization_id, func.count(User.user_id)).group_by(User.organization_id).all())
+        if status:
+            query = query.filter(Organization.status == status.upper())
+        if subscription_status:
+            query = query.filter(func.upper(OrganizationSubscription.status) == subscription_status.upper())
+        total = query.with_entities(func.count(Organization.organization_id)).scalar() or 0
+        sort_columns = {
+            "name": Organization.name,
+            "created_at": Organization.created_at,
+            "user_count": func.coalesce(user_counts.c.user_count, 0),
+            "last_activity_at": activity.c.last_activity_at,
+        }
+        ordering = sort_columns[sort_by]
+        ordering = ordering.asc() if sort_order == "asc" else ordering.desc()
+        organizations = query.order_by(ordering.nullslast(), Organization.organization_id.asc()).offset(skip).limit(limit).all()
         subscriptions = {row.organization_id: row for row in db.query(OrganizationSubscription).all()}
-        return [{
-            "organization_id": item.organization_id, "name": item.name, "slug": item.slug,
-            "status": item.status, "plan_code": item.plan_code, "created_at": item.created_at,
-            "user_count": counts.get(item.organization_id, 0),
-            "subscription_status": subscriptions.get(item.organization_id).status if subscriptions.get(item.organization_id) else None,
-            "trial_ends_at": subscriptions.get(item.organization_id).trial_ends_at if subscriptions.get(item.organization_id) else None,
-        } for item in organizations]
+        organization_ids = [item.organization_id for item, _, _ in organizations]
+        owner_rows = (
+            db.query(User.organization_id, User.name, User.email)
+            .join(UserRole, UserRole.user_id == User.user_id)
+            .join(Role, UserRole.role_id == Role.role_id)
+            .filter(func.lower(Role.role_name) == "workspace owner", User.organization_id.in_(organization_ids))
+            .order_by(User.created_at.asc())
+            .all()
+        )
+        owners = {}
+        for row in owner_rows:
+            owners.setdefault(row.organization_id, {"name": row.name, "email": row.email})
+        return {
+            "items": [{
+                "organization_id": item.organization_id, "name": item.name, "slug": item.slug,
+                "status": item.status, "plan_code": item.plan_code, "created_at": item.created_at,
+                "user_count": user_count,
+                "last_activity_at": last_activity_at,
+                "subscription_status": subscriptions.get(item.organization_id).status if subscriptions.get(item.organization_id) else None,
+                "trial_ends_at": subscriptions.get(item.organization_id).trial_ends_at if subscriptions.get(item.organization_id) else None,
+                "owner": owners.get(item.organization_id),
+            } for item, user_count, last_activity_at in organizations],
+            "total": total, "skip": skip, "limit": limit,
+        }
     finally:
         _restore_session(db, previous)
 
@@ -91,14 +132,25 @@ async def platform_organization_detail(organization_id: str, current_admin: Plat
             raise HTTPException(status_code=404, detail="Organization not found")
         subscription = db.query(OrganizationSubscription).filter(OrganizationSubscription.organization_id == organization.organization_id).one_or_none()
         users = db.query(User).options(joinedload(User.user_roles).joinedload(UserRole.role)).filter(User.organization_id == organization.organization_id).order_by(User.created_at.desc()).limit(25).all()
+        owner = (
+            db.query(User)
+            .join(UserRole, UserRole.user_id == User.user_id)
+            .join(Role, UserRole.role_id == Role.role_id)
+            .filter(User.organization_id == organization.organization_id, func.lower(Role.role_name) == "workspace owner")
+            .order_by(User.created_at.asc())
+            .first()
+        )
         last_activity = db.query(AuditEvent.created_at).filter(AuditEvent.organization_id == organization.organization_id).order_by(AuditEvent.created_at.desc()).first()
+        recent_audit = db.query(AuditEvent).filter(AuditEvent.organization_id == organization.organization_id).order_by(AuditEvent.created_at.desc()).limit(10).all()
         return {
             "organization_id": organization.organization_id, "name": organization.name, "slug": organization.slug,
             "status": organization.status, "plan_code": organization.plan_code, "created_at": organization.created_at,
             "last_activity_at": last_activity[0] if last_activity else None,
+            "owner": {"name": owner.name, "email": owner.email} if owner else None,
             "user_count": db.query(func.count(User.user_id)).filter(User.organization_id == organization.organization_id).scalar() or 0,
-            "subscription": {"status": subscription.status, "plan_code": subscription.plan_code, "trial_ends_at": subscription.trial_ends_at} if subscription else None,
+            "subscription": {"status": subscription.status, "plan_code": subscription.plan_code, "trial_ends_at": subscription.trial_ends_at, "period_ends_at": subscription.period_ends_at, "cancel_at_period_end": subscription.cancel_at_period_end} if subscription else None,
             "users": [{"user_id": user.user_id, "name": user.name, "email": user.email, "is_active": user.is_active, "role_names": user.role_names} for user in users],
+            "recent_activity": [{"event_id": event.event_id, "actor_name": event.actor_name, "actor_roles": event.actor_roles, "method": event.method, "path": event.path, "status_code": event.status_code, "created_at": event.created_at} for event in recent_audit],
         }
     finally:
         _restore_session(db, previous)
@@ -134,6 +186,46 @@ async def platform_plans(current_admin: PlatformAdmin = Depends(get_current_plat
     try:
         rows = db.query(OrganizationSubscription.plan_code, OrganizationSubscription.status, func.count(OrganizationSubscription.subscription_id)).group_by(OrganizationSubscription.plan_code, OrganizationSubscription.status).all()
         return [{"plan_code": plan, "subscription_status": status, "organization_count": count} for plan, status, count in rows]
+    finally:
+        _restore_session(db, previous)
+
+
+@router.get("/subscriptions")
+async def platform_subscriptions(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    plan_code: str | None = Query(None, max_length=32),
+    subscription_status: str | None = Query(None, max_length=24),
+    current_admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: Session = Depends(get_db),
+):
+    previous = _global_session(db)
+    try:
+        query = db.query(OrganizationSubscription, Organization).join(
+            Organization, Organization.organization_id == OrganizationSubscription.organization_id
+        )
+        if plan_code:
+            query = query.filter(func.upper(OrganizationSubscription.plan_code) == plan_code.upper())
+        if subscription_status:
+            query = query.filter(func.upper(OrganizationSubscription.status) == subscription_status.upper())
+        total = query.with_entities(func.count(OrganizationSubscription.subscription_id)).scalar() or 0
+        rows = query.order_by(OrganizationSubscription.created_at.desc()).offset(skip).limit(limit).all()
+        return {
+            "items": [{
+                "subscription_id": subscription.subscription_id,
+                "organization_id": organization.organization_id,
+                "organization_name": organization.name,
+                "organization_slug": organization.slug,
+                "plan_code": subscription.plan_code,
+                "status": subscription.status,
+                "trial_ends_at": subscription.trial_ends_at,
+                "period_ends_at": subscription.period_ends_at,
+                "cancel_at_period_end": subscription.cancel_at_period_end,
+                "billing_provider": subscription.billing_provider,
+                "created_at": subscription.created_at,
+            } for subscription, organization in rows],
+            "total": total, "skip": skip, "limit": limit,
+        }
     finally:
         _restore_session(db, previous)
 
@@ -183,4 +275,4 @@ async def platform_health(current_admin: PlatformAdmin = Depends(get_current_pla
         db.execute(text("SELECT 1"))
     except Exception:
         database = "unavailable"
-    return {"api": "healthy", "database": database, "email_provider": "configured" if __import__("app.core.config", fromlist=["SMTP_HOST"]).SMTP_HOST else "not_configured"}
+    return {"api": "healthy", "database": database, "email_provider": "configured" if __import__("app.core.config", fromlist=["SMTP_HOST"]).SMTP_HOST else "not_configured", "checked_at": datetime.now(timezone.utc)}

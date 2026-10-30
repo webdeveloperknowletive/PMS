@@ -15,17 +15,18 @@ import { PlatformShell } from "@/components/layout/platform-shell";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const isPlatformPath = pathname.startsWith("/platform");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { isAuthenticated, isInitializing } = useAuthStore();
-  const permissions = usePermissions();
+  const permissions = usePermissions(!isPlatformPath);
 
-  useEventReminders(); // polls for upcoming events across the whole app while a session is active
+  useEventReminders(!isPlatformPath); // Platform sessions must not call workspace-only APIs.
 
   useEffect(() => {
     if (!isInitializing && !isAuthenticated) {
-      router.replace(pathname.startsWith("/platform") ? "/platform/login" : "/login");
+      router.replace(isPlatformPath ? "/platform/login" : "/login");
     }
-  }, [isInitializing, isAuthenticated, router]);
+  }, [isInitializing, isAuthenticated, isPlatformPath, router]);
 
   if (isInitializing) {
     return (
@@ -38,7 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!isAuthenticated) return null;
   const accessDenied = !permissions.isLoading && !canAccessModule(pathname, permissions.permissionCodes);
 
-  if (pathname.startsWith("/platform")) {
+  if (isPlatformPath) {
     return <PlatformShell>{children}</PlatformShell>;
   }
   return (

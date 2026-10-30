@@ -36,27 +36,27 @@ function saveRemindedKeys(userId: string, keys: Set<string>) {
  * user organizes, since calendar_events has no attendee/invitee list — the
  * only per-user linkage available is the `organizer` field.
  */
-export function useEventReminders() {
+export function useEventReminders(enabled = true) {
   const user = useAuthStore((s) => s.user);
-  const { permissionCodes } = usePermissions();
+  const { permissionCodes } = usePermissions(enabled);
   const calendarAccess = permissionCodes.includes("modules.calendar.access") && permissionCodes.includes("calendar.view");
   const taskReminderAccess = permissionCodes.some((code) => [
     "tasks.view", "tasks.team_view", "tasks.manage", "tasks.update",
     "tasks.update_assigned", "kanban.view", "kanban.move", "roles.manage",
   ].includes(code));
   const canViewReminderSettings = permissionCodes.includes("modules.notifications.access") && permissionCodes.includes("notifications.settings.view");
-  const { data: events } = useCalendarEvents(calendarAccess);
+  const { data: events } = useCalendarEvents(enabled && calendarAccess);
   const { data: reminderSetting } = useQuery({
     queryKey: ["meeting-reminder-setting"],
     queryFn: notificationSettingsApi.getMeetingReminder,
-    enabled: !!user && calendarAccess && canViewReminderSettings,
+    enabled: enabled && !!user && calendarAccess && canViewReminderSettings,
     refetchInterval: 10_000,
   });
   const queryClient = useQueryClient();
   const remindedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!user) return;
+    if (!enabled || !user) return;
     remindedRef.current = loadRemindedKeys(user.user_id);
 
     const checkReminders = async () => {
@@ -98,10 +98,10 @@ export function useEventReminders() {
     checkReminders();
     const interval = setInterval(checkReminders, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [events, user, queryClient, reminderSetting]);
+  }, [enabled, events, user, queryClient, reminderSetting]);
 
   useEffect(() => {
-    if (!user || !taskReminderAccess) return;
+    if (!enabled || !user || !taskReminderAccess) return;
     let checking = false;
     const checkTaskReminders = async () => {
       if (checking) return;
@@ -124,5 +124,5 @@ export function useEventReminders() {
     void checkTaskReminders();
     const interval = setInterval(() => void checkTaskReminders(), 60_000);
     return () => clearInterval(interval);
-  }, [user?.user_id, taskReminderAccess, queryClient]);
+  }, [enabled, user?.user_id, taskReminderAccess, queryClient]);
 }

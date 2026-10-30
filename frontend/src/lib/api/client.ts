@@ -66,6 +66,17 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Platform access tokens use a separate table and refresh flow. Never try
+    // to refresh them through the workspace endpoint or send the admin to the
+    // customer login when a platform request returns 401.
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/platform")) {
+      tokenStorage.clear();
+      if (window.location.pathname !== "/platform/login") {
+        window.location.href = "/platform/login";
+      }
+      return Promise.reject(error);
+    }
+
     const refreshToken = tokenStorage.getRefreshToken();
     if (!refreshToken) {
       tokenStorage.clear();

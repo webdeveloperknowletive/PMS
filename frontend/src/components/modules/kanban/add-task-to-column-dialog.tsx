@@ -233,7 +233,7 @@ export function AddTaskToColumnDialog({
                 <Label>Work type</Label>
                 <Select value={newTaskType} onValueChange={(value) => setNewTaskType(value as TaskType)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{["EPIC", "STORY", "TASK", "BUG", "SPIKE"].map((type) => <SelectItem key={type} value={type}>{type.charAt(0) + type.slice(1).toLowerCase()}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="TASK">Task</SelectItem></SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">

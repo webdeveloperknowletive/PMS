@@ -13,6 +13,7 @@ import { tasksApi } from "@/lib/api/tasks";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { labelTextColor, normalizeKanbanLabelKey } from "@/lib/kanban-labels";
 import { useCreateKanbanLabel, useKanbanLabels, useUpdateKanbanLabel } from "@/hooks/queries/use-kanban";
+import { READY_KANBAN_COLORS } from "@/components/modules/kanban/kanban-color-palette";
 import type { KanbanLabel } from "@/types/kanban";
 import type { Task, TaskAttachment, TaskChecklistItem } from "@/types/task";
 
@@ -60,10 +61,8 @@ export function KanbanCardFeatureDialog({
   const [formError, setFormError] = useState("");
   const [labelSearch, setLabelSearch] = useState("");
   const [newLabelName, setNewLabelName] = useState("");
-  const [newLabelColor, setNewLabelColor] = useState("#3B82F6");
   const [editingLabel, setEditingLabel] = useState<KanbanLabel | null>(null);
   const [editingLabelName, setEditingLabelName] = useState("");
-  const [editingLabelColor, setEditingLabelColor] = useState("#3B82F6");
   const taskId = task?.task_id;
   const labelsQuery = useKanbanLabels(open && feature === "labels");
   const createLabel = useCreateKanbanLabel();
@@ -194,7 +193,7 @@ export function KanbanCardFeatureDialog({
       return;
     }
     try {
-      const created = await createLabel.mutateAsync({ name, color: newLabelColor });
+      const created = await createLabel.mutateAsync({ name, color: READY_KANBAN_COLORS[5] });
       toggleLabel(created.label_key, true);
       setNewLabelName("");
       setFormError("");
@@ -207,7 +206,6 @@ export function KanbanCardFeatureDialog({
   const beginEditLabel = (label: KanbanLabel) => {
     setEditingLabel(label);
     setEditingLabelName(label.name);
-    setEditingLabelColor(label.color);
   };
 
   const saveLabelDefinition = async () => {
@@ -220,7 +218,7 @@ export function KanbanCardFeatureDialog({
     try {
       const updated = await updateLabel.mutateAsync({
         labelId: editingLabel.label_id,
-        payload: { name, color: editingLabelColor },
+        payload: { name, color: editingLabel.color },
       });
       if (updated.label_key !== editingLabel.label_key) {
         setLabels((current) => current.split(",").map((key) => normalizeKanbanLabelKey(key) === editingLabel.label_key ? updated.label_key : normalizeKanbanLabelKey(key)).filter(Boolean).join(", "));
@@ -286,7 +284,6 @@ export function KanbanCardFeatureDialog({
                   <Checkbox checked={checked} aria-label={`${checked ? "Remove" : "Add"} ${label.name}`} onCheckedChange={(value) => toggleLabel(label.label_key, value === true)} />
                   {isEditing ? <>
                     <Input value={editingLabelName} maxLength={40} aria-label="Edit label name" onChange={(event) => setEditingLabelName(event.target.value)} />
-                    <Input type="color" value={editingLabelColor} aria-label="Edit label color" className="h-9 w-12 shrink-0 p-1" onChange={(event) => setEditingLabelColor(event.target.value)} />
                     <Button type="button" variant="ghost" size="icon" aria-label="Save label changes" disabled={updateLabel.isPending} onClick={() => void saveLabelDefinition()}><Check className="h-4 w-4" /></Button>
                     <Button type="button" variant="ghost" size="icon" aria-label="Cancel label changes" onClick={() => setEditingLabel(null)}><X className="h-4 w-4" /></Button>
                   </> : <>
@@ -301,11 +298,10 @@ export function KanbanCardFeatureDialog({
             <p className="text-sm font-medium">Create a new label</p>
             <div className="flex items-center gap-2">
               <Input value={newLabelName} maxLength={40} placeholder="e.g. Bug, Feature, Backend" aria-label="New label name" onChange={(event) => setNewLabelName(event.target.value)} />
-              <Input type="color" value={newLabelColor} aria-label="New label color" className="h-10 w-12 shrink-0 p-1" onChange={(event) => setNewLabelColor(event.target.value)} />
               <Button type="button" variant="outline" disabled={!newLabelName.trim() || createLabel.isPending} onClick={() => void createLabelDefinition()}><Plus className="mr-1 h-4 w-4" />Create</Button>
             </div>
           </section>}
-          <p className="text-xs text-muted-foreground">Selected labels are saved on this card. Label colors and names are shared across your organization.</p>
+          <p className="text-xs text-muted-foreground">Selected label names are shared across your organization. New labels use the standard color.</p>
         </div>}
 
         {feature === "dates" && <div className="grid gap-4 sm:grid-cols-2">
