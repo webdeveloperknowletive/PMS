@@ -87,7 +87,6 @@ class WorkspaceInviteRead(BaseModel):
     expires_at: datetime
     accepted_at: datetime | None = None
     revoked_at: datetime | None = None
-    invitation_url: str | None = None
     email_sent: bool = False
 
 

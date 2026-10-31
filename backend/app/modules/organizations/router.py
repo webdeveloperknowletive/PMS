@@ -106,7 +106,7 @@ async def invite_member(
     db: Session = Depends(get_db),
 ):
     require_invitation_manager(current_user, db)
-    invitation, invitation_url, email_sent = service.create_invitation(
+    invitation, _, email_sent = service.create_invitation(
         db,
         current_user.organization_id,
         current_user,
@@ -119,7 +119,6 @@ async def invite_member(
         "role_id": invitation.role_id,
         "created_at": invitation.created_at,
         "expires_at": invitation.expires_at,
-        "invitation_url": invitation_url,
         "email_sent": email_sent,
     }
 
@@ -156,7 +155,7 @@ async def resend_workspace_invitation(
     ).one_or_none()
     if invitation is None:
         raise HTTPException(status_code=404, detail="Invitation not found")
-    invitation, invitation_url, email_sent = service.resend_invitation(db, invitation)
+    invitation, _, email_sent = service.resend_invitation(db, invitation)
     return {
         "invitation_id": invitation.invitation_id,
         "email": invitation.email,
@@ -165,7 +164,6 @@ async def resend_workspace_invitation(
         "expires_at": invitation.expires_at,
         "accepted_at": invitation.accepted_at,
         "revoked_at": invitation.revoked_at,
-        "invitation_url": invitation_url,
         "email_sent": email_sent,
     }
 

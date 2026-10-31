@@ -50,6 +50,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", "")
+SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "SprintIX")
 SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
 TRIAL_DURATION_DAYS = max(0, int(os.getenv("TRIAL_DURATION_DAYS", "14")))
 TERMS_VERSION = os.getenv("TERMS_VERSION", "demo-2026-10")

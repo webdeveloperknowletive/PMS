@@ -6,7 +6,7 @@
 2. SprintIX reserves the workspace slug and creates that company's workspace, a trial subscription record, workspace roles, permissions, and the first account. The slug is used as the workspace subdomain. The frontend reads the slug from its host, carries it into sign-in, and the backend checks that the account belongs to that workspace.
 3. That first account is always **Workspace Owner**. Public signup cannot choose an employee role.
 4. The owner verifies the email, signs in, can update company details from **Organization**, creates a project, and invites employees from **Users**.
-5. For each employee, an authorized person enters the email and chooses one of that workspace's roles. The invite link is single-use and expires after 72 hours. Accepting it consumes the link; afterward the employee signs in. Resending an unaccepted invitation issues a fresh link and invalidates the previous one.
+5. An authorized person uses one email field and one role selector in **Users**. Clicking **Add** saves that employee as a recipient chip showing their email and role, then clears the same fields for the next employee. Recipient chips can be removed before sending. **Send all invitations** sends the queued recipients in one click. A partially entered employee must be added or cleared before sending. Duplicate emails are rejected before sending. Each row is sent separately with its own result: successfully sent recipients are removed from the queue after sending and remain in the Invitations list. Failed email deliveries stay in the queue and can be retried using the saved invitation. A failed row does not prevent other rows from being processed. Acceptance links appear only inside the employee's email, not in the administrator UI or invitation API responses. The private link is single-use and expires after 72 hours. Accepting it consumes the link; afterward the employee signs in. Resending an unaccepted invitation issues a fresh link and invalidates the previous one.
 6. The employee opens the invitation, creates a password, and joins the workspace with the selected role. The employee cannot select or change the role during acceptance.
 7. The owner or an authorized administrator can see invitation status, resend an active or expired invitation, or revoke a pending invitation. Resending rotates the one-time token so the old link stops working. Active employees are managed in the existing Users, Roles, and Permissions screens.
 
@@ -44,11 +44,21 @@ Application records now carry a workspace ID, and authenticated ORM queries and 
 ## Local setup
 
 - Copy `backend/.env.example` to `backend/.env` and fill in the database and application settings.
-- Set `PUBLIC_APP_URL` to the frontend's actual local address (currently `http://localhost:3000`) so copied and emailed invitations open the running app. Keep the API on port 8000.
+- Set `PUBLIC_APP_URL` to the frontend's actual local address (currently `http://localhost:3002`) so emailed invitations open the running app. Keep the API on port 8000. `localhost` links only work on the machine running SprintIX; employees on other devices need a deployed, publicly reachable HTTPS URL.
 - From the `backend` directory, apply the versioned workspace migrations with `alembic upgrade head` before starting the API. Back up an existing database first.
-- Configure SMTP values to send verification and invitation emails. In local development, verification and invitation links can be copied from the app when email is not configured.
-- Set `WORKSPACE_DOMAIN` in the backend `.env` and `NEXT_PUBLIC_WORKSPACE_DOMAIN` in the frontend environment to the same host, without a scheme or path. Local links use `localhost:3000/login?workspace_slug=acme` so they work on Windows without local DNS changes.
+- Configure SMTP values to send verification and invitation emails. Invitations use email only; failed delivery is reported as a failure and can be retried, without exposing a copyable invitation token. The existing local-development verification fallback is unchanged.
+- Set `WORKSPACE_DOMAIN` in the backend `.env` and `NEXT_PUBLIC_WORKSPACE_DOMAIN` in the frontend environment to the same host, without a scheme or path. Local links use `localhost:3002/login?workspace_slug=acme` so they work on Windows without local DNS changes.
 - For production, point wildcard DNS (`*.yourdomain.com`) and HTTPS certificates at the frontend, set `WORKSPACE_DOMAIN=yourdomain.com`, and set `NEXT_PUBLIC_WORKSPACE_DOMAIN=yourdomain.com`. The backend accepts the base app origins listed in `ALLOW_ORIGINS` and workspace subdomains under that configured domain.
+
+## Invitation email delivery
+
+- `SMTP_FROM_NAME` defaults to `SprintIX`. `SMTP_FROM_EMAIL` must be a verified sender in Brevo; `SMTP_USERNAME` is Brevo's separate SMTP Login, not the From address.
+- Invitation emails include a plain-text alternative, an escaped HTML acceptance button, Date and Message-ID headers, and certificate-verified STARTTLS. A successful send means the SMTP server accepted the message, not that Gmail placed it in the inbox.
+- For better inbox delivery, use a sender on a domain you own, authenticate that domain in Brevo with the DNS records Brevo provides (including DKIM and DMARC), and use a public HTTPS application URL. Free Gmail domains cannot be authenticated by you in Brevo. Email formatting cannot guarantee inbox placement.
+- Authorize the API server's outgoing public IP in Brevo when SMTP IP blocking is enabled. Review Brevo's transactional delivery logs for bounces or rejections. Recipients can mark legitimate invitations as **Not spam**.
+- Do not add tracking pixels or marketing unsubscribe headers to account invitations. Treat them as transactional, recipient-specific messages.
+
+References: [Brevo deliverability guidance](https://help.brevo.com/hc/en-us/articles/360020418259-Best-practices-for-email-deliverability), [domain authentication](https://help.brevo.com/hc/en-us/articles/17286219877778-FAQs-About-domain-authentication-Brevo-code-DKIM-DMARC), and [Gmail sender guidelines](https://support.google.com/mail/answer/81126).
 
 ## Before public sale
 

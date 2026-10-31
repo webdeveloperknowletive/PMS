@@ -17,7 +17,6 @@ export interface OrganizationInvitation {
   expires_at: string;
   accepted_at?: string | null;
   revoked_at?: string | null;
-  invitation_url?: string | null;
   email_sent?: boolean;
 }
 

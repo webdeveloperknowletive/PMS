@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.config import APP_ENV, SMTP_FROM_EMAIL, SMTP_HOST, TERMS_VERSION, TRIAL_DURATION_DAYS, workspace_app_url
-from app.core.email import send_product_email
+from app.core.email import send_product_email, send_workspace_invitation
 from app.core.permissions import PERMISSION_CATALOG
 from app.modules.auth.service import VERIFY_TOKEN_EXPIRE_MINUTES, create_token, hash_password
 from app.modules.auth.model import EmailVerificationToken
@@ -208,7 +208,7 @@ def create_invitation(
     db.add(invitation)
     db.commit()
     db.refresh(invitation)
-    # Until SMTP is configured, return a copyable invite URL to the admin.
+    # The private acceptance link is emailed to the employee, not shown to the admin.
     organization = db.query(Organization).filter_by(organization_id=organization_id).one()
     invite_url = workspace_app_url(
         organization.slug,
@@ -216,10 +216,8 @@ def create_invitation(
         {"token": raw_token},
     )
     try:
-        email_sent = send_product_email(
-            email,
-            f"Join {organization.name} on SprintIX",
-            f"Hello,\n\n{invited_by.name} invited you to join {organization.name} on SprintIX.\n\nAccept the invitation:\n{invite_url}\n\nThis link expires in {INVITATION_EXPIRE_HOURS} hours.",
+        email_sent = send_workspace_invitation(
+            email, organization.name, invite_url, INVITATION_EXPIRE_HOURS, inviter_name=invited_by.name,
         )
     except HTTPException:
         logger.exception("Invitation created, but email delivery failed for %s", email)
@@ -247,10 +245,8 @@ def resend_invitation(db: Session, invitation: OrganizationInvitation) -> tuple[
         {"token": raw_token},
     )
     try:
-        email_sent = send_product_email(
-            invitation.email,
-            f"Your invitation to {organization.name} on SprintIX",
-            f"Hello,\n\nHere is your renewed invitation from {organization.name}.\n\nAccept the invitation:\n{invite_url}\n\nThis link expires in {INVITATION_EXPIRE_HOURS} hours. Any previously issued link has been cancelled.",
+        email_sent = send_workspace_invitation(
+            invitation.email, organization.name, invite_url, INVITATION_EXPIRE_HOURS,
         )
     except HTTPException:
         logger.exception("Invitation link renewed, but email delivery failed for %s", invitation.email)

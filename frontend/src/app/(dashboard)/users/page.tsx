@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, UserCog, Search, MailPlus, Copy, XCircle, RefreshCw, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Plus, Pencil, Trash2, UserCog, Search, MailPlus, X, XCircle, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -28,6 +28,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 
 const ALL = "__all__";
 const USER_PAGE_SIZE = 100;
+type InviteRow = { id: number; email: string; roleId: string; invitationId?: string; sent?: boolean; error?: string };
 
 export default function UsersPage() {
   const [userPage, setUserPage] = useState(0);
@@ -48,26 +49,78 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [permissionsUser, setPermissionsUser] = useState<User | null>(null);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [inviteRows, setInviteRows] = useState<InviteRow[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRoleId, setInviteRoleId] = useState("");
-  const [lastInviteUrl, setLastInviteUrl] = useState("");
+  const nextRecipientId = useRef(0);
+  const inviteEmailInput = useRef<HTMLInputElement>(null);
+  const [sendingInvites, setSendingInvites] = useState(false);
   const currentUser = useAuthStore((s) => s.user);
 
-  const handleInvite = async () => {
-    if (!inviteEmail.trim() || !inviteRoleId) {
+  const inviteableRoles = (roles ?? []).filter((role) => !role.is_system);
+
+  const handleAddRecipient = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (sendingInvites) return;
+    const email = inviteEmail.trim().toLowerCase();
+    if (!email || !inviteableRoles.some((role) => role.role_id === inviteRoleId)) {
       toast.error("Enter an employee email and choose their role.");
       return;
     }
+    if (inviteRows.some((row) => row.email === email)) {
+      toast.error("This email is already in the recipient list.");
+      return;
+    }
+    const id = nextRecipientId.current++;
+    setInviteRows((rows) => [...rows, { id, email, roleId: inviteRoleId }]);
+    setInviteEmail("");
+    setInviteRoleId("");
+    inviteEmailInput.current?.focus();
+  };
+
+  const handleInvite = async () => {
+    if (sendingInvites) return;
+    if (inviteEmail.trim() || inviteRoleId) {
+      toast.error("Click Add for the employee you entered, or clear the fields before sending.");
+      return;
+    }
+    const pending = inviteRows.filter((row) => !row.sent);
+    if (!pending.length) return;
+    if (pending.some((row) => !row.email.trim() || !inviteableRoles.some((role) => role.role_id === row.roleId))) {
+      toast.error("Enter an employee email and choose their role.");
+      return;
+    }
+    const emails = inviteRows.map((row) => row.email.trim().toLowerCase());
+    if (new Set(emails).size !== emails.length) {
+      toast.error("Each employee email can appear only once. Remove duplicate emails.");
+      return;
+    }
+    setSendingInvites(true);
+    let sent = 0;
     try {
-      const result = await inviteMutation.mutateAsync({ email: inviteEmail.trim(), role_id: inviteRoleId });
-      setInviteEmail("");
-      setLastInviteUrl(result.invitation_url ?? "");
-      toast.success(result.email_sent ? "Invitation email sent." : "Invitation created. Copy and share the invitation link.");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err));
+      for (const row of pending) {
+        try {
+          // Retry saved invitations through resend so failed delivery never creates duplicates.
+          const result = row.invitationId
+            ? await resendInvitation.mutateAsync(row.invitationId)
+            : await inviteMutation.mutateAsync({ email: row.email.trim().toLowerCase(), role_id: row.roleId });
+          if (result.email_sent) sent += 1;
+          setInviteRows((rows) => rows.map((item) => item.id === row.id ? {
+            ...item, invitationId: result.invitation_id, sent: Boolean(result.email_sent),
+            error: result.email_sent ? undefined : "Email not sent. Check SMTP settings, then retry or use Resend below.",
+          } : item));
+        } catch (err) {
+          setInviteRows((rows) => rows.map((item) => item.id === row.id ? { ...item, error: getApiErrorMessage(err) } : item));
+        }
+      }
+      if (sent) toast.success(`${sent} invitation email${sent === 1 ? "" : "s"} sent.`);
+      if (sent < pending.length) toast.error(`${pending.length - sent} invitation${pending.length - sent === 1 ? " needs" : "s need"} attention. Check the messages beside each employee.`);
+    } finally {
+      // Sent invitations remain in the Invitations list, not in the send queue.
+      setInviteRows((rows) => rows.filter((row) => !row.sent));
+      setSendingInvites(false);
     }
   };
-  const inviteableRoles = (roles ?? []).filter((role) => !role.is_system);
 
   const handleRevokeInvitation = async (id: string) => {
     try {
@@ -81,8 +134,11 @@ export default function UsersPage() {
   const handleResendInvitation = async (id: string) => {
     try {
       const result = await resendInvitation.mutateAsync(id);
-      setLastInviteUrl(result.invitation_url ?? "");
-      toast.success(result.email_sent ? "A new invitation email has been sent. The previous link no longer works." : "A new invitation link is ready to copy and share.");
+      setInviteRows((rows) => rows.map((row) => row.invitationId === id ? {
+        ...row, sent: Boolean(result.email_sent), error: result.email_sent ? undefined : "Email not sent. Check SMTP settings and retry.",
+      } : row).filter((row) => !row.sent));
+      if (result.email_sent) toast.success("Invitation email sent. The previous email's invitation is no longer valid.");
+      else toast.error("Invitation saved, but email was not sent. Check SMTP settings and retry.");
     } catch (err) {
       toast.error(getApiErrorMessage(err));
     }
@@ -158,21 +214,35 @@ export default function UsersPage() {
         {can("invitations.create") && <Card id="invite-employee" className="border-blue-100">
           <CardContent className="space-y-4 p-5">
             <div>
-              <h2 className="flex items-center gap-2 text-base font-semibold"><MailPlus className="h-4 w-4 text-blue-600" /> Invite an employee</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Choose a role. They will receive a one-time link to join this workspace.</p>
+              <h2 className="flex items-center gap-2 text-base font-semibold"><MailPlus className="h-4 w-4 text-blue-600" /> Invite employees</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Enter an email, select a role, and click Add. Build your recipient list, then send everyone an invitation in one click.</p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Input type="email" placeholder="employee@company.com" value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} className="sm:flex-1" />
-              <Select value={inviteRoleId} onValueChange={setInviteRoleId}>
-                <SelectTrigger className="sm:w-56"><SelectValue placeholder="Choose a role" /></SelectTrigger>
+            <form onSubmit={handleAddRecipient} className="flex flex-col gap-3 sm:flex-row">
+              <Input ref={inviteEmailInput} aria-label="Employee email" type="email" required placeholder="employee@company.com" value={inviteEmail} disabled={sendingInvites} onChange={(event) => setInviteEmail(event.target.value)} className="sm:flex-1" />
+              <Select value={inviteRoleId} disabled={sendingInvites} onValueChange={setInviteRoleId}>
+                <SelectTrigger aria-label="Employee role" className="sm:w-56"><SelectValue placeholder="Choose a role" /></SelectTrigger>
                 <SelectContent>{inviteableRoles.map((role) => <SelectItem key={role.role_id} value={role.role_id}>{role.role_name}</SelectItem>)}</SelectContent>
               </Select>
-              <Button onClick={handleInvite} disabled={inviteMutation.isPending}><MailPlus className="h-4 w-4" /> Send invitation</Button>
+              <Button type="submit" variant="outline" disabled={sendingInvites}><Plus className="h-4 w-4" /> Add</Button>
+            </form>
+            <div className="rounded-xl border bg-slate-50/60 p-3">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Recipients ({inviteRows.length})</p>
+              {inviteRows.length === 0 ? <p className="text-sm text-muted-foreground">Added employees will appear here with their roles.</p> :
+                <ul aria-label="Invitation recipients" className="flex flex-wrap gap-2">
+                  {inviteRows.map((row) => <li key={row.id} className={`max-w-full rounded-xl border px-3 py-2 text-sm ${row.error ? "border-red-200 bg-red-50" : row.sent ? "border-green-200 bg-green-50" : "border-violet-200 bg-white"}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="min-w-0 break-all font-medium">{row.email} <span className="font-normal text-muted-foreground">({roles?.find((role) => role.role_id === row.roleId)?.role_name ?? "Role"})</span></span>
+                      <button type="button" aria-label={`Remove ${row.email} from recipients`} disabled={sendingInvites} className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:opacity-50" onClick={() => setInviteRows((rows) => rows.filter((item) => item.id !== row.id))}><X className="h-3.5 w-3.5" /></button>
+                    </div>
+                    {row.sent && <p role="status" className="mt-1 text-xs text-green-700">Email sent</p>}
+                    {row.error && <p role="alert" className="mt-1 max-w-sm text-xs text-destructive">{row.error}</p>}
+                  </li>)}
+                </ul>}
             </div>
-            {lastInviteUrl && <div className="flex flex-col gap-2 rounded-lg bg-blue-50 p-3 sm:flex-row sm:items-center">
-              <p className="min-w-0 flex-1 break-all text-xs text-blue-900">{lastInviteUrl}</p>
-              <Button size="sm" variant="outline" onClick={async () => { await navigator.clipboard.writeText(lastInviteUrl); toast.success("Invitation link copied."); }}><Copy className="h-3.5 w-3.5" /> Copy link</Button>
-            </div>}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p aria-live="polite" className="text-sm text-muted-foreground">{inviteRows.filter((row) => !row.sent).length} ready to send</p>
+              <Button type="button" onClick={handleInvite} disabled={sendingInvites || inviteRows.every((row) => row.sent)}><MailPlus className="h-4 w-4" /> {sendingInvites ? "Sending invitations…" : "Send all invitations"}</Button>
+            </div>
           </CardContent>
         </Card>}
 
@@ -186,8 +256,8 @@ export default function UsersPage() {
               return <div key={item.invitation_id} className="flex flex-col gap-2 rounded-lg border px-3 py-2.5 sm:flex-row sm:items-center">
                 <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.email} <span className="font-normal text-slate-500">({roleName})</span></p><p className="text-xs text-muted-foreground">{statusLabel} · expires {formatDate(item.expires_at)}</p></div>
                 {(statusLabel === "Pending" || statusLabel === "Expired") && <>
-                  {can("invitations.resend") && <Button size="sm" variant="outline" onClick={() => handleResendInvitation(item.invitation_id)} disabled={resendInvitation.isPending}><RefreshCw className="h-3.5 w-3.5" /> Resend</Button>}
-                  {can("invitations.delete") && statusLabel === "Pending" && <Button size="sm" variant="ghost" onClick={() => handleRevokeInvitation(item.invitation_id)} disabled={revokeInvitation.isPending}><XCircle className="h-4 w-4" /> Revoke</Button>}
+                  {can("invitations.resend") && <Button size="sm" variant="outline" onClick={() => handleResendInvitation(item.invitation_id)} disabled={sendingInvites || resendInvitation.isPending}><RefreshCw className="h-3.5 w-3.5" /> Resend</Button>}
+                  {can("invitations.delete") && statusLabel === "Pending" && <Button size="sm" variant="ghost" onClick={() => handleRevokeInvitation(item.invitation_id)} disabled={sendingInvites || revokeInvitation.isPending}><XCircle className="h-4 w-4" /> Revoke</Button>}
                 </>}
               </div>;
             })}</div>}
