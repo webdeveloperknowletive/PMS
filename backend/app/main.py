@@ -92,8 +92,17 @@ app.add_middleware(
     allow_origins=ALLOW_ORIGINS,
     allow_origin_regex=WORKSPACE_ORIGIN_REGEX,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+    allow_headers=[
+        "Accept",
+        "Authorization",
+        "Content-Type",
+        "Origin",
+        "X-Requested-With",
+        "X-Tenant-ID",
+        "X-Organization-ID",
+    ],
+    max_age=600,
 )
 
 # ==========================================================
