@@ -42,10 +42,14 @@ export function UserFormDialog({
   open,
   onOpenChange,
   user,
+  page = false,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user?: User | null;
+  page?: boolean;
+  onSaved?: (savedUser: User) => void;
 }) {
   const isEditing = !!user;
   const createMutation = useCreateUser();
@@ -71,29 +75,22 @@ export function UserFormDialog({
 
   const onSubmit = async (values: FormValues) => {
     try {
+      let savedUser: User;
       if (isEditing && user) {
-        await updateMutation.mutateAsync({ userId: user.user_id, payload: { name: values.name, email: values.email } });
+        savedUser = await updateMutation.mutateAsync({ userId: user.user_id, payload: { name: values.name, email: values.email } });
         toast.success("User updated");
       } else {
-        await createMutation.mutateAsync({ name: values.name, email: values.email, password: values.password, is_active: true });
+        savedUser = await createMutation.mutateAsync({ name: values.name, email: values.email, password: values.password, is_active: true });
         toast.success("User created");
       }
-      onOpenChange(false);
+      if (onSaved) onSaved(savedUser);
+      else onOpenChange(false);
     } catch (err) {
       setError("root", { message: getApiErrorMessage(err) });
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit User" : "Add User"}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? "Update this user's profile." : "Create a new user account."}
-          </DialogDescription>
-        </DialogHeader>
-
+  const form = (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="name">Full name</Label>
@@ -126,7 +123,7 @@ export function UserFormDialog({
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{errors.root.message}</p>
           )}
 
-          <DialogFooter>
+          <div className="flex justify-end gap-2 border-t pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
@@ -134,9 +131,9 @@ export function UserFormDialog({
               {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
               {isEditing ? "Save changes" : "Create user"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
   );
+  if (page) return <section className="mx-auto max-w-3xl rounded-md border bg-white p-5 shadow-sm sm:p-8">{form}</section>;
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent><DialogHeader><DialogTitle>{isEditing ? "Edit User" : "Add User"}</DialogTitle><DialogDescription>{isEditing ? "Update this user's profile." : "Create a new user account."}</DialogDescription></DialogHeader>{form}</DialogContent></Dialog>;
 }               

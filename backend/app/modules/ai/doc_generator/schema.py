@@ -38,6 +38,7 @@ class AIDocumentGenerationRead(AIDocumentGenerationBase):
 
     document_generation_id: uuid.UUID
     created_at: datetime
+    published_document_id: uuid.UUID | None = None
 
 
 # ==========================================================

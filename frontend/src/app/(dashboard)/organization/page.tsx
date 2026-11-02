@@ -1,17 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Building2, Loader2, Save } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
+import { InlineDetailField } from "@/components/shared/inline-detail-field";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentOrganization, useUpdateCurrentOrganization } from "@/hooks/queries/use-organizations";
 import { usePermissions } from "@/hooks/use-permissions";
-import { getApiErrorMessage } from "@/lib/api/client";
 import { WORKSPACE_DOMAIN } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
@@ -19,27 +15,15 @@ export default function OrganizationPage() {
   const { canManageOrganization, isLoading: permissionsLoading } = usePermissions();
   const { data: organization, isLoading } = useCurrentOrganization();
   const update = useUpdateCurrentOrganization();
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const workspaceSlug = organization?.slug ?? slug;
+  const workspaceSlug = organization?.slug ?? "";
   const workspaceUrl = WORKSPACE_DOMAIN.includes("localhost")
     ? `http://${WORKSPACE_DOMAIN}/login?workspace_slug=${encodeURIComponent(workspaceSlug)}`
     : `https://${workspaceSlug}.${WORKSPACE_DOMAIN}`;
 
-  useEffect(() => {
+  const save = async (payload: { name?: string; slug?: string }) => {
     if (!organization) return;
-    setName(organization.name);
-    setSlug(organization.slug);
-  }, [organization]);
-
-  const save = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    try {
-      await update.mutateAsync({ name: name.trim(), slug: slug.trim().toLowerCase() });
-      toast.success("Workspace settings saved.");
-    } catch (error) {
-      toast.error(getApiErrorMessage(error));
-    }
+    await update.mutateAsync({ name: payload.name ?? organization.name, slug: payload.slug ?? organization.slug });
+    toast.success("Workspace updated");
   };
 
   if (!permissionsLoading && !canManageOrganization) {
@@ -56,11 +40,11 @@ export default function OrganizationPage() {
             <CardDescription>These details identify your company workspace to its members.</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div> : <form onSubmit={save} className="space-y-4">
-              <div className="space-y-1.5"><Label htmlFor="organization-name">Organization name</Label><Input id="organization-name" value={name} onChange={(event) => setName(event.target.value)} required minLength={2} maxLength={180} /></div>
-              <div className="space-y-1.5"><Label htmlFor="organization-slug">Workspace address</Label><div className="flex overflow-hidden rounded-md border focus-within:ring-2 focus-within:ring-ring"><Input id="organization-slug" value={slug} onChange={(event) => setSlug(event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/--+/g, "-"))} required minLength={3} maxLength={63} pattern="[a-z0-9]([a-z0-9-]*[a-z0-9])?" className="rounded-none border-0 focus-visible:ring-0" /><span className="flex shrink-0 items-center border-l bg-slate-50 px-3 text-xs text-slate-500">{WORKSPACE_DOMAIN.includes("localhost") ? "workspace link" : `.${WORKSPACE_DOMAIN}`}</span></div><p className="text-xs text-slate-500">Workspace members can use this address to sign in to the right company space.</p></div>
-              <Button type="submit" disabled={update.isPending || isLoading}>{update.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save changes</Button>
-            </form>}
+            {isLoading ? <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div> : organization && <div className="space-y-4">
+              <InlineDetailField label="Organization name" value={organization.name} canEdit={canManageOrganization} required validate={(value) => value.length < 2 || value.length > 180 ? "Use 2 to 180 characters" : undefined} onSave={(value) => save({ name: value })} />
+              <InlineDetailField label="Workspace address" value={organization.slug} canEdit={canManageOrganization} required validate={(value) => /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(value) && value.length >= 3 && value.length <= 63 ? undefined : "Use 3 to 63 lowercase letters, numbers, or hyphens"} onSave={(value) => save({ slug: value.toLowerCase() })} />
+              <p className="text-xs text-slate-500">Workspace members can use this address to sign in to the right company space.</p>
+            </div>}
           </CardContent>
         </Card>
 

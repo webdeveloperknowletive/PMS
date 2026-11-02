@@ -59,3 +59,7 @@ class NotificationVolumeRead(BaseModel):
 
 class NotificationVolumeUpdate(BaseModel):
     volume_percent: int = Field(..., ge=0, le=100)
+
+
+class TaskDeadlineEmailSetting(BaseModel):
+    enabled: bool

@@ -275,4 +275,12 @@ async def platform_health(current_admin: PlatformAdmin = Depends(get_current_pla
         db.execute(text("SELECT 1"))
     except Exception:
         database = "unavailable"
-    return {"api": "healthy", "database": database, "email_provider": "configured" if __import__("app.core.config", fromlist=["SMTP_HOST"]).SMTP_HOST else "not_configured", "checked_at": datetime.now(timezone.utc)}
+    from app.core import config as app_config
+    email_configured = bool(app_config.SMTP_HOST and app_config.SMTP_FROM_EMAIL)
+    return {
+        "api": "healthy",
+        "database": database,
+        "email_provider": "configured" if email_configured else "not_configured",
+        "email_delivery": "not_checked",
+        "checked_at": datetime.now(timezone.utc),
+    }

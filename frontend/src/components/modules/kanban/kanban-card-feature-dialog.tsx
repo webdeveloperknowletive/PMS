@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Check, CheckSquare, Download, Loader2, Paperclip, Pencil, Plus, Tag, Trash2, X } from "lucide-react";
@@ -287,8 +288,8 @@ export function KanbanCardFeatureDialog({
                     <Button type="button" variant="ghost" size="icon" aria-label="Save label changes" disabled={updateLabel.isPending} onClick={() => void saveLabelDefinition()}><Check className="h-4 w-4" /></Button>
                     <Button type="button" variant="ghost" size="icon" aria-label="Cancel label changes" onClick={() => setEditingLabel(null)}><X className="h-4 w-4" /></Button>
                   </> : <>
-                    <span className="min-w-0 flex-1 truncate rounded-md px-3 py-2 text-sm font-medium" style={{ backgroundColor: label.color, color: labelTextColor(label.color) }}>{label.name}</span>
-                    {canManageLabels && label.label_id && <Button type="button" variant="ghost" size="icon" aria-label={`Edit ${label.name}`} onClick={() => beginEditLabel(label as KanbanLabel)}><Pencil className="h-4 w-4" /></Button>}
+                    {label.label_id ? <Link href={`/kanban/labels/${label.label_id}`} className="min-w-0 flex-1 truncate rounded-md px-3 py-2 text-sm font-medium hover:underline" style={{ backgroundColor: label.color, color: labelTextColor(label.color) }}>{label.name}</Link> : <span className="min-w-0 flex-1 truncate rounded-md px-3 py-2 text-sm font-medium" style={{ backgroundColor: label.color, color: labelTextColor(label.color) }}>{label.name}</span>}
+                    {canManageLabels && label.label_id && <Button asChild type="button" variant="ghost" size="icon" aria-label={`Open ${label.name}`}><Link href={`/kanban/labels/${label.label_id}`}><Pencil className="h-4 w-4" /></Link></Button>}
                   </>}
                 </div>;
               })}

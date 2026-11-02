@@ -181,3 +181,36 @@ def delete_generated_document(db: Session, document_generation_id: UUID) -> None
     deleted = repository.delete_document_generation(db, document_generation_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Generated document not found")
+
+
+def publish_generated_document(db: Session, document_generation_id: UUID, actor) -> AIDocumentGeneration:
+    """Publish a reviewed saved AI draft into the workspace Documentation module once."""
+    from app.modules.documentation.model import Document
+    from app.modules.projects.service import get_project
+
+    draft = db.query(AIDocumentGeneration).filter(
+        AIDocumentGeneration.document_generation_id == document_generation_id,
+        AIDocumentGeneration.organization_id == actor.organization_id,
+    ).with_for_update().one_or_none()
+    if draft is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Generated document not found")
+    if draft.published_document_id:
+        return draft
+    get_project(db, draft.project_id, actor)
+    published = Document(
+        organization_id=actor.organization_id,
+        project_id=draft.project_id,
+        title=draft.title,
+        version=draft.version,
+        resource_type="AI_DOC",
+        content=draft.generated_content,
+        created_by=f"{actor.name} (AI document)",
+        updated_by=f"{actor.name} (AI document)",
+    )
+    db.add(published)
+    db.flush()
+    draft.published_document_id = published.document_id
+    draft.status = "Published"
+    db.commit()
+    db.refresh(draft)
+    return draft

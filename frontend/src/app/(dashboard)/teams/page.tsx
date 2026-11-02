@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, Users, Search, UsersRound } from "lucide-react";
@@ -14,8 +16,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TeamFormDialog } from "@/components/modules/teams/team-form-dialog";
-import { TeamMembersDialog } from "@/components/modules/teams/team-members-dialog";
 import { useDeleteTeam, useTeamLeads, useTeams, useTeamMemberCandidates } from "@/hooks/queries/use-teams";
 import { useProjects } from "@/hooks/queries/use-projects";
 import { useUsers } from "@/hooks/queries/use-users";
@@ -57,6 +57,7 @@ function TeamRosterPreview({ team, users, assignedMembers = [] }: { team: Team; 
 }
 
 export default function TeamsPage() {
+  const router = useRouter();
   const currentUser = useAuthStore((state) => state.user);
   const { permissionCodes, canManageTeams } = usePermissions();
   const canCreateTeam = permissionCodes.includes("teams.create") || ["teams.members.create", "teams.members.update", "teams.members.delete"].some((code) => permissionCodes.includes(code));
@@ -78,10 +79,7 @@ export default function TeamsPage() {
   const [projectFilter, setProjectFilter] = useState(ALL);
   const [statusFilter, setStatusFilter] = useState(ALL);
 
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [deletingTeam, setDeletingTeam] = useState<Team | null>(null);
-  const [membersTeam, setMembersTeam] = useState<Team | null>(null);
 
   const projectMap = useMemo(() => new Map((projects ?? []).map((p) => [p.project_id, p])), [projects]);
   const userMap = useMemo(() => {
@@ -142,14 +140,6 @@ export default function TeamsPage() {
     requestAnimationFrame(() => document.getElementById("team-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
-  const openCreate = () => {
-    setEditingTeam(null);
-    setFormOpen(true);
-  };
-  const openEdit = (team: Team) => {
-    setEditingTeam(team);
-    setFormOpen(true);
-  };
   const confirmDelete = async () => {
     if (!deletingTeam) return;
     try {
@@ -166,10 +156,10 @@ export default function TeamsPage() {
       <PageHeader
         title="Teams"
         description="Manage your teams and collaborate effectively"
-        actions={canCreateTeam ? <Button onClick={openCreate}>
+        actions={canCreateTeam ? <Button asChild><Link href="/teams/new">
             <Plus className="h-4 w-4" />
             New Team
-          </Button> : undefined}
+          </Link></Button> : undefined}
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -245,7 +235,7 @@ export default function TeamsPage() {
               title="No teams found"
               description="Try adjusting your filters, or create a new team."
               actionLabel={canCreateTeam ? "New Team" : undefined}
-              onAction={canCreateTeam ? openCreate : undefined}
+              onAction={canCreateTeam ? () => router.push("/teams/new") : undefined}
             />
           </CardContent>
         ) : (
@@ -273,7 +263,7 @@ export default function TeamsPage() {
                 return (
                   <TableRow key={team.team_id}>
                     <TableCell>
-                      <p className="font-medium text-foreground">{team.team_name}</p>
+                      <Link href={`/teams/${team.team_id}`} className="font-medium text-[#0c66e4] hover:underline">{team.team_name}</Link>
                       {team.description && (
                         <p className="line-clamp-1 max-w-xs text-xs text-muted-foreground">{team.description}</p>
                       )}
@@ -288,13 +278,13 @@ export default function TeamsPage() {
                       <TeamRosterPreview team={team} users={Array.from(userMap.values())} assignedMembers={taskAssigneesByTeam.get(team.team_id)} />
                     </TableCell>
                     <TableCell>
-                      <button
-                        onClick={() => setMembersTeam(team)}
+                      <Link
+                        href={`/teams/${team.team_id}`}
                         className="flex items-center gap-1.5 text-sm text-primary hover:underline"
                       >
                         <UsersRound className="h-3.5 w-3.5" />
                         {canManageMembership ? "Manage" : "View"} (max {team.max_members})
-                      </button>
+                      </Link>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`border-0 font-medium ${STATUS_COLOR[team.status] ?? "bg-slate-100 text-slate-600"}`}>
@@ -304,8 +294,8 @@ export default function TeamsPage() {
                     <TableCell className="text-sm text-muted-foreground">{formatDate(team.created_at)}</TableCell>
                     <TableCell>
                       {(canManageMembership || canEditTeam || canDeleteTeam) && <div className="flex flex-nowrap items-center gap-1">
-                        {canManageMembership && <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Manage team members" title="Manage team members" onClick={() => setMembersTeam(team)}><UsersRound className="h-4 w-4" /></Button>}
-                        {canEditTeam && <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit team" title="Edit team" onClick={() => openEdit(team)}><Pencil className="h-4 w-4" /></Button>}
+                        {canManageMembership && <Button asChild variant="outline" size="icon" className="h-8 w-8" aria-label="Manage team members" title="Manage team members"><Link href={`/teams/${team.team_id}`}><UsersRound className="h-4 w-4" /></Link></Button>}
+                        {canEditTeam && <Button asChild variant="outline" size="icon" className="h-8 w-8" aria-label="Open team" title="Open team"><Link href={`/teams/${team.team_id}`}><Pencil className="h-4 w-4" /></Link></Button>}
                         {canDeleteTeam && <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete team" title="Delete team" onClick={() => setDeletingTeam(team)}><Trash2 className="h-4 w-4" /></Button>}
                       </div>}
                     </TableCell>
@@ -317,9 +307,7 @@ export default function TeamsPage() {
         )}
       </Card>
 
-      <TeamFormDialog open={formOpen} onOpenChange={setFormOpen} team={editingTeam} />
 
-      <TeamMembersDialog open={!!membersTeam} onOpenChange={(open) => !open && setMembersTeam(null)} team={membersTeam} canManage={canManageMembership} />
 
       <ConfirmDialog
         open={!!deletingTeam}

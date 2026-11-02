@@ -12,6 +12,7 @@ export const metadata: Metadata = {
     shortcut: "/sprintix-logo-hd.png",
   },
   appleWebApp: { capable: true, title: "SprintIX", statusBarStyle: "default" },
+  other: { "mobile-web-app-capable": "yes" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

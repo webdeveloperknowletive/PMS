@@ -93,6 +93,8 @@ Kanban columns support optional WIP limits, including whole-number validation, a
 
 The Kanban board supports search and priority, assignee, component, release, epic, sprint, and label filters, plus assignee and priority grouping. A label-only selection is applied correctly. Card dragging pauses while a filtered or grouped view is active, so a visible card index cannot accidentally overwrite the actual board order.
 
+Each project has an independent Kanban board. The board selector loads columns, placements, tasks, and archived cards for the selected project; its stable `project_id` query parameter supports direct links from a project page. Switching projects clears board filters and open card dialogs. The API applies organization and project visibility checks to board reads and writes, and validates that task placements and target columns belong to the same project. A member’s primary task assignment does not grant access to other projects; additional Kanban card members remain a separate relationship from the primary task assignee.
+
 The project backlog/sprint view can group its existing tasks by direct epic parent or release, with an explicit “No epic” or “No release” group. Grouping is a view over existing tasks and does not change task or sprint data.
 
 The header search now queries accessible tasks, projects, goals, releases, documents, reports, people, visible calendar events, messages from chats the user belongs to, and audit events for workspace administrators. Chat results open the matching conversation, and other results respect the signed-in user's organization and module access.

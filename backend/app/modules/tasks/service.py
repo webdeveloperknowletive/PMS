@@ -29,6 +29,8 @@ from app.modules.workflow.model import Workflow
 from app.modules.projects.custom_field_schema import _validate_value as _validate_custom_field_value
 from app.modules.notifications.events import notify_project_users, project_recipient_ids, notify_users
 from app.modules.notifications.model import Notification
+from app.modules.notifications.model import NotificationUserSetting
+from app.core.email import send_product_email
 from app.modules.users.model import User
 from app.modules.kanban.model import KanbanCardMember, KanbanColumn, KanbanLabel, KanbanTask
 from app.modules.gantt.model import GanttTask
@@ -78,7 +80,7 @@ def deliver_task_deadline_reminders(db: Session, current_user: User, local_date:
     tasks = db.query(Task).filter(
         Task.organization_id == current_user.organization_id,
         Task.archived_at.is_(None),
-        Task.status.notin__(("DONE", "CANCELLED")),
+        Task.status.notin_(("DONE", "CANCELLED")),
         Task.due_date >= local_date,
         Task.due_date <= local_date + timedelta(days=7),
         Task.reminder_days_before.is_not(None),
@@ -86,6 +88,7 @@ def deliver_task_deadline_reminders(db: Session, current_user: User, local_date:
     ).all()
 
     created = 0
+    pending_emails: list[tuple[str, str, str]] = []
     try:
         for task in tasks:
             reminder_days = task.reminder_days_before
@@ -118,6 +121,14 @@ def deliver_task_deadline_reminders(db: Session, current_user: User, local_date:
                 notification_type="Task Deadline Reminder",
                 is_read=False,
             ))
+            preference = db.get(NotificationUserSetting, current_user.user_id)
+            if preference is None or preference.email_task_deadline_reminders:
+                pending_emails.append((
+                    current_user.email,
+                    f"{title}: {task.task_name}"[:255],
+                    f"Hello {current_user.name},\n\nYour task ‘{task.task_name}’ is due {deadline}. "
+                    f"This is your reminder set for {_REMINDER_TEXT[reminder_days]}.\n\nSprintIX",
+                ))
             created += 1
         if created:
             db.commit()
@@ -126,6 +137,13 @@ def deliver_task_deadline_reminders(db: Session, current_user: User, local_date:
     except Exception:
         db.rollback()
         raise
+    for to_email, subject, body in pending_emails:
+        try:
+            send_product_email(to_email, subject, body)
+        except Exception:
+            # The in-app reminder is already durable; mail failures must not undo it.
+            import logging
+            logging.getLogger(__name__).exception("Task deadline email could not be sent to %s", to_email)
     return created
 
 
@@ -707,15 +725,9 @@ def _validate_team_assignment(db: Session, project_id, actor: User, team_id, ass
     ).first() is not None
     if not is_member:
         raise HTTPException(status_code=400, detail="Choose a member of the selected team")
-    active_tasks = db.query(Task.task_id).filter(
-        Task.project_id == project_id,
-        Task.user_id == assignee_id,
-        Task.status.notin_(("DONE", "CANCELLED")),
-    )
-    if task_id is not None:
-        active_tasks = active_tasks.filter(Task.task_id != task_id)
-    if active_tasks.first() is not None:
-        raise HTTPException(status_code=409, detail="This member already has unfinished work in this project")
+    # A developer/tester can own multiple unfinished tasks in a project.
+    # Workload planning is handled by sprint capacity and task views, not by
+    # rejecting a valid assignment here.
 
 
 def _notify_assignee(db: Session, task: Task, assigned_by: User) -> None:

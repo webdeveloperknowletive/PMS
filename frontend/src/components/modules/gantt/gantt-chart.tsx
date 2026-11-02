@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -113,7 +114,7 @@ export function GanttChart({
               style={{ height: ROW_HEIGHT }}
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">{task?.task_name ?? "Unknown task"}</p>
+                <Link href={`/gantt/${entry.gantt_id}`} className="block truncate text-sm font-medium text-[#0c66e4] hover:underline">{task?.task_name ?? "Unknown task"}</Link>
                 <p className="text-xs text-muted-foreground">
                   {formatScheduleDate(entry.start_date)} – {formatScheduleDate(entry.end_date)}
                 </p>
@@ -122,7 +123,7 @@ export function GanttChart({
               <div className="flex shrink-0 items-center gap-1">
                 <UserAvatar user={task?.user_id ? userMap.get(task.user_id) : null} showName={false} size="sm" />
                 {(onEdit || onDelete) && <div className="flex items-center gap-1">
-                  {onEdit && <Button variant="outline" size="icon" className="h-7 w-7" aria-label="Edit scheduled task" title="Edit scheduled task" onClick={() => onEdit(entry)}><Pencil className="h-3.5 w-3.5" /></Button>}
+                  {onEdit && <Button asChild variant="outline" size="icon" className="h-7 w-7" aria-label="Open scheduled task" title="Open scheduled task"><Link href={`/gantt/${entry.gantt_id}`}><Pencil className="h-3.5 w-3.5" /></Link></Button>}
                   {onDelete && <Button variant="outline" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" aria-label="Remove scheduled task" title="Remove scheduled task" onClick={() => onDelete(entry)}><Trash2 className="h-3.5 w-3.5" /></Button>}
                 </div>}
               </div>

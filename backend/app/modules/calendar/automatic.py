@@ -19,6 +19,7 @@ def add_automatic_calendar_entries(
     personal_user_ids: set[UUID] | None = None,
     event_date: date | None = None,
     related_task_id: UUID | None = None,
+    related_milestone_id: UUID | None = None,
 ) -> None:
     """Add one shared entry and private copies for the people involved.
 
@@ -41,6 +42,7 @@ def add_automatic_calendar_entries(
         "end_datetime": end,
         "is_automatic": True,
         "related_task_id": related_task_id,
+        "related_milestone_id": related_milestone_id,
     }
     db.add(CalendarEvent(**common, calendar_scope="ORGANIZATION", calendar_owner_id=None))
     for user_id in (personal_user_ids or {actor_id}):

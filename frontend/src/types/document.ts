@@ -3,10 +3,12 @@ export interface DocumentBase {
   title: string;
   file_url?: string | null;
   version: string;
-  resource_type: "FILE" | "GITHUB" | "DRIVE";
+  resource_type: "FILE" | "GITHUB" | "DRIVE" | "AI_DOC";
 }
 
-export interface DocumentCreate extends DocumentBase {}
+export interface DocumentCreate extends Omit<DocumentBase, "resource_type"> {
+  resource_type: "FILE" | "GITHUB" | "DRIVE";
+}
 
 export interface DocumentUpdate {
   title?: string;
@@ -24,4 +26,5 @@ export interface Document extends DocumentBase {
   file_size?: number | null;
   created_by?: string | null;
   updated_by?: string | null;
+  content?: string | null;
 }

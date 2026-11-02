@@ -30,9 +30,10 @@ from app.modules.kanban.schema import (
 def create_kanban_column(
     db: Session,
     payload: KanbanColumnCreate,
+    organization_id=None,
 ) -> KanbanColumn:
 
-    column = KanbanColumn(**payload.model_dump())
+    column = KanbanColumn(**payload.model_dump(), organization_id=organization_id)
 
     db.add(column)
     db.commit()
@@ -136,9 +137,10 @@ def delete_kanban_column(
 def create_kanban_task(
     db: Session,
     payload: KanbanTaskCreate,
+    organization_id=None,
 ) -> KanbanTask:
 
-    kanban_task = KanbanTask(**payload.model_dump())
+    kanban_task = KanbanTask(**payload.model_dump(), organization_id=organization_id)
 
     db.add(kanban_task)
     db.commit()

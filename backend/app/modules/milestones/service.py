@@ -9,6 +9,7 @@ Routers should only ever call this layer, never the model
 or repository directly.
 """
 
+from datetime import datetime, time, timedelta, timezone
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -21,6 +22,7 @@ from app.modules.notifications.events import notify_project_users
 from app.modules.notifications.events import project_recipient_ids
 from app.modules.users.model import User
 from app.modules.calendar.automatic import add_automatic_calendar_entries
+from app.modules.calendar.model import CalendarEvent
 
 
 def get_milestones(db: Session, skip: int = 0, limit: int = 100) -> list[Milestone]:
@@ -48,6 +50,7 @@ def create_milestone(db: Session, payload: MilestoneCreate, actor: User) -> Mile
         event_type="Milestone",
         personal_user_ids=project_recipient_ids(db, milestone.project_id) | {actor.user_id},
         event_date=milestone.due_date,
+        related_milestone_id=milestone.milestone_id,
     )
     db.commit()
     notify_project_users(db, milestone.project_id, actor_id=actor.user_id,
@@ -61,16 +64,28 @@ def update_milestone(db: Session, milestone_id: UUID, payload: MilestoneUpdate, 
     milestone = repository.update_milestone(db, milestone_id, payload)
     if milestone is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
-    add_automatic_calendar_entries(
-        db,
-        project_id=milestone.project_id,
-        actor_id=actor.user_id,
-        title=f"Milestone updated: {milestone.title}",
-        description=f"{actor.name} updated this milestone.",
-        event_type="Work activity",
-        personal_user_ids=project_recipient_ids(db, milestone.project_id) | {actor.user_id},
-        event_date=milestone.due_date,
-    )
+    start = datetime.combine(milestone.due_date, time(hour=9), tzinfo=timezone.utc)
+    events = db.query(CalendarEvent).filter(
+        CalendarEvent.related_milestone_id == milestone.milestone_id,
+        CalendarEvent.is_automatic.is_(True),
+    ).all()
+    if events:
+        for event in events:
+            event.project_id = milestone.project_id
+            event.title = f"Milestone: {milestone.title}"[:255]
+            event.description = f"Milestone due date: {milestone.title}."
+            event.event_type = "Milestone"
+            event.start_datetime = start
+            event.end_datetime = start + timedelta(minutes=30)
+    else:
+        # Older milestones may not have a linked event; create the first stable link on update.
+        add_automatic_calendar_entries(
+            db, project_id=milestone.project_id, actor_id=actor.user_id,
+            title=f"Milestone: {milestone.title}",
+            description=f"Milestone due date: {milestone.title}.", event_type="Milestone",
+            personal_user_ids=project_recipient_ids(db, milestone.project_id) | {actor.user_id},
+            event_date=milestone.due_date, related_milestone_id=milestone.milestone_id,
+        )
     db.commit()
     notify_project_users(db, milestone.project_id, actor_id=actor.user_id,
         title=f"Milestone updated: {milestone.title}", message=f"{actor.name} updated the milestone.",
@@ -82,15 +97,6 @@ def delete_milestone(db: Session, milestone_id: UUID, actor: User) -> None:
     """Delete a milestone, or raise 404."""
     milestone = get_milestone(db, milestone_id)
     project_id, title = milestone.project_id, milestone.title
-    add_automatic_calendar_entries(
-        db,
-        project_id=project_id,
-        actor_id=actor.user_id,
-        title=f"Milestone deleted: {title}",
-        description=f"{actor.name} deleted this milestone.",
-        event_type="Work activity",
-        personal_user_ids=project_recipient_ids(db, project_id) | {actor.user_id},
-    )
     deleted = repository.delete_milestone(db, milestone_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")

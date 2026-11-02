@@ -7,12 +7,14 @@ from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.modules.ai.meeting_summary import service
 from app.modules.ai.meeting_summary.schema import (
+    AIMeetingApplyRequest,
     AIMeetingSummaryCreate,
     AIMeetingSummaryGenerationRequest,
     AIMeetingSummaryRead,
     AIMeetingSummaryUpdate,
 )
 from app.modules.ai.meeting_summary.permissions import can_generate, can_view_results
+from app.modules.tasks.permissions import can_manage_tasks
 from app.modules.users.model import User
 
 router = APIRouter(
@@ -55,6 +57,20 @@ async def get_meeting_summary(
     db: Session = Depends(get_db),
 ):
     return service.get_meeting_summary(db, summary_id)
+
+
+@router.post(
+    "/{summary_id}/apply-actions",
+    response_model=AIMeetingSummaryRead,
+    dependencies=[Depends(can_generate), Depends(can_manage_tasks)],
+)
+async def apply_meeting_actions(
+    summary_id: UUID,
+    payload: AIMeetingApplyRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.apply_meeting_actions(db, summary_id, payload, current_user)
 
 
 @router.post(

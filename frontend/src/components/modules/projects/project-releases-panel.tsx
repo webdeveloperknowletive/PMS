@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import { useState, type FormEvent } from "react";
 import { ChevronDown, ChevronUp, History, PackageCheck, Plus, Trash2 } from "lucide-react";
@@ -68,7 +69,7 @@ export function ProjectReleasesPanel({ projectId }: { projectId: string }) {
       </div>}
       {isLoading ? <p className="text-xs text-slate-500">Loading releases…</p> : releases.length === 0 ? <p className="rounded-xl bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">No releases are planned for this project.</p> : releases.map((release) => <div key={release.release_id} className="space-y-2 rounded-xl border border-slate-100 p-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-slate-800">{release.name}{release.version ? ` · ${release.version}` : ""}</p><p className="mt-1 text-xs text-slate-500">{release.completed_task_count} complete · {release.unresolved_task_count} unresolved of {release.task_count}{release.release_date ? ` · due ${release.release_date}` : ""}</p></div>
+          <div className="min-w-0 flex-1"><Link href={`/projects/${projectId}/releases/${release.release_id}`} className="block truncate text-sm font-semibold text-[#0c66e4] hover:underline">{release.name}{release.version ? ` · ${release.version}` : ""}</Link><p className="mt-1 text-xs text-slate-500">{release.completed_task_count} complete · {release.unresolved_task_count} unresolved of {release.task_count}{release.release_date ? ` · due ${release.release_date}` : ""}</p></div>
           {canManage ? <Select value={release.status} onValueChange={(status) => updateRelease.mutate({ projectId, releaseId: release.release_id, payload: { status: status as typeof release.status } }, { onError: (error) => toast.error(getApiErrorMessage(error)) })}><SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger><SelectContent>{releaseStatuses.map((status) => <SelectItem key={status} value={status}>{status.replace("_", " ")}</SelectItem>)}</SelectContent></Select> : <Badge variant="outline">{release.status.replace("_", " ")}</Badge>}
           <Button type="button" size="sm" variant="ghost" aria-expanded={historyReleaseId === release.release_id} aria-controls={`release-history-${release.release_id}`} onClick={() => setHistorySelection((current) => current === release.release_id ? undefined : release.release_id)}>
             <History className="h-4 w-4" />History {historyReleaseId === release.release_id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}

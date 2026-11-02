@@ -20,6 +20,7 @@ from app.modules.notifications.schema import (
     NotificationSoundSettingUpdate,
     NotificationVolumeRead,
     NotificationVolumeUpdate,
+    TaskDeadlineEmailSetting,
 )
 from app.modules.roles.permissions import can_manage_roles
 
@@ -132,6 +133,24 @@ async def update_notification_volume_setting(
         setting.volume_percent = payload.volume_percent
     db.commit()
     return {"volume_percent": payload.volume_percent}
+
+
+@router.get("/settings/task-deadline-email", response_model=TaskDeadlineEmailSetting)
+async def get_task_deadline_email_setting(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    setting = db.get(NotificationUserSetting, current_user.user_id)
+    return {"enabled": setting.email_task_deadline_reminders if setting else True}
+
+
+@router.put("/settings/task-deadline-email", response_model=TaskDeadlineEmailSetting)
+async def update_task_deadline_email_setting(payload: TaskDeadlineEmailSetting, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    setting = db.get(NotificationUserSetting, current_user.user_id)
+    if setting is None:
+        setting = NotificationUserSetting(user_id=current_user.user_id, email_task_deadline_reminders=payload.enabled)
+        db.add(setting)
+    else:
+        setting.email_task_deadline_reminders = payload.enabled
+    db.commit()
+    return {"enabled": payload.enabled}
 
 
 @router.get("/", response_model=list[NotificationRead], status_code=status.HTTP_200_OK)

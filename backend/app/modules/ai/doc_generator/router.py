@@ -14,6 +14,7 @@ from app.modules.ai.doc_generator.schema import (
 )
 from app.modules.ai.doc_generator.permissions import can_generate, can_view_results
 from app.modules.users.model import User
+from app.modules.documentation.permissions import can_upload_documents
 
 router = APIRouter(
     prefix="/ai/documentation",
@@ -79,3 +80,21 @@ async def save_document(
 ):
     """Persists a previewed (and possibly user-edited) document."""
     return service.save_document(db, payload, generated_by=current_user.user_id)
+
+
+@router.post(
+    "/{document_generation_id}/publish",
+    response_model=AIDocumentGenerationRead,
+    dependencies=[Depends(can_generate), Depends(can_upload_documents)],
+)
+async def publish_generated_document(
+    document_generation_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.publish_generated_document(db, document_generation_id, current_user)
+
+
+@router.delete("/{document_generation_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(can_generate)])
+async def delete_generated_document(document_generation_id: UUID, db: Session = Depends(get_db)):
+    service.delete_generated_document(db, document_generation_id)

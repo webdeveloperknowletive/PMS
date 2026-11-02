@@ -23,6 +23,8 @@ Shutdown:
 # ==========================================================
 
 from contextlib import asynccontextmanager
+import asyncio
+from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from sqlalchemy import text
@@ -32,6 +34,8 @@ from app.core.logger import logger
 from app.core.config import APP_NAME
 from app.modules.roles.bootstrap import initialize_role_permissions
 from app.modules.organizations.bootstrap import get_default_organization_id
+from db.session import SessionLocal
+from app.modules.users.model import User
 
 # ==========================================================
 # Lifespan Context Manager
@@ -62,7 +66,15 @@ async def lifespan(app: FastAPI):
         logger.error(f"Database connection failed: {exc}")
         raise
 
-    yield
+    reminder_task = asyncio.create_task(_run_task_deadline_reminders(), name="task-deadline-reminders")
+    try:
+        yield
+    finally:
+        reminder_task.cancel()
+        try:
+            await reminder_task
+        except asyncio.CancelledError:
+            pass
 
     # ---------------------------------------------------------------
     # Shutdown
@@ -73,3 +85,31 @@ async def lifespan(app: FastAPI):
     engine.dispose()
 
     logger.info("Database connections closed.")
+
+
+async def _run_task_deadline_reminders() -> None:
+    """Run reminder checks even while workspace users have their browsers closed.
+
+    The delivery table's unique key makes multiple API worker processes safe:
+    only the worker that reserves a reminder sends it.
+    """
+    while True:
+        await asyncio.sleep(60)
+        await asyncio.to_thread(_run_task_deadline_reminder_cycle)
+
+
+def _run_task_deadline_reminder_cycle() -> None:
+    local_date = datetime.now(timezone.utc).date()
+    try:
+        with SessionLocal() as db:
+            users = db.query(User).filter(User.is_active.is_(True)).all()
+            for user in users:
+                try:
+                    db.info["organization_id"] = user.organization_id
+                    from app.modules.tasks.service import deliver_task_deadline_reminders
+                    deliver_task_deadline_reminders(db, user, local_date)
+                except Exception:
+                    db.rollback()
+                    logger.exception("Scheduled task deadline reminder failed for user %s", user.user_id)
+    except Exception:
+        logger.exception("Could not run the scheduled task deadline reminder check")

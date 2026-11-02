@@ -28,8 +28,8 @@ export const kanbanApi = {
     return data;
   },
   // ── Columns ────────────────────────────────────────────
-  listColumns: async (): Promise<KanbanColumn[]> => {
-    const { data } = await apiClient.get<KanbanColumn[]>("/kanban/columns");
+  listColumns: async (projectId?: string): Promise<KanbanColumn[]> => {
+    const { data } = await apiClient.get<KanbanColumn[]>("/kanban/columns", { params: projectId ? { project_id: projectId } : undefined });
     return data;
   },
   getColumn: async (columnId: string): Promise<KanbanColumn> => {
@@ -49,8 +49,8 @@ export const kanbanApi = {
   },
 
   // ── Task placements (which column + position a task sits at) ─────────
-  listTasks: async (): Promise<KanbanTask[]> => {
-    const { data } = await apiClient.get<KanbanTask[]>("/kanban/tasks");
+  listTasks: async (projectId?: string): Promise<KanbanTask[]> => {
+    const { data } = await apiClient.get<KanbanTask[]>("/kanban/tasks", { params: projectId ? { project_id: projectId } : undefined });
     return data;
   },
   /**

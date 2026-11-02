@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, Workflow as WorkflowIcon, Search, Star, CircleCheck, CirclePause, Archive, Layers3 } from "lucide-react";
 import { toast } from "sonner";
@@ -206,7 +207,7 @@ export default function WorkflowPage() {
                   <TableRow key={w.workflow_id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-foreground">{w.workflow_name}</p>
+                        <Link href={`/workflow/${w.workflow_id}`} className="font-medium text-[#0c66e4] hover:underline">{w.workflow_name}</Link>
                         {w.is_default && (
                           <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-label="Default workflow" />
                         )}
@@ -230,7 +231,7 @@ export default function WorkflowPage() {
                     <TableCell className="text-sm text-muted-foreground">{formatDate(w.updated_at)}</TableCell>
                     <TableCell>
                       {canManageWorkflow && <div className="flex flex-nowrap items-center gap-1">
-                        <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit workflow" title="Edit workflow" onClick={() => openEdit(w)}><Pencil className="h-4 w-4" /></Button>
+                        <Button asChild variant="outline" size="icon" className="h-8 w-8" aria-label="Open workflow" title="Open workflow"><Link href={`/workflow/${w.workflow_id}`}><Pencil className="h-4 w-4" /></Link></Button>
                         <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete workflow" title="Delete workflow" onClick={() => setDeletingWorkflow(w)}><Trash2 className="h-4 w-4" /></Button>
                       </div>}
                     </TableCell>

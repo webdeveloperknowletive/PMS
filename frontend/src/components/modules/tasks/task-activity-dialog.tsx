@@ -17,7 +17,7 @@ function formatMoment(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
-export function TaskActivityDialog({ task, open, onOpenChange, canComment = false }: { task: Task | null; open: boolean; onOpenChange: (open: boolean) => void; canComment?: boolean }) {
+export function TaskActivityDialog({ task, open, onOpenChange, canComment = false, page = false }: { task: Task | null; open: boolean; onOpenChange: (open: boolean) => void; canComment?: boolean; page?: boolean }) {
   const taskId = task?.task_id;
   const { canManageTasks } = usePermissions();
   const { data: comments = [] } = useTaskComments(taskId);
@@ -61,9 +61,7 @@ export function TaskActivityDialog({ task, open, onOpenChange, canComment = fals
     return `${link.link_type === "DUPLICATES" ? "duplicates" : "relates to"} ${otherName}`;
   };
 
-  return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl">
-      <DialogHeader><DialogTitle>{task?.task_name ?? "Task details"}</DialogTitle><DialogDescription>Comments and changes for this task.</DialogDescription></DialogHeader>
+  const panelContent = <div className="space-y-5">
       <section className="space-y-3">
         <h3 className="flex items-center gap-2 text-sm font-semibold"><MessageCircle className="h-4 w-4" />Comments</h3>
         <div className="max-h-56 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-3">
@@ -89,6 +87,7 @@ export function TaskActivityDialog({ task, open, onOpenChange, canComment = fals
         <h3 className="text-sm font-semibold">Activity history</h3>
         {activity.length ? <ol className="space-y-2">{activity.map((entry) => <li key={entry.activity_id} className="flex gap-3 text-xs"><span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-violet-500" /><div><p className="text-slate-700"><span className="font-semibold">{entry.actor_name ?? "Workspace member"}</span> {entry.details}</p><time className="text-[10px] text-slate-500">{formatMoment(entry.created_at)}</time></div></li>)}</ol> : <p className="text-xs text-slate-500">No history has been recorded yet.</p>}
       </section>
-    </DialogContent>
-  </Dialog>;
+  </div>;
+  if (page) return <section className="mx-auto max-w-5xl rounded-md border bg-white p-5 shadow-sm sm:p-8">{panelContent}</section>;
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>{task?.task_name ?? "Task details"}</DialogTitle><DialogDescription>Comments and changes for this task.</DialogDescription></DialogHeader>{panelContent}</DialogContent></Dialog>;
 }

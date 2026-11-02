@@ -44,3 +44,5 @@ class AITaskEstimationRead(AITaskEstimationBase):
 
     estimation_id: uuid.UUID
     created_at: datetime
+    is_applied: bool = False
+    applied_at: datetime | None = None

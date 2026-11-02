@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { Component, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -87,8 +88,8 @@ export function ProjectComponentsPanel({ projectId }: { projectId: string }) {
           <Input aria-label="Component description" value={editingDescription} onChange={(event) => setEditingDescription(event.target.value)} maxLength={1000} placeholder="Optional description" />
           <div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button><Button type="submit" disabled={updateComponent.isPending || editingName.trim().length < 2}>{updateComponent.isPending ? "Saving…" : "Save changes"}</Button></div>
         </form> : <div key={component.component_id} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3">
-          <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-slate-800">{component.name}</p>{component.description && <p className="mt-1 truncate text-xs text-slate-500">{component.description}</p>}</div>
-          {canManage && <><Button type="button" variant="ghost" size="icon" aria-label={`Edit ${component.name}`} onClick={() => { setEditingId(component.component_id); setEditingName(component.name); setEditingDescription(component.description ?? ""); }}><Pencil className="h-4 w-4" /></Button><Button type="button" variant="ghost" size="icon" aria-label={`Remove ${component.name}`} onClick={() => setDeleting(component)}><Trash2 className="h-4 w-4" /></Button></>}
+          <div className="min-w-0 flex-1"><Link href={`/projects/${projectId}/components/${component.component_id}`} className="block truncate text-sm font-semibold text-[#0c66e4] hover:underline">{component.name}</Link>{component.description && <p className="mt-1 truncate text-xs text-slate-500">{component.description}</p>}</div>
+          {canManage && <><Button asChild type="button" variant="ghost" size="icon" aria-label={`Open ${component.name}`}><Link href={`/projects/${projectId}/components/${component.component_id}`}><Pencil className="h-4 w-4" /></Link></Button><Button type="button" variant="ghost" size="icon" aria-label={`Remove ${component.name}`} onClick={() => setDeleting(component)}><Trash2 className="h-4 w-4" /></Button></>}
         </div>)}
       </CardContent>
     </Card>

@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.core.dependencies import get_current_user
 from app.modules.ai.sprint_planning import service
-from app.modules.ai.sprint_planning.schema import AISprintPlanCreate, AISprintPlanGenerationRequest, AISprintPlanRead, AISprintPlanUpdate
+from app.modules.ai.sprint_planning.schema import AISprintPlanApplyRequest, AISprintPlanCreate, AISprintPlanGenerationRequest, AISprintPlanRead, AISprintPlanUpdate
 from app.modules.ai.sprint_planning.permissions import can_generate, can_view_results
+from app.modules.tasks.permissions import can_manage_tasks
 from app.modules.users.model import User
 
 router = APIRouter(
@@ -50,6 +51,20 @@ async def get_sprint_plan(
     db: Session = Depends(get_db),
 ):
     return service.get_sprint_plan(db, sprint_plan_id)
+
+
+@router.post(
+    "/{sprint_plan_id}/apply",
+    response_model=AISprintPlanRead,
+    dependencies=[Depends(can_generate), Depends(can_manage_tasks)],
+)
+async def apply_sprint_plan(
+    sprint_plan_id: UUID,
+    payload: AISprintPlanApplyRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.apply_sprint_plan(db, sprint_plan_id, payload, current_user)
 
 
 @router.post(

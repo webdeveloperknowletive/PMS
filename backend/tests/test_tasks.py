@@ -8,11 +8,46 @@ from pydantic import ValidationError
 from app.modules.tasks.schema import SprintCreate, SprintUpdate, TaskBulkUpdate, TaskCreate, TaskUpdate
 from app.modules.projects.goal_schema import ProjectGoalCreate, ProjectGoalUpdate
 from app.modules.projects.schema import ProjectUpdate
-from app.modules.tasks.service import _build_sprint_burndown, _validate_task_transition
+from app.modules.tasks.service import _build_sprint_burndown, _validate_task_transition, _validate_team_assignment
+from app.modules.projects.model import Project
+from app.modules.tasks.model import Task
+from app.modules.teams.model import Team, TeamLead, TeamMember
 from app.modules.workflow.schema import WorkflowCreate
 from app.modules.workflow.transitions import DEFAULT_TASK_TRANSITIONS
 from app.core.exceptions import ForbiddenException
 from app.modules.calendar.schema import CalendarEventCreate, CalendarEventUpdate
+
+
+def test_team_assignment_allows_a_member_to_own_multiple_open_project_tasks():
+    project_id, team_id, assignee_id = uuid4(), uuid4(), uuid4()
+    actor = SimpleNamespace(user_id=uuid4(), organization_id=uuid4())
+    team = SimpleNamespace(team_id=team_id, team_lead_id=uuid4())
+
+    class Query:
+        def __init__(self, entity):
+            self.entity = entity
+
+        def filter(self, *_conditions):
+            return self
+
+        def one_or_none(self):
+            return team
+
+        def first(self):
+            if self.entity is TeamLead.team_lead_id:
+                return None
+            if self.entity is Project.project_id:
+                return (project_id,)
+            if self.entity is TeamMember.member_id:
+                return (uuid4(),)
+            pytest.fail("Assignment validation queried unrelated records")
+
+    class Database:
+        def query(self, entity):
+            assert entity is not Task.task_id
+            return Query(entity)
+
+    _validate_team_assignment(Database(), project_id, actor, team_id, assignee_id)
 
 
 def test_bulk_update_accepts_assignee_and_explicit_unassignment():

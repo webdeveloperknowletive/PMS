@@ -10,6 +10,7 @@ it does not call an LLM itself.
 
 from uuid import UUID
 from decimal import Decimal
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, ValidationError
@@ -21,6 +22,7 @@ from app.modules.ai.task_estimation import repository
 from app.modules.ai.task_estimation.model import AITaskEstimation
 from app.modules.ai.task_estimation.schema import AITaskEstimationCreate, AITaskEstimationGenerationRequest, AITaskEstimationUpdate
 from app.modules.tasks.model import Task
+from app.modules.users.model import User
 
 
 class _EstimationOutput(BaseModel):
@@ -90,3 +92,26 @@ def delete_task_estimation(db: Session, estimation_id: UUID) -> None:
     deleted = repository.delete_task_estimation(db, estimation_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task estimation not found")
+
+
+def apply_task_estimation(db: Session, estimation_id: UUID, actor: User) -> AITaskEstimation:
+    estimation = db.query(AITaskEstimation).filter(
+        AITaskEstimation.estimation_id == estimation_id,
+        AITaskEstimation.organization_id == actor.organization_id,
+    ).with_for_update().one_or_none()
+    if estimation is None:
+        raise HTTPException(status_code=404, detail="Task estimation not found")
+    if estimation.is_applied:
+        raise HTTPException(status_code=409, detail="This estimate has already been applied")
+    from app.modules.tasks import service as task_service
+    task = task_service.get_task(db, estimation.task_id, current_user=actor)
+    if task.organization_id != actor.organization_id or task.project_id != estimation.project_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    task.estimated_hours = estimation.estimated_hours
+    if estimation.story_points is not None:
+        task.story_points = estimation.story_points
+    estimation.is_applied = True
+    estimation.applied_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(estimation)
+    return estimation

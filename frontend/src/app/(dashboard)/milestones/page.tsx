@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, Flag, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -203,9 +204,7 @@ export default function MilestonesPage() {
                     />
                   </TableCell>
                   <TableCell>
-                    <p className={`font-medium ${m.is_completed ? "text-muted-foreground line-through" : "text-foreground"}`}>
-                      {m.title}
-                    </p>
+                    <Link href={`/milestones/${m.milestone_id}`} className={`font-medium hover:underline ${m.is_completed ? "text-muted-foreground line-through" : "text-[#0c66e4]"}`}>{m.title}</Link>
                     {m.description && (
                       <p className="line-clamp-1 max-w-xs text-xs text-muted-foreground">{m.description}</p>
                     )}
@@ -219,7 +218,7 @@ export default function MilestonesPage() {
                   <TableCell className="text-sm text-muted-foreground">{formatDate(m.due_date)}</TableCell>
                   <TableCell>
                     {canManageMilestones && <div className="flex flex-nowrap items-center gap-1">
-                      <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit milestone" title="Edit milestone" onClick={() => openEdit(m)}><Pencil className="h-4 w-4" /></Button>
+                      <Button asChild variant="outline" size="icon" className="h-8 w-8" aria-label="Open milestone" title="Open milestone"><Link href={`/milestones/${m.milestone_id}`}><Pencil className="h-4 w-4" /></Link></Button>
                       <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete milestone" title="Delete milestone" onClick={() => setDeletingMilestone(m)}><Trash2 className="h-4 w-4" /></Button>
                     </div>}
                   </TableCell>

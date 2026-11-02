@@ -45,6 +45,7 @@ def create_calendar_event(db: Session, payload: CalendarEventCreate, actor: User
         values["calendar_owner_id"] = None
     values["organizer"] = actor.user_id
     values["related_task_id"] = None
+    values["related_milestone_id"] = None
     event = CalendarEvent(**values)
     db.add(event)
     db.commit()

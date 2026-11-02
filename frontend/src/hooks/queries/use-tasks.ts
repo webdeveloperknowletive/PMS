@@ -25,11 +25,11 @@ export function useTask(taskId: string | undefined) {
   });
 }
 
-export function useProjectAssigneeCandidates(projectId: string | undefined) {
+export function useProjectAssigneeCandidates(projectId: string | undefined, enabled = true) {
   return useQuery({
     queryKey: [KEY, projectId, "assignee-candidates"],
     queryFn: () => tasksApi.getProjectAssigneeCandidates(projectId!),
-    enabled: !!projectId,
+    enabled: !!projectId && enabled,
   });
 }
 

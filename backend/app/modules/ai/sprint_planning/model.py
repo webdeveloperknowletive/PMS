@@ -25,6 +25,7 @@ class AISprintPlan(Base, OrganizationScopedMixin, TimestampMixin):
     ai_response = Column(JSONB, nullable=False)
     confidence_score = Column(Numeric(5, 2), nullable=True)
     status = Column(String(30), nullable=False, default="Generated", index=True)
+    applied_sprint_id = Column(UUID(as_uuid=True), ForeignKey("task_sprints.sprint_id", ondelete="SET NULL"), nullable=True)
 
     __table_args__ = (
         CheckConstraint("sprint_duration_days > 0", name="ck_ai_sprint_plans_duration_positive"),

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Plus, Pencil, Trash2, UserCog, Search, MailPlus, X, XCircle, RefreshCw, ShieldCheck } from "lucide-react";
@@ -14,8 +15,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserFormDialog } from "@/components/modules/users/user-form-dialog";
-import { UserPermissionsDialog } from "@/components/modules/users/user-permissions-dialog";
 import { useUsers } from "@/hooks/queries/use-users";
 import { useInviteOrganizationMember, useOrganizationInvitations, useResendOrganizationInvitation, useRevokeOrganizationInvitation } from "@/hooks/queries/use-organizations";
 import { useDeleteUser, useToggleUserStatus } from "@/hooks/queries/use-users-admin";
@@ -45,9 +44,6 @@ export default function UsersPage() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState(ALL);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [permissionsUser, setPermissionsUser] = useState<User | null>(null);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [inviteRows, setInviteRows] = useState<InviteRow[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -173,10 +169,6 @@ export default function UsersPage() {
     if (!isLoading && userPage > 0 && users?.length === 0) setUserPage((page) => page - 1);
   }, [isLoading, userPage, users?.length]);
 
-  const openEdit = (u: User) => {
-    setEditingUser(u);
-    setFormOpen(true);
-  };
   const handleToggleStatus = async (u: User) => {
     if (u.user_id === currentUser?.user_id) {
       toast.error("You can't deactivate your own account.");
@@ -330,9 +322,9 @@ export default function UsersPage() {
                       <div className="flex items-center gap-2">
                         <UserAvatar user={u} showName={false} />
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-foreground">
+                          <Link href={`/users/${u.user_id}`} className="block truncate text-sm font-medium text-[#0c66e4] hover:underline">
                             {u.name} ({u.role_names?.join(", ") || "No post assigned"})
-                          </p>
+                          </Link>
                           <p className="truncate text-xs text-muted-foreground">{u.email}</p>
                         </div>
                       </div>
@@ -353,8 +345,8 @@ export default function UsersPage() {
                     <TableCell className="text-sm text-muted-foreground">{formatDate(u.created_at)}</TableCell>
                     <TableCell>
                       <div className="flex flex-nowrap items-center gap-1">
-                        {(can("users.permissions.view") || can("users.permissions.update")) && <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2" aria-label={`Manage permissions for ${u.name}`} title="Manage direct permissions" onClick={() => setPermissionsUser(u)}><ShieldCheck className="h-4 w-4" /><span className="hidden xl:inline">Access</span></Button>}
-                        {can("users.update") && <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit user" title="Edit user" onClick={() => openEdit(u)}><Pencil className="h-4 w-4" /></Button>}
+                        {(can("users.permissions.view") || can("users.permissions.update")) && <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 px-2" aria-label={`Manage permissions for ${u.name}`} title="Manage direct permissions"><Link href={`/users/${u.user_id}/permissions`}><ShieldCheck className="h-4 w-4" /><span className="hidden xl:inline">Access</span></Link></Button>}
+                        {can("users.update") && <Button asChild variant="outline" size="icon" className="h-8 w-8" aria-label="Open user" title="Open user"><Link href={`/users/${u.user_id}`}><Pencil className="h-4 w-4" /></Link></Button>}
                         {can("users.delete") && u.user_id !== currentUser?.user_id && <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete user" title="Delete user" onClick={() => setDeletingUser(u)}><Trash2 className="h-4 w-4" /></Button>}
                       </div>
                     </TableCell>
@@ -373,13 +365,6 @@ export default function UsersPage() {
           </div>
         </div>
 
-        <UserFormDialog open={formOpen} onOpenChange={setFormOpen} user={editingUser} />
-        <UserPermissionsDialog
-          open={!!permissionsUser}
-          onOpenChange={(open) => !open && setPermissionsUser(null)}
-          user={permissionsUser}
-          canUpdate={can("users.permissions.update")}
-        />
 
         <ConfirmDialog
           open={!!deletingUser}

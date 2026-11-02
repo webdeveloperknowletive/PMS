@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Building2, Check, Loader2, LockKeyhole, Mail, UserRound, Link2, ShieldCheck, Info, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Building2, Check, Loader2, Mail, UserRound, Link2, ShieldCheck, Info, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -112,7 +112,7 @@ export default function RegisterPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">Password</Label>
-                <div className="relative"><FieldIcon><LockKeyhole className="h-4 w-4" /></FieldIcon><PasswordInput id="password" autoComplete="new-password" placeholder="At least 8 characters" aria-invalid={!!errors.password} className={`pl-10 ${errors.password ? "border-red-500 bg-red-50/40 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""}`} {...passwordRegistration} /></div>
+                <PasswordInput id="password" autoComplete="new-password" placeholder="At least 8 characters" aria-invalid={!!errors.password} className={errors.password ? "border-red-500 bg-red-50/40 focus-visible:border-red-500 focus-visible:ring-red-500/10" : ""} {...passwordRegistration} />
                 <FieldError>{errors.password?.message}</FieldError>
               </div>
               <div className="space-y-1.5">

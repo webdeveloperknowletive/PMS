@@ -136,10 +136,11 @@ def require_card_details_edit(db: Session, task: Task, user: User) -> bool:
 async def get_kanban_columns(
     skip: int = 0,
     limit: int = 100,
+    project_id: UUID | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_kanban_columns(db, current_user, skip=skip, limit=limit)
+    return service.get_kanban_columns(db, current_user, skip=skip, limit=limit, project_id=project_id)
 
 
 @router.get(
@@ -164,9 +165,10 @@ async def get_kanban_column(
 )
 async def create_kanban_column(
     payload: KanbanColumnCreate,
+    current_user: User = Depends(can_manage_board),
     db: Session = Depends(get_db),
 ):
-    return service.create_kanban_column(db, payload)
+    return service.create_kanban_column(db, payload, current_user)
 
 
 @router.put(
@@ -178,9 +180,10 @@ async def create_kanban_column(
 async def update_kanban_column(
     column_id: UUID,
     payload: KanbanColumnUpdate,
+    current_user: User = Depends(can_manage_board),
     db: Session = Depends(get_db),
 ):
-    return service.update_kanban_column(db, column_id, payload)
+    return service.update_kanban_column(db, column_id, payload, current_user)
 
 
 @router.delete(
@@ -190,9 +193,10 @@ async def update_kanban_column(
 )
 async def delete_kanban_column(
     column_id: UUID,
+    current_user: User = Depends(can_manage_board),
     db: Session = Depends(get_db),
 ):
-    service.delete_kanban_column(db, column_id)
+    service.delete_kanban_column(db, column_id, current_user)
 
 
 # ==========================================================
@@ -319,10 +323,11 @@ async def update_kanban_card_members(
 async def get_kanban_tasks(
     skip: int = 0,
     limit: int = 100,
+    project_id: UUID | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_kanban_tasks(db, current_user, skip=skip, limit=limit)
+    return service.get_kanban_tasks(db, current_user, skip=skip, limit=limit, project_id=project_id)
 
 
 @router.get(
@@ -347,9 +352,10 @@ async def get_kanban_task(
 )
 async def create_kanban_task(
     payload: KanbanTaskCreate,
+    current_user: User = Depends(can_manage_board),
     db: Session = Depends(get_db),
 ):
-    return service.create_kanban_task(db, payload)
+    return service.create_kanban_task(db, payload, current_user)
 
 
 @router.put(
@@ -364,10 +370,13 @@ async def update_kanban_task(
     db: Session = Depends(get_db),
 ):
     if payload.column_id is not None:
-        placement = db.get(KanbanTask, task_id)
-        task = db.get(Task, placement.task_id) if placement else None
+        placement = service.get_kanban_task(db, task_id, current_user)
+        task = placement.task
         source_column = db.get(KanbanColumn, placement.column_id) if placement else None
-        target_column = db.get(KanbanColumn, payload.column_id)
+        target_column = db.query(KanbanColumn).filter(
+            KanbanColumn.column_id == payload.column_id,
+            KanbanColumn.organization_id == current_user.organization_id,
+        ).one_or_none()
         _require_review_approval(db, task, source_column, target_column, current_user)
         if placement and payload.column_id != placement.column_id:
             return await move_kanban_task(
@@ -377,7 +386,7 @@ async def update_kanban_task(
                 current_user,
                 db,
             )
-    return service.update_kanban_task(db, task_id, payload)
+    return service.update_kanban_task(db, task_id, payload, current_user)
 
 
 @router.patch(
@@ -397,14 +406,17 @@ async def move_kanban_task(
     and stamps who moved it (from the authenticated user, not the request
     body, so this can't be spoofed).
     """
-    placement_before = db.get(KanbanTask, task_id)
+    placement_before = service.get_kanban_task(db, task_id, current_user)
     previous_column_id = placement_before.column_id if placement_before else None
     previous_column = db.get(KanbanColumn, previous_column_id) if previous_column_id else None
     task = db.get(Task, placement_before.task_id) if placement_before else None
     previous_status = task.status if task else None
-    target_column = db.query(KanbanColumn).filter(KanbanColumn.column_id == column_id).one_or_none()
+    target_column = db.query(KanbanColumn).filter(
+        KanbanColumn.column_id == column_id,
+        KanbanColumn.organization_id == current_user.organization_id,
+    ).one_or_none()
     _require_review_approval(db, task, previous_column, target_column, current_user)
-    placement = service.move_kanban_task(db, task_id, column_id, position, moved_by=current_user.user_id)
+    placement = service.move_kanban_task(db, task_id, column_id, position, moved_by=current_user.user_id, actor=current_user)
     task = db.query(Task).filter(Task.task_id == placement.task_id).one_or_none()
     column = db.query(KanbanColumn).filter(KanbanColumn.column_id == column_id).one_or_none()
     if task and column:
@@ -522,6 +534,7 @@ async def cancel_task_review(
 )
 async def delete_kanban_task(
     task_id: UUID,
+    current_user: User = Depends(can_manage_board),
     db: Session = Depends(get_db),
 ):
-    service.delete_kanban_task(db, task_id)
+    service.delete_kanban_task(db, task_id, current_user)

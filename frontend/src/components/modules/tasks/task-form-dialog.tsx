@@ -32,8 +32,8 @@ const NO_RELEASE = "__no_release__";
 const NO_COMPONENT = "__no_component__";
 const NO_CUSTOM_FIELD_VALUE = "__no_custom_field_value__";
 const NO_REMINDER = "none";
-const TASK_TYPES = ["TASK"] as const;
-// Keep legacy values valid when editing records created before Work Type was restricted to Task.
+const TASK_TYPES = ["EPIC", "STORY", "TASK", "BUG", "SPIKE"] as const;
+// Subtasks require a parent task and are created from a parent task's detail view.
 const TASK_TYPE_VALUES = ["EPIC", "STORY", "TASK", "BUG", "SPIKE", "SUBTASK"] as const;
 
 function isValidDateInput(value: string): boolean {
@@ -70,14 +70,20 @@ export function TaskFormDialog({
   onOpenChange,
   task,
   defaultProjectId,
+  defaultTaskType = "TASK",
   kanbanCardEdit = false,
+  page = false,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   task?: Task | null;
   defaultProjectId?: string;
+  defaultTaskType?: "EPIC" | "STORY" | "TASK" | "BUG" | "SPIKE";
   /** Keep a card edit on its current project and change its status by dragging. */
   kanbanCardEdit?: boolean;
+  page?: boolean;
+  onSaved?: (savedTask: Task) => void;
 }) {
   const isEditing = !!task;
   const { data: projects } = useProjects();
@@ -106,7 +112,7 @@ export function TaskFormDialog({
       task_name: "",
       status: "TODO",
       priority: "MEDIUM",
-      task_type: "TASK",
+      task_type: defaultTaskType,
       user_id: "",
       start_date: "",
       due_date: "",
@@ -160,7 +166,7 @@ export function TaskFormDialog({
     control,
     name: "checklist_items",
   });
-  const taskTypeOptions = TASK_TYPES;
+  const taskTypeOptions: readonly (typeof TASK_TYPE_VALUES)[number][] = task?.task_type === "SUBTASK" ? [...TASK_TYPES, "SUBTASK"] : TASK_TYPES;
 
   useEffect(() => {
     if (open) {
@@ -193,7 +199,7 @@ export function TaskFormDialog({
               task_name: "",
               status: "TODO",
               priority: "MEDIUM",
-              task_type: "TASK",
+              task_type: defaultTaskType,
               user_id: "",
               start_date: "",
               due_date: "",
@@ -202,7 +208,7 @@ export function TaskFormDialog({
             }
       );
     }
-  }, [open, task, defaultProjectId, reset]);
+  }, [open, task, defaultProjectId, defaultTaskType, reset]);
 
   useEffect(() => {
     if (!open || !customFieldsFetched) return;
@@ -270,30 +276,23 @@ export function TaskFormDialog({
         .filter((item) => item.text.length > 0),
     };
     try {
+      let savedTask: Task;
       if (isEditing && task) {
-        await updateMutation.mutateAsync({ id: task.task_id, payload: taskFields });
+        savedTask = await updateMutation.mutateAsync({ id: task.task_id, payload: taskFields });
         toast.success("Task updated");
       } else {
-        await createMutation.mutateAsync({ project_id: values.project_id, team_id: assigneeTeam?.team_id ?? null, ...taskFields });
+        savedTask = await createMutation.mutateAsync({ project_id: values.project_id, team_id: assigneeTeam?.team_id ?? null, ...taskFields });
         toast.success("Task created");
       }
-      onOpenChange(false);
+      if (onSaved) onSaved(savedTask);
+      else onOpenChange(false);
     } catch (err) {
       setError("root", { message: getApiErrorMessage(err) });
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Task" : "New Task"}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? "Update this task's details." : "Add a new task to a project."}
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+  const form = (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="task_name">Task name</Label>
             <Input id="task_name" placeholder="Design homepage UI" required maxLength={255} aria-invalid={!!errors.task_name} {...register("task_name")} />
@@ -304,7 +303,7 @@ export function TaskFormDialog({
             <div className="space-y-1.5">
               <Label>Work type</Label>
               <Controller control={control} name="task_type" render={({ field }) => (
-                <Select value={TASK_TYPES.includes(field.value as "TASK") ? field.value : "TASK"} onValueChange={field.onChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <Select value={field.value} onValueChange={field.onChange} disabled={isEditing && field.value === "SUBTASK"}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                   {taskTypeOptions.map((type) => <SelectItem key={type} value={type}>{type.charAt(0) + type.slice(1).toLowerCase()}</SelectItem>)}
                 </SelectContent></Select>
               )} />
@@ -528,7 +527,7 @@ export function TaskFormDialog({
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{errors.root.message}</p>
           )}
 
-          <DialogFooter>
+          <div className="flex justify-end gap-2 border-t pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
@@ -536,9 +535,9 @@ export function TaskFormDialog({
               {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
               {isEditing ? "Save changes" : "Create task"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
   );
+  if (page) return <section className="mx-auto max-w-5xl rounded-md border bg-white p-5 shadow-sm sm:p-8">{form}</section>;
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{isEditing ? "Edit Task" : "New Task"}</DialogTitle><DialogDescription>{isEditing ? "Update this task's details." : "Add a new task to a project."}</DialogDescription></DialogHeader>{form}</DialogContent></Dialog>;
 }

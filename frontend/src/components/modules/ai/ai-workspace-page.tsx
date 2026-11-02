@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Activity, AlertTriangle, CalendarDays, CheckCircle2, Clock3, FileText, Loader2, Plus, Sparkles, Trash2, WandSparkles } from "lucide-react";
+import { Activity, AlertTriangle, CalendarDays, CheckCircle2, Clock3, FileText, Loader2, Plus, Sparkles, Trash2, WandSparkles, ListChecks } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,7 @@ export function AiWorkspacePage({ kind }: { kind: AiKind }) {
   const [meetingAt, setMeetingAt] = useState(() => new Date().toISOString().slice(0, 16));
   const [selected, setSelected] = useState<AiRecord | null>(null);
   const [deleting, setDeleting] = useState<AiRecord | null>(null);
+  const [selectedApplyItems, setSelectedApplyItems] = useState<number[]>([]);
 
   const listQuery = useQuery({
     queryKey: [config.endpoint],
@@ -72,6 +74,34 @@ export function AiWorkspacePage({ kind }: { kind: AiKind }) {
   const deleteMutation = useMutation({
     mutationFn: async (record: AiRecord) => { await apiClient.delete(`${config.endpoint}/${val(record[config.idField])}`); },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: [config.endpoint] }); setDeleting(null); toast.success("AI record removed"); },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+  const applyMutation = useMutation({
+    mutationFn: async ({ record, indexes }: { record: AiRecord; indexes: number[] }) => {
+      const id = val(record[config.idField]);
+      if (kind === "sprint") {
+        const suggestions = Array.isArray(record.suggested_tasks) ? record.suggested_tasks : [];
+        const selected_task_ids = indexes.map((index) => {
+          const task = suggestions[index];
+          return task && typeof task === "object" ? val((task as AiRecord).task_id) : "";
+        }).filter(Boolean);
+        return (await apiClient.post<AiRecord>(`${config.endpoint}/${id}/apply`, { selected_task_ids })).data;
+      }
+      if (kind === "estimate") return (await apiClient.post<AiRecord>(`${config.endpoint}/${id}/apply`, {})).data;
+      if (kind === "meeting") return (await apiClient.post<AiRecord>(`${config.endpoint}/${id}/apply-actions`, { item_indexes: indexes })).data;
+      throw new Error("This AI result does not have an apply action.");
+    },
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: [config.endpoint] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task-sprints"] });
+      queryClient.invalidateQueries({ queryKey: ["gantt-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["sprint-reports"] });
+      setSelected(updated);
+      setSelectedApplyItems([]);
+      toast.success("Selected AI suggestions applied to workspace data");
+    },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
 
@@ -101,6 +131,8 @@ export function AiWorkspacePage({ kind }: { kind: AiKind }) {
     : kind === "estimate" ? [`${num(item.estimated_hours)} hours`, val(item.complexity)]
     : kind === "risk" ? [val(item.risk_level), `${num(item.probability)}% probability`]
     : [`${Array.isArray(item.action_items) ? item.action_items.length : 0} action items`, formatDate(val(item.meeting_date))];
+  const selectedSprintTasks: unknown[] = selected && Array.isArray(selected.suggested_tasks) ? selected.suggested_tasks : [];
+  const selectedMeetingActions: unknown[] = selected && Array.isArray(selected.action_items) ? selected.action_items : [];
 
   return (
     <div className="workspace-page animate-enter">
@@ -146,16 +178,19 @@ export function AiWorkspacePage({ kind }: { kind: AiKind }) {
           {listQuery.isLoading ? <div className="space-y-3">{[1, 2, 3].map((item) => <Skeleton key={item} className="h-28 w-full" />)}</div>
             : listQuery.isError ? <Card><CardContent className="p-6 text-sm text-rose-700">{getApiErrorMessage(listQuery.error)}</CardContent></Card>
             : !listQuery.data?.length ? <Card className="border-dashed border-slate-300 bg-white/60"><CardContent className="flex flex-col items-center px-6 py-12 text-center"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-700"><Icon className="h-6 w-6" /></div><h3 className="mt-4 text-sm font-semibold text-slate-800">No results yet</h3><p className="mt-1 max-w-xs text-xs leading-5 text-slate-500">Complete the form to generate the first result for your workspace.</p></CardContent></Card>
-            : <div className="space-y-3">{listQuery.data.map((item) => <Card key={val(item[config.idField])} className="group border-white/90 transition hover:-translate-y-0.5 hover:border-violet-100 hover:shadow-md"><CardContent className="p-4 sm:p-5"><div className="flex items-start gap-3"><div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${config.tint} text-white`}><Icon className="h-4 w-4" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="truncate text-sm font-semibold text-slate-900">{titleFor(item)}</h3>{kind === "risk" && <Badge variant="outline" className="rounded-full">{val(item.risk_level)}</Badge>}</div><p className="mt-1 truncate text-xs text-slate-500">{projectFor(item)} · {formatDate(val(item.created_at))}</p></div>{canUseAI && <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-slate-400 hover:text-rose-600" aria-label="Delete result" onClick={() => setDeleting(item)}><Trash2 className="h-4 w-4" /></Button>}</div><p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-600">{summaryFor(item) || "Generated result ready to review."}</p><div className="mt-3 flex flex-wrap items-center gap-2">{badgesFor(item).filter(Boolean).map((badge) => <Badge key={badge} variant="secondary" className="rounded-full bg-slate-100 text-[10px] font-semibold text-slate-600">{badge}</Badge>)}<Button variant="link" size="sm" className="ml-auto h-7 px-1 text-xs" onClick={() => setSelected(item)}>View details</Button></div></CardContent></Card>)}</div>}
+            : <div className="space-y-3">{listQuery.data.map((item) => <Card key={val(item[config.idField])} className="group border-white/90 transition hover:-translate-y-0.5 hover:border-violet-100 hover:shadow-md"><CardContent className="p-4 sm:p-5"><div className="flex items-start gap-3"><div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${config.tint} text-white`}><Icon className="h-4 w-4" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><Link href={`${config.endpoint.replace("/ai/sprint-plans", "/ai/sprint-planning").replace("/ai/task-estimations", "/ai/task-estimation").replace("/ai/risk-predictions", "/ai/risk-prediction").replace("/ai/meeting-summaries", "/ai/meeting-summary")}/${val(item[config.idField])}`} className="truncate text-sm font-semibold text-[#0c66e4] hover:underline">{titleFor(item)}</Link>{kind === "risk" && <Badge variant="outline" className="rounded-full">{val(item.risk_level)}</Badge>}</div><p className="mt-1 truncate text-xs text-slate-500">{projectFor(item)} · {formatDate(val(item.created_at))}</p></div>{canUseAI && <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-slate-400 hover:text-rose-600" aria-label="Delete result" onClick={() => setDeleting(item)}><Trash2 className="h-4 w-4" /></Button>}</div><p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-600">{summaryFor(item) || "Generated result ready to review."}</p><div className="mt-3 flex flex-wrap items-center gap-2">{badgesFor(item).filter(Boolean).map((badge) => <Badge key={badge} variant="secondary" className="rounded-full bg-slate-100 text-[10px] font-semibold text-slate-600">{badge}</Badge>)}<Button asChild variant="link" size="sm" className="ml-auto h-7 px-1 text-xs"><Link href={`${config.endpoint.replace("/ai/sprint-plans", "/ai/sprint-planning").replace("/ai/task-estimations", "/ai/task-estimation").replace("/ai/risk-predictions", "/ai/risk-prediction").replace("/ai/meeting-summaries", "/ai/meeting-summary")}/${val(item[config.idField])}`}>View details</Link></Button></div></CardContent></Card>)}</div>}
         </section>
       </div>
 
-      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+      <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setSelectedApplyItems([]); } }}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader><DialogTitle>{selected ? titleFor(selected) : "AI result"}</DialogTitle><DialogDescription>{selected ? `${projectFor(selected)} · Generated ${formatDate(val(selected.created_at))}` : ""}</DialogDescription></DialogHeader>
           <div className="space-y-4">
             <div className="rounded-2xl bg-violet-50/80 p-4"><p className="mb-2 text-xs font-bold uppercase tracking-wide text-violet-700">Summary</p><p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{selected ? summaryFor(selected) : ""}</p></div>
+            {selected && kind === "sprint" && Array.isArray(selected.suggested_tasks) && <div className="space-y-2 rounded-xl border p-4"><div className="flex items-center justify-between gap-2"><p className="text-sm font-semibold">Choose suggested tasks for the sprint</p><Button type="button" size="sm" variant="outline" onClick={() => setSelectedApplyItems(selectedSprintTasks.map((_, index) => index))}>Select all</Button></div>{selectedSprintTasks.map((item, index) => { const candidate = typeof item === "object" && item ? item as AiRecord : {}; const taskId = val(candidate.task_id); const reason = val(candidate.reason); return <label key={`${taskId}-${index}`} className="flex cursor-pointer items-start gap-3 rounded-lg bg-slate-50 p-3 text-sm"><input type="checkbox" checked={selectedApplyItems.includes(index)} onChange={(event) => setSelectedApplyItems((current) => event.target.checked ? [...current, index] : current.filter((value) => value !== index))} /><span><span className="font-medium">{val(candidate.task_name, taskId || `Suggestion ${index + 1}`)}</span>{reason && <span className="mt-1 block text-xs text-slate-500">{reason}</span>}</span></label>; })}{!selectedSprintTasks.length && <p className="text-xs text-slate-500">This AI plan has no suggested existing tasks to assign.</p>}</div>}
+            {selected && kind === "meeting" && Array.isArray(selected.action_items) && <div className="space-y-2 rounded-xl border p-4"><p className="text-sm font-semibold">Choose action items to create as tasks</p>{selectedMeetingActions.map((item, index) => { const candidate = typeof item === "object" && item ? item as AiRecord : {}; const title = typeof item === "string" ? item : val(candidate.task, val(candidate.title, val(candidate.task_name, "Untitled action item"))); const alreadyApplied = Array.isArray(selected.applied_action_items) && selected.applied_action_items.includes(index); return <label key={`${index}-${title}`} className={`flex items-start gap-3 rounded-lg p-3 text-sm ${alreadyApplied ? "bg-emerald-50 text-emerald-800" : "bg-slate-50"}`}><input type="checkbox" checked={alreadyApplied || selectedApplyItems.includes(index)} disabled={alreadyApplied} onChange={(event) => setSelectedApplyItems((current) => event.target.checked ? [...current, index] : current.filter((value) => value !== index))} /><span>{title}{alreadyApplied && <span className="ml-2 text-xs">Already created</span>}</span></label>; })}{!selectedMeetingActions.length && <p className="text-xs text-slate-500">This summary has no action items.</p>}</div>}
             <pre className="max-h-80 overflow-auto rounded-2xl bg-slate-950 p-4 text-xs leading-5 text-slate-100">{selected ? JSON.stringify(selected.ai_response ?? selected.prediction_result ?? { action_items: selected.action_items, decisions: selected.decisions, attendees: selected.attendees, confidence_score: selected.confidence_score }, null, 2) : ""}</pre>
+            {selected && kind !== "risk" && <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4"><p className="text-xs text-slate-500">Review suggestions before applying. Created tasks and sprints use your workspace permissions.</p><Button type="button" disabled={applyMutation.isPending || (kind === "sprint" && (!selectedApplyItems.length || !!selected.applied_sprint_id)) || (kind === "estimate" && !!selected.is_applied) || (kind === "meeting" && (!selectedApplyItems.length || !Array.isArray(selected.action_items)))} onClick={() => selected && applyMutation.mutate({ record: selected, indexes: selectedApplyItems })}>{applyMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Applying...</> : <><ListChecks className="h-4 w-4" />{kind === "sprint" ? selected.applied_sprint_id ? "Already applied" : "Create sprint and assign tasks" : kind === "estimate" ? selected.is_applied ? "Already applied" : "Apply estimate to task" : "Create selected tasks"}</>}</Button></div>}
           </div>
         </DialogContent>
       </Dialog>

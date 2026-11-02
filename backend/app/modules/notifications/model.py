@@ -42,3 +42,4 @@ class NotificationUserSetting(Base, OrganizationScopedMixin):
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True)
     volume_percent = Column(Integer, nullable=False, default=65, server_default="65")
+    email_task_deadline_reminders = Column(Boolean, nullable=False, default=True, server_default="true")

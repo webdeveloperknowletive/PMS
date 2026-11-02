@@ -47,7 +47,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Header onMenuClick={() => setMobileNavOpen(true)} />
-        <main className="min-h-0 flex-1 overflow-y-auto scrollbar-thin [scrollbar-gutter:stable] px-4 py-5 sm:px-6 sm:py-7 xl:px-9">
+        <main className="min-h-0 flex-1 overflow-y-auto scrollbar-thin [scrollbar-gutter:stable] bg-white px-4 py-5 sm:px-6 xl:px-8">
           <div className="mx-auto min-h-full w-full max-w-[1600px]">{accessDenied ? <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-24 text-center"><ShieldAlert className="mb-4 h-8 w-8 text-destructive" /><h1 className="text-base font-semibold">Access restricted</h1><p className="mt-1 max-w-sm text-sm text-muted-foreground">Your assigned role does not include access to this module.</p></div> : children}</div>
         </main>
       </div>

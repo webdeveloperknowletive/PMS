@@ -32,6 +32,7 @@ export default function SettingsPage() {
   const [toastDurationSeconds, setToastDurationSeconds] = useState("");
   const [selectedSoundKey, setSelectedSoundKey] = useState<NotificationSoundKey>("gentle_chime");
   const [volumePercent, setVolumePercent] = useState(65);
+  const [taskDeadlineEmailsEnabled, setTaskDeadlineEmailsEnabled] = useState(true);
   const [chatSoundKey, setChatSoundKey] = useState<NotificationSoundKey>("double_ping");
   const [chatMasterVolume, setChatMasterVolume] = useState(100);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
@@ -62,6 +63,11 @@ export default function SettingsPage() {
     queryFn: notificationSettingsApi.getVolume,
     enabled: !!user && can("notifications.personal_settings.view"),
   });
+  const taskDeadlineEmailSetting = useQuery({
+    queryKey: ["task-deadline-email-setting", user?.user_id],
+    queryFn: notificationSettingsApi.getTaskDeadlineEmail,
+    enabled: !!user && can("notifications.personal_settings.view"),
+  });
   const chatOrganizationSettings = useQuery({
     queryKey: ["chat-organization-settings"],
     queryFn: chatApi.organizationSettings,
@@ -76,6 +82,9 @@ export default function SettingsPage() {
   useEffect(() => {
     if (notificationVolumeSetting.data) setVolumePercent(notificationVolumeSetting.data.volume_percent);
   }, [notificationVolumeSetting.data]);
+  useEffect(() => {
+    if (taskDeadlineEmailSetting.data) setTaskDeadlineEmailsEnabled(taskDeadlineEmailSetting.data.enabled);
+  }, [taskDeadlineEmailSetting.data]);
   useEffect(() => {
     if (chatOrganizationSettings.data) {
       setChatSoundKey(chatOrganizationSettings.data.sound_key as NotificationSoundKey);
@@ -130,6 +139,15 @@ export default function SettingsPage() {
     onSuccess: (setting) => {
       queryClient.setQueryData(["notification-volume-setting", user?.user_id], setting);
       toast.success("Your notification volume was updated");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const updateTaskDeadlineEmail = useMutation({
+    mutationFn: () => notificationSettingsApi.updateTaskDeadlineEmail(taskDeadlineEmailsEnabled),
+    onSuccess: (setting) => {
+      queryClient.setQueryData(["task-deadline-email-setting", user?.user_id], setting);
+      toast.success("Task reminder email preference updated");
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
@@ -268,6 +286,14 @@ export default function SettingsPage() {
                 <Button variant="outline" onClick={() => playNotificationSound((notificationSoundSetting.data?.sound_key ?? "gentle_chime") as NotificationSoundKey, volumePercent)} disabled={volumePercent === 0}><Music2 className="h-4 w-4" /> Preview</Button>
                 {can("notifications.personal_settings.update") && <Button onClick={() => updateNotificationVolume.mutate()} disabled={volumePercent === notificationVolumeSetting.data?.volume_percent || updateNotificationVolume.isPending}>{updateNotificationVolume.isPending ? "Saving..." : "Save my volume"}</Button>}
               </div>
+            </CardContent>
+          </Card>}
+          {can("notifications.personal_settings.view") && <Card className="border-sky-100">
+            <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Mail className="h-4 w-4 text-sky-600" /> Task deadline emails</CardTitle></CardHeader>
+            <CardContent>
+              <p className="mb-4 text-sm leading-6 text-slate-600">Choose whether SprintIX sends email alongside your in-app deadline reminders. In-app reminders remain on either way.</p>
+              <label className="flex items-center gap-3 text-sm font-medium text-slate-700"><input type="checkbox" checked={taskDeadlineEmailsEnabled} onChange={(event) => setTaskDeadlineEmailsEnabled(event.target.checked)} disabled={taskDeadlineEmailSetting.isLoading} /> Email me when a task reminder is due</label>
+              {can("notifications.personal_settings.update") && <Button className="mt-4" onClick={() => updateTaskDeadlineEmail.mutate()} disabled={taskDeadlineEmailSetting.isLoading || taskDeadlineEmailsEnabled === taskDeadlineEmailSetting.data?.enabled || updateTaskDeadlineEmail.isPending}>{updateTaskDeadlineEmail.isPending ? "Saving..." : "Save email preference"}</Button>}
             </CardContent>
           </Card>}
           <Card className="border-white/90">

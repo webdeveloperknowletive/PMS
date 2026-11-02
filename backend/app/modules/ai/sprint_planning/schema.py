@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class AISprintPlanBase(BaseModel):
@@ -42,9 +42,21 @@ class AISprintPlanGenerationRequest(BaseModel):
     prompt: str = ""
 
 
+class AISprintPlanApplyRequest(BaseModel):
+    selected_task_ids: list[uuid.UUID] = Field(..., min_length=1, max_length=100)
+
+    @field_validator("selected_task_ids")
+    @classmethod
+    def unique_task_ids(cls, value):
+        if len(value) != len(set(value)):
+            raise ValueError("Choose each suggested task only once")
+        return value
+
+
 class AISprintPlanRead(AISprintPlanBase):
     model_config = ConfigDict(from_attributes=True)
 
     sprint_plan_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    applied_sprint_id: uuid.UUID | None = None

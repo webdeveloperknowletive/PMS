@@ -5,7 +5,7 @@ import { Check, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { Permission } from "@/types/role";
@@ -17,9 +17,10 @@ interface UserPermissionsDialogProps {
   onOpenChange: (open: boolean) => void;
   user: User | null;
   canUpdate: boolean;
+  page?: boolean;
 }
 
-export function UserPermissionsDialog({ open, onOpenChange, user, canUpdate }: UserPermissionsDialogProps) {
+export function UserPermissionsDialog({ open, onOpenChange, user, canUpdate, page = false }: UserPermissionsDialogProps) {
   const catalog = useUserPermissionCatalog(open);
   const grants = useUserPermissions(user?.user_id, open);
   const savePermissions = useSetUserPermissions();
@@ -73,15 +74,14 @@ export function UserPermissionsDialog({ open, onOpenChange, user, canUpdate }: U
   const loading = catalog.isLoading || grants.isLoading;
   const error = catalog.isError || grants.isError;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-indigo-600" /> User permissions</DialogTitle>
-          <DialogDescription>
+  const content = (
+    <>
+        <div className="mb-4">
+          <h2 className="flex items-center gap-2 text-lg font-semibold"><ShieldCheck className="h-5 w-5 text-indigo-600" /> User permissions</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             {user ? `Manage direct module and action access for ${user.name}.` : "Manage direct module and action access."}
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
 
         <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-3 text-sm text-indigo-950">
           Direct grants add access on top of the user’s assigned roles. To remove access inherited from a role, edit that role’s permissions.
@@ -149,7 +149,8 @@ export function UserPermissionsDialog({ open, onOpenChange, user, canUpdate }: U
             {savePermissions.isPending ? "Saving…" : "Save permissions"}
           </Button>}
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   );
+  if (page) return <section className="mx-auto max-w-5xl space-y-4 rounded-md border bg-white p-5 shadow-sm sm:p-8">{content}</section>;
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto">{content}</DialogContent></Dialog>;
 }

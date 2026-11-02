@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Search, LogOut, UserRound, ChevronDown, Menu, ArrowUpRight, Command, Home } from "lucide-react";
+import { Bell, Search, LogOut, UserRound, ChevronDown, Menu, ArrowUpRight, Command, Home, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
@@ -188,22 +188,23 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
   return (
     <>
-      <header className="z-30 flex h-[72px] shrink-0 items-center justify-between gap-3 border-b border-slate-200/70 bg-white/85 px-4 backdrop-blur-xl sm:px-6">
+      <header className="z-30 flex h-[56px] shrink-0 items-center justify-between gap-3 border-b border-[#dfe1e6] bg-white px-4 sm:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <Button variant="ghost" size="icon" aria-label="Open navigation" className="shrink-0 lg:hidden" onClick={onMenuClick}>
             <Menu className="h-5 w-5" />
           </Button>
-          {!roleNames.some((role) => role.trim().toLowerCase() === "project manager") && <Link href="/dashboard" aria-label="Go to home dashboard" title="Home" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+          {!roleNames.some((role) => role.trim().toLowerCase() === "project manager") && <Link href="/dashboard" aria-label="Go to home dashboard" title="Home" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#44546f] transition hover:bg-[#f1f2f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c66e4]">
             <Home className="h-[18px] w-[18px]" />
           </Link>}
-          <button type="button" onClick={() => setSearchOpen(true)} className="group flex h-10 w-full max-w-[540px] items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 text-left text-sm text-slate-500 shadow-inner shadow-white transition hover:border-violet-200 hover:bg-white hover:shadow-sm">
-            <Search className="h-4 w-4 text-slate-400 group-hover:text-violet-500" />
-            <span className="flex-1 truncate">Search anything in SprintIX...</span>
+          <button type="button" onClick={() => setSearchOpen(true)} className="group flex h-8 w-full max-w-[520px] items-center gap-2 rounded-md border border-[#dfe1e6] bg-[#f7f8f9] px-3 text-left text-sm text-[#626f86] transition hover:bg-white hover:border-[#0c66e4]">
+            <Search className="h-4 w-4 text-[#626f86]" />
+            <span className="flex-1 truncate">Search</span>
             <kbd className="hidden items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500 sm:inline-flex"><Command className="h-3 w-3" /> K</kbd>
           </button>
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          {permissionCodes.includes("modules.tasks.access") && permissionCodes.includes("tasks.create") && <Button asChild size="sm" className="h-8 rounded-md bg-[#0c66e4] px-3 text-white hover:bg-[#0055cc]"><Link href="/tasks/new"><Plus className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Create</span></Link></Button>}
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 rounded-xl p-1.5 outline-none transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-violet-300">
               <UserAvatar user={user} showName={false} size="md" />
@@ -221,7 +222,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               <DropdownMenuItem onClick={() => logout()} className="text-destructive focus:text-destructive"><LogOut /> Log out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {permissionCodes.includes("modules.notifications.access") && <Link href="/notifications" aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"} title="Notifications" className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+          {permissionCodes.includes("modules.notifications.access") && <Link href="/notifications" aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"} title="Notifications" className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#44546f] transition hover:bg-[#f1f2f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c66e4]">
             <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-rose-500 px-1 text-[9px] font-bold leading-none text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}
           </Link>}

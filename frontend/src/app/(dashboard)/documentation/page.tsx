@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Download, ExternalLink, FileText, Github, HardDrive, Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
+import { Download, ExternalLink, FileText, Github, HardDrive, Pencil, Plus, Search, Trash2, Upload, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -18,6 +19,7 @@ import { useProjects } from "@/hooks/queries/use-projects";
 import { formatDate } from "@/lib/utils";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { Document } from "@/types/document";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePermissions } from "@/hooks/use-permissions";
 
 type ResourceType = "FILE" | "GITHUB" | "DRIVE";
@@ -61,7 +63,7 @@ function ResourceSection({
         ) : resources.map((doc) => (
           <div key={doc.document_id} className="flex flex-col gap-3 rounded-xl border border-slate-100 bg-white p-3 sm:flex-row sm:items-center">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-slate-800">{doc.title}</p>
+              <Link href={`/documentation/${doc.document_id}`} className="block truncate text-sm font-semibold text-[#0c66e4] hover:underline">{doc.title}</Link>
               <p className="mt-1 text-xs text-slate-500">{projects.get(doc.project_id) ?? "Project"} · v{doc.version}</p>
               <p className="mt-1 text-[11px] text-slate-500">Added by {doc.created_by || "Unknown user"} · {formatDate(doc.created_at)}</p>
               {wasEdited(doc) && doc.updated_by && <p className="mt-0.5 text-[11px] text-slate-500">Last edited by {doc.updated_by}{doc.updated_at ? ` · ${formatDate(doc.updated_at)}` : ""}</p>}
@@ -73,7 +75,7 @@ function ResourceSection({
                 <Button asChild size="sm" variant="outline"><a href={doc.file_url} target="_blank" rel="noopener noreferrer">Open link<ExternalLink className="h-4 w-4" /></a></Button>
               ) : doc.resource_type === "FILE" ? <span className="text-xs text-slate-400">No file uploaded</span> : null}
               {(canEdit || canDelete) && <div className="flex items-center gap-1">
-                {canEdit && <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit resource" title="Edit resource" onClick={() => onEdit(doc)}><Pencil className="h-4 w-4" /></Button>}
+                {canEdit && <Button asChild variant="outline" size="icon" className="h-8 w-8" aria-label="Open resource" title="Open resource"><Link href={`/documentation/${doc.document_id}`}><Pencil className="h-4 w-4" /></Link></Button>}
                 {canDelete && <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete resource" title="Delete resource" onClick={() => onDelete(doc)}><Trash2 className="h-4 w-4" /></Button>}
               </div>}
             </div>
@@ -95,6 +97,7 @@ export default function DocumentationPage() {
   const [resourceType, setResourceType] = useState<ResourceType>("FILE");
   const [editingDoc, setEditingDoc] = useState<Document | null>(null);
   const [deletingDoc, setDeletingDoc] = useState<Document | null>(null);
+  const [viewingAiDocument, setViewingAiDocument] = useState<Document | null>(null);
 
   const projectMap = useMemo(() => new Map((projects ?? []).map((p) => [p.project_id, p.project_name])), [projects]);
   const filtered = (documents ?? []).filter((doc) =>
@@ -102,7 +105,7 @@ export default function DocumentationPage() {
     (projectFilter === ALL || doc.project_id === projectFilter)
   );
   const openCreate = (type: ResourceType) => { setEditingDoc(null); setResourceType(type); setFormOpen(true); };
-  const openEdit = (doc: Document) => { setEditingDoc(doc); setResourceType(doc.resource_type); setFormOpen(true); };
+  const openEdit = (doc: Document) => { if (doc.resource_type === "AI_DOC") return; setEditingDoc(doc); setResourceType(doc.resource_type); setFormOpen(true); };
   const confirmDelete = async () => {
     if (!deletingDoc) return;
     try { await deleteMutation.mutateAsync(deletingDoc.document_id); toast.success("Resource deleted"); setDeletingDoc(null); }
@@ -125,7 +128,9 @@ export default function DocumentationPage() {
       {sections.map((section) => (
         <ResourceSection key={section.type} {...section} resources={filtered.filter((doc) => doc.resource_type === section.type)} loading={isLoading} projects={projectMap} canEdit={canUploadDocuments} canDelete={canDeleteDocuments} onAdd={() => openCreate(section.type)} onEdit={openEdit} onDelete={setDeletingDoc} />
       ))}
+      {filtered.some((doc) => doc.resource_type === "AI_DOC") && <Card className="overflow-hidden border-white/90"><CardHeader className="border-b border-slate-100 px-5 py-4"><CardTitle className="flex items-center gap-2 text-base"><FileText className="h-5 w-5 text-violet-600" />Published AI documents</CardTitle><p className="text-xs text-slate-500">Reviewed AI drafts published into this project’s documentation.</p></CardHeader><CardContent className="space-y-2 p-4">{filtered.filter((doc) => doc.resource_type === "AI_DOC").map((doc) => <div key={doc.document_id} className="flex items-center gap-3 rounded-xl border p-3"><div className="min-w-0 flex-1"><Link href={`/documentation/${doc.document_id}`} className="truncate text-sm font-semibold text-[#0c66e4] hover:underline">{doc.title}</Link><p className="mt-1 text-xs text-slate-500">{projectMap.get(doc.project_id) ?? "Project"} · v{doc.version} · {formatDate(doc.created_at)}</p></div><Button asChild variant="outline" size="sm"><Link href={`/documentation/${doc.document_id}`}><Eye className="h-4 w-4" />Read</Link></Button>{canDeleteDocuments && <Button variant="outline" size="icon" aria-label="Delete published AI document" onClick={() => setDeletingDoc(doc)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}</div>)}</CardContent></Card>}
       <DocumentFormDialog open={formOpen} onOpenChange={setFormOpen} document={editingDoc} resourceType={resourceType} />
+      <Dialog open={!!viewingAiDocument} onOpenChange={(open) => !open && setViewingAiDocument(null)}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>{viewingAiDocument?.title}</DialogTitle><DialogDescription>Published AI document · {viewingAiDocument && formatDate(viewingAiDocument.created_at)}</DialogDescription></DialogHeader><pre className="whitespace-pre-wrap rounded-lg bg-muted/40 p-4 text-sm">{viewingAiDocument?.content}</pre></DialogContent></Dialog>
       <ConfirmDialog open={!!deletingDoc} onOpenChange={(open) => !open && setDeletingDoc(null)} title="Delete this resource?" description={`This will permanently remove "${deletingDoc?.title}". This action cannot be undone.`} confirmLabel="Delete" onConfirm={confirmDelete} isLoading={deleteMutation.isPending} />
     </div>
   );

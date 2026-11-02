@@ -20,6 +20,7 @@ class AIMeetingSummary(Base, OrganizationScopedMixin, CreatedAtMixin):
     transcript = Column(Text, nullable=False)
     summary = Column(Text, nullable=False)
     action_items = Column(JSONB, nullable=False, default=list)
+    applied_action_items = Column(JSONB, nullable=False, default=list, server_default="[]")
     decisions = Column(JSONB, nullable=True, default=list)
     attendees = Column(JSONB, nullable=True, default=list)
     ai_model = Column(String(100), nullable=False)

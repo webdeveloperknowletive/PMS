@@ -47,7 +47,7 @@ export const platformApi = {
   },
   users: async (search?: string) => (await apiClient.get<PlatformUser[]>("/platform/users", { params: search ? { search } : {} })).data,
   auditLogs: async () => (await apiClient.get("/platform/audit-logs")).data,
-  health: async () => (await apiClient.get<{ api: string; database: string; email_provider: string; checked_at: string }>("/platform/health")).data,
+  health: async () => (await apiClient.get<{ api: string; database: string; email_provider: string; email_delivery: string; checked_at: string }>("/platform/health")).data,
   plans: async () => (await apiClient.get<Array<{ plan_code: string; subscription_status: string; organization_count: number }>>("/platform/plans")).data,
   subscriptions: async (params: { skip?: number; limit?: number; plan_code?: string; subscription_status?: string } = {}) => (await apiClient.get<PlatformPage<PlatformSubscription>>("/platform/subscriptions", { params })).data,
   organization: async (id: string) => (await apiClient.get<PlatformOrganizationDetail>(`/platform/organizations/${id}`)).data,

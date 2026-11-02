@@ -38,18 +38,18 @@ export function useUpdateKanbanLabel() {
   });
 }
 
-export function useKanbanColumns(enabled = true) {
+export function useKanbanColumns(enabled = true, projectId?: string) {
   return useQuery({
-    queryKey: [COLUMNS_KEY],
-    queryFn: () => kanbanApi.listColumns(),
+    queryKey: [COLUMNS_KEY, projectId ?? "all"],
+    queryFn: () => kanbanApi.listColumns(projectId),
     enabled,
   });
 }
 
-export function useKanbanTaskPlacements(enabled = true) {
+export function useKanbanTaskPlacements(enabled = true, projectId?: string) {
   return useQuery({
-    queryKey: [PLACEMENTS_KEY],
-    queryFn: () => kanbanApi.listTasks(),
+    queryKey: [PLACEMENTS_KEY, projectId ?? "all"],
+    queryFn: () => kanbanApi.listTasks(projectId),
     enabled,
     refetchInterval: 2_000,
     refetchOnWindowFocus: true,

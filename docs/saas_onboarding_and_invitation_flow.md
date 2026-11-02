@@ -44,11 +44,24 @@ Application records now carry a workspace ID, and authenticated ORM queries and 
 ## Local setup
 
 - Copy `backend/.env.example` to `backend/.env` and fill in the database and application settings.
-- Set `PUBLIC_APP_URL` to the frontend's actual local address (currently `http://localhost:3002`) so emailed invitations open the running app. Keep the API on port 8000. `localhost` links only work on the machine running SprintIX; employees on other devices need a deployed, publicly reachable HTTPS URL.
+- Set `PUBLIC_APP_URL` to the frontend's actual local address (currently `http://localhost:3000`) so emailed invitations open the running app. Keep the API on port 8000. `localhost` links only work on the machine running SprintIX; employees on other devices need a deployed, publicly reachable HTTPS URL.
 - From the `backend` directory, apply the versioned workspace migrations with `alembic upgrade head` before starting the API. Back up an existing database first.
 - Configure SMTP values to send verification and invitation emails. Invitations use email only; failed delivery is reported as a failure and can be retried, without exposing a copyable invitation token. The existing local-development verification fallback is unchanged.
-- Set `WORKSPACE_DOMAIN` in the backend `.env` and `NEXT_PUBLIC_WORKSPACE_DOMAIN` in the frontend environment to the same host, without a scheme or path. Local links use `localhost:3002/login?workspace_slug=acme` so they work on Windows without local DNS changes.
+- Set `WORKSPACE_DOMAIN` in the backend `.env` and `NEXT_PUBLIC_WORKSPACE_DOMAIN` in the frontend environment to the same host, without a scheme or path. Local links use `localhost:3000/login?workspace_slug=acme` so they work on Windows without local DNS changes.
 - For production, point wildcard DNS (`*.yourdomain.com`) and HTTPS certificates at the frontend, set `WORKSPACE_DOMAIN=yourdomain.com`, and set `NEXT_PUBLIC_WORKSPACE_DOMAIN=yourdomain.com`. The backend accepts the base app origins listed in `ALLOW_ORIGINS` and workspace subdomains under that configured domain.
+
+### Production signup API connectivity
+
+The frontend makes signup requests directly from the visitor's browser to the API. Configure the frontend deployment with:
+
+```env
+NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api/v1
+NEXT_PUBLIC_WORKSPACE_DOMAIN=yourdomain.com
+```
+
+Replace the example hosts with the actual public HTTPS API and frontend hosts. `NEXT_PUBLIC_API_URL` must not be `localhost` in a deployed build: in a visitor's browser, `localhost` means that visitor's own computer. Set the backend's `ALLOW_ORIGINS` to the exact frontend origin (scheme and hostname, no path), for example `https://yourdomain.com,https://www.yourdomain.com`, and set `PUBLIC_APP_URL=https://yourdomain.com` plus `WORKSPACE_DOMAIN=yourdomain.com`. If customers use workspace subdomains, backend CORS also allows subdomains under `WORKSPACE_DOMAIN`.
+
+After changing `NEXT_PUBLIC_API_URL`, rebuild and redeploy the frontend because Next.js embeds `NEXT_PUBLIC_*` values into the client bundle at build time. Confirm the backend API is publicly reachable over HTTPS and its deployment has the required production environment and database migrations applied. If signup displays a browser-level Network Error, inspect the browser Network panel: a failed DNS/TLS/connection indicates API reachability, while a CORS message indicates the backend origin allowlist needs the deployed frontend origin. An HTTP 4xx/5xx response instead means the request reached the backend and its response message should identify the application-level issue (for example, SMTP is required for signup verification).
 
 ## Invitation email delivery
 

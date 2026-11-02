@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -48,6 +48,7 @@ class Task(Base, OrganizationScopedMixin, TimestampMixin):
     description = Column(Text, nullable=True)
     task_type = Column(String(20), nullable=False, default="TASK")
     story_points = Column(Integer, nullable=True)
+    estimated_hours = Column(Numeric(8, 2), nullable=True)
     status = Column(String(20), nullable=False, default="TODO", index=True)
     priority = Column(String(20), nullable=False, default="MEDIUM")
     backlog_rank = Column(Integer, nullable=False, default=0, server_default="0", index=True)

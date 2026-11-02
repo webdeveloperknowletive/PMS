@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Literal
 from typing import Any
 
@@ -237,6 +238,7 @@ class TaskRead(TaskBase):
     model_config = ConfigDict(from_attributes=True)
 
     task_id: uuid.UUID
+    estimated_hours: Decimal | None = None
     backlog_rank: int = 0
     created_at: datetime
     updated_at: datetime

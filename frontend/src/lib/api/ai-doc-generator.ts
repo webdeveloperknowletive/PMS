@@ -1,20 +1,23 @@
 import { apiClient } from "./client";
-import { createCrudApi } from "./crud-factory";
-import type { AIDocumentGeneration, AIDocumentGenerationCreate, AIDocumentGenerationRequest, AIDocumentGenerationUpdate } from "@/types/ai";
+import type { AIDocumentGeneration, AIDocumentGenerationRequest, GeneratedDocumentPreview } from "@/types/ai";
 
-export const aiDocGeneratorApi = createCrudApi<
-  AIDocumentGeneration,
-  AIDocumentGenerationCreate,
-  AIDocumentGenerationUpdate
->("/ai/document-generations", "document_generation_id");
+export const aiDocGeneratorApi = {
+  list: async (): Promise<AIDocumentGeneration[]> => (await apiClient.get<AIDocumentGeneration[]>("/ai/documentation/")).data,
+  get: async (id: string): Promise<AIDocumentGeneration> => (await apiClient.get<AIDocumentGeneration>(`/ai/documentation/${id}`)).data,
+  remove: async (id: string): Promise<void> => { await apiClient.delete(`/ai/documentation/${id}`); },
+  publish: async (id: string): Promise<AIDocumentGeneration> => (await apiClient.post<AIDocumentGeneration>(`/ai/documentation/${id}/publish`, {})).data,
+};
 
-/**
- * The generic `.create()` above still expects the full DB-shaped payload
- * (generated_content, ai_model, etc.) — but the backend now only accepts
- * {project_id, document_type, title, prompt} and generates the rest
- * itself by calling Groq. Use this instead of aiDocGeneratorApi.create().
- */
-export async function generateDocument(payload: AIDocumentGenerationRequest): Promise<AIDocumentGeneration> {
-  const { data } = await apiClient.post<AIDocumentGeneration>("/ai/document-generations/", payload);
-  return data;
+export async function generateDocument(payload: AIDocumentGenerationRequest): Promise<GeneratedDocumentPreview> {
+  return (await apiClient.post<GeneratedDocumentPreview>("/ai/documentation/generate", payload)).data;
+}
+
+export async function saveDocument(payload: {
+  project_id: string;
+  document_type: string;
+  title: string;
+  content: Record<string, unknown>;
+  ai_model: string;
+}): Promise<AIDocumentGeneration> {
+  return (await apiClient.post<AIDocumentGeneration>("/ai/documentation/save", payload)).data;
 }

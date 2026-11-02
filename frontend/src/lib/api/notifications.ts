@@ -24,4 +24,8 @@ export const notificationSettingsApi = {
     (await apiClient.get<{ volume_percent: number }>("/notifications/settings/volume")).data,
   updateVolume: async (volume_percent: number): Promise<{ volume_percent: number }> =>
     (await apiClient.put<{ volume_percent: number }>("/notifications/settings/volume", { volume_percent })).data,
+  getTaskDeadlineEmail: async (): Promise<{ enabled: boolean }> =>
+    (await apiClient.get<{ enabled: boolean }>("/notifications/settings/task-deadline-email")).data,
+  updateTaskDeadlineEmail: async (enabled: boolean): Promise<{ enabled: boolean }> =>
+    (await apiClient.put<{ enabled: boolean }>("/notifications/settings/task-deadline-email", { enabled })).data,
 };

@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { FileStack, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { FileStack, Loader2, Sparkles, Trash2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -26,46 +27,61 @@ import {
   useDeleteGeneratedDocument,
   useGenerateDocument,
   useGeneratedDocuments,
+  usePublishGeneratedDocument,
+  useSaveGeneratedDocument,
 } from "@/hooks/queries/use-ai-doc-generator";
 import { formatDate } from "@/lib/utils";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { AIDocumentGeneration } from "@/types/ai";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useTasks } from "@/hooks/queries/use-tasks";
 
 export default function AIDocGeneratorPage() {
-  const { canUseAI } = usePermissions();
+  const { canUseAI, canUploadDocuments } = usePermissions();
   const { data: projects } = useProjects();
+  const { data: tasks } = useTasks({ limit: 500 });
   const { data: documents, isLoading } = useGeneratedDocuments();
   const generateMutation = useGenerateDocument();
+  const saveMutation = useSaveGeneratedDocument();
+  const publishMutation = usePublishGeneratedDocument();
   const deleteMutation = useDeleteGeneratedDocument();
 
   const [projectId, setProjectId] = useState("");
   const [documentType, setDocumentType] = useState("");
   const [title, setTitle] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [taskId, setTaskId] = useState("");
+  const [preview, setPreview] = useState<import("@/types/ai").GeneratedDocumentPreview | null>(null);
 
   const [viewing, setViewing] = useState<AIDocumentGeneration | null>(null);
   const [deleting, setDeleting] = useState<AIDocumentGeneration | null>(null);
 
   const projectName = (id: string) => projects?.find((p) => p.project_id === id)?.project_name ?? "Unknown project";
 
-  const canGenerate = projectId && documentType.trim() && title.trim() && prompt.trim() && !generateMutation.isPending;
+  const canGenerate = projectId && documentType.trim() && title.trim() && prompt.trim() && (documentType !== "TASK_DESCRIPTION" || !!taskId) && !generateMutation.isPending;
 
   const handleGenerate = async () => {
     try {
-      await generateMutation.mutateAsync({
+      const result = await generateMutation.mutateAsync({
         project_id: projectId,
         document_type: documentType.trim(),
-        title: title.trim(),
-        prompt: prompt.trim(),
+        task_id: documentType === "TASK_DESCRIPTION" ? taskId : null,
+        additional_instructions: `Requested title: ${title.trim()}\n\n${prompt.trim()}`,
       });
-      toast.success("Document generated");
-      setDocumentType("");
-      setTitle("");
-      setPrompt("");
+      setPreview(result);
+      toast.success("Draft generated. Review it before saving.");
     } catch (err) {
       toast.error(getApiErrorMessage(err));
     }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!preview) return;
+    try {
+      await saveMutation.mutateAsync({ project_id: projectId, document_type: preview.document_type, title: preview.title, content: preview.content, ai_model: preview.ai_model });
+      toast.success("Reviewed AI draft saved");
+      setPreview(null); setDocumentType(""); setTitle(""); setPrompt(""); setTaskId("");
+    } catch (err) { toast.error(getApiErrorMessage(err)); }
   };
 
   const confirmDelete = async () => {
@@ -77,6 +93,11 @@ export default function AIDocGeneratorPage() {
     } catch (err) {
       toast.error(getApiErrorMessage(err));
     }
+  };
+
+  const handlePublish = async (id: string) => {
+    try { await publishMutation.mutateAsync(id); toast.success("Document published to Documentation"); }
+    catch (err) { toast.error(getApiErrorMessage(err)); }
   };
 
   return (
@@ -113,14 +134,11 @@ export default function AIDocGeneratorPage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="document_type">Document type</Label>
-              <Input
-                id="document_type"
-                placeholder="Project Charter, Status Report, Retrospective..."
-                value={documentType}
-                onChange={(e) => setDocumentType(e.target.value)}
-              />
+              <Select value={documentType} onValueChange={(value) => { setDocumentType(value); setTaskId(""); }}><SelectTrigger id="document_type"><SelectValue placeholder="Select document type" /></SelectTrigger><SelectContent><SelectItem value="PROJECT_OVERVIEW">Project overview</SelectItem><SelectItem value="PROJECT_STATUS_REPORT">Project status report</SelectItem><SelectItem value="TASK_DESCRIPTION">Task description</SelectItem></SelectContent></Select>
             </div>
           </div>
+
+          {documentType === "TASK_DESCRIPTION" && <div className="space-y-1.5"><Label>Task</Label><Select value={taskId} onValueChange={setTaskId}><SelectTrigger><SelectValue placeholder="Select task" /></SelectTrigger><SelectContent>{(tasks ?? []).filter((task) => task.project_id === projectId).map((task) => <SelectItem key={task.task_id} value={task.task_id}>{task.task_name}</SelectItem>)}</SelectContent></Select></div>}
 
           <div className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
@@ -159,6 +177,7 @@ export default function AIDocGeneratorPage() {
               </>
             )}
           </Button>
+          {preview && <div className="space-y-3 rounded-xl border border-violet-200 bg-violet-50/50 p-4"><div><p className="font-semibold">Review draft: {preview.title}</p><p className="text-xs text-muted-foreground">Generated content is still a draft. Check it before saving or publishing.</p></div><pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-white p-3 text-xs">{JSON.stringify(preview.content, null, 2)}</pre><div className="flex flex-wrap gap-2"><Button onClick={handleSaveDraft} disabled={saveMutation.isPending}>{saveMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : "Save reviewed draft"}</Button><Button variant="outline" onClick={() => setPreview(null)}>Discard preview</Button></div></div>}
         </CardContent>
       </Card>}
 
@@ -192,13 +211,13 @@ export default function AIDocGeneratorPage() {
                       <Badge variant="secondary">{doc.document_type}</Badge>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {projectName(doc.project_id)} · {formatDate(doc.created_at)} · {doc.ai_model}
+                      {projectName(doc.project_id)} · {formatDate(doc.created_at)} · {doc.ai_model} · {doc.status}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setViewing(doc)}>
-                      View
-                    </Button>
+                    <Button asChild variant="outline" size="sm"><Link href={`/ai/doc-generator/${doc.document_generation_id}`}>View</Link></Button>
+                    {canUploadDocuments && !doc.published_document_id && <Button variant="outline" size="sm" onClick={() => handlePublish(doc.document_generation_id)} disabled={publishMutation.isPending}><Send className="h-4 w-4" /> Publish</Button>}
+                    {doc.published_document_id && <Badge variant="secondary">Published to Documentation</Badge>}
                     {canUseAI && <Button variant="ghost" size="icon" onClick={() => setDeleting(doc)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>}

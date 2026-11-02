@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --background: 225 38% 97%;
-    --foreground: 226 36% 15%;
+    --background: 0 0% 100%;
+    --foreground: 218 47% 19%;
     --card: 0 0% 100%;
     --card-foreground: 226 36% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 226 36% 15%;
-    --primary: 249 78% 61%;
+    --primary: 215 90% 47%;
     --primary-foreground: 0 0% 100%;
     --secondary: 224 31% 94%;
     --secondary-foreground: 226 32% 22%;
     --muted: 224 31% 95%;
     --muted-foreground: 224 13% 46%;
-    --accent: 248 100% 97%;
-    --accent-foreground: 249 67% 48%;
+    --accent: 214 100% 96%;
+    --accent-foreground: 215 90% 47%;
     --destructive: 0 75% 56%;
     --destructive-foreground: 0 0% 100%;
     --border: 224 23% 89%;
     --input: 224 23% 87%;
-    --ring: 249 78% 61%;
-    --radius: 1rem;
+    --ring: 215 90% 47%;
+    --radius: 0.375rem;
     --sidebar: 231 42% 13%;
     --sidebar-foreground: 225 23% 78%;
     --sidebar-active: 249 78% 61%;
@@ -41,9 +41,6 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "cv11", "salt", "ss01";
-    background-image:
-      radial-gradient(ellipse at 82% 0%, hsl(250 100% 95% / 0.56), transparent 34rem),
-      radial-gradient(ellipse at 4% 100%, hsl(198 100% 95% / 0.46), transparent 30rem);
     min-height: 100vh;
   }
 

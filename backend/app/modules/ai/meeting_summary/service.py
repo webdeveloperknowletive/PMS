@@ -8,6 +8,7 @@ in ai/doc_generator/service.py — this module stores results,
 it does not call an LLM itself.
 """
 
+from datetime import date
 from uuid import UUID
 from typing import Any
 
@@ -19,8 +20,11 @@ from app.core.config import GROQ_MODEL
 from app.modules.ai.generation import generate_structured
 from app.modules.ai.meeting_summary import repository
 from app.modules.ai.meeting_summary.model import AIMeetingSummary
-from app.modules.ai.meeting_summary.schema import AIMeetingSummaryCreate, AIMeetingSummaryGenerationRequest, AIMeetingSummaryUpdate
+from app.modules.ai.meeting_summary.schema import AIMeetingApplyRequest, AIMeetingSummaryCreate, AIMeetingSummaryGenerationRequest, AIMeetingSummaryUpdate
 from app.modules.projects.model import Project
+from app.modules.tasks.schema import TaskCreate
+from app.modules.tasks.model import Task
+from app.modules.users.model import User
 
 
 class _MeetingOutput(BaseModel):
@@ -77,3 +81,55 @@ def delete_meeting_summary(db: Session, summary_id: UUID) -> None:
     deleted = repository.delete_meeting_summary(db, summary_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meeting summary not found")
+
+
+def apply_meeting_actions(db: Session, summary_id: UUID, payload: AIMeetingApplyRequest, actor: User) -> AIMeetingSummary:
+    summary = db.query(AIMeetingSummary).filter(
+        AIMeetingSummary.summary_id == summary_id,
+        AIMeetingSummary.organization_id == actor.organization_id,
+    ).with_for_update().one_or_none()
+    if summary is None:
+        raise HTTPException(status_code=404, detail="Meeting summary not found")
+    from app.modules.projects.service import get_project
+    get_project(db, summary.project_id, actor)
+    applied = set(summary.applied_action_items or [])
+    if any(index >= len(summary.action_items or []) for index in payload.item_indexes):
+        raise HTTPException(status_code=400, detail="One or more selected action items no longer exist")
+    from app.modules.tasks import service as task_service
+    for index in payload.item_indexes:
+        if index in applied:
+            continue
+        item = (summary.action_items or [])[index]
+        if isinstance(item, str):
+            task_name, description, suggested_owner, due_value = item.strip(), None, None, None
+        elif isinstance(item, dict):
+            task_name = str(item.get("task") or item.get("title") or item.get("task_name") or "").strip()
+            description = item.get("description") or item.get("details")
+            suggested_owner = item.get("owner")
+            due_value = item.get("due_date")
+        else:
+            raise HTTPException(status_code=400, detail=f"Action item {index + 1} has an unsupported format")
+        if not task_name:
+            raise HTTPException(status_code=400, detail=f"Action item {index + 1} has no task title")
+        due_date = None
+        if due_value:
+            try:
+                due_date = date.fromisoformat(str(due_value)[:10])
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=f"Action item {index + 1} has an invalid due date") from exc
+        if suggested_owner:
+            owner_note = f"AI suggested owner: {str(suggested_owner)[:150]} (unassigned pending confirmation)."
+            description = f"{description}\n\n{owner_note}" if description else owner_note
+        # Record the index before create_task: its transaction commits the marker
+        # with the task, so retries cannot create duplicate tasks.
+        summary.applied_action_items = sorted(applied | {index})
+        task_service.create_task(db, TaskCreate(
+            project_id=summary.project_id,
+            task_name=task_name[:255],
+            description=str(description)[:10000] if description else None,
+            task_type="TASK", status="TODO", priority="MEDIUM",
+            due_date=due_date, labels=["#64748b"],
+        ), assigned_by=actor)
+        applied.add(index)
+    db.refresh(summary)
+    return summary

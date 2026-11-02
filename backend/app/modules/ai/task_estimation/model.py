@@ -1,12 +1,13 @@
 import uuid
 
-from sqlalchemy import CheckConstraint, Column, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 from app.shared.mixins import OrganizationScopedMixin
 from app.shared.mixins import CreatedAtMixin
+from sqlalchemy.sql import func
 
 
 class AITaskEstimation(Base, OrganizationScopedMixin, CreatedAtMixin):
@@ -23,6 +24,8 @@ class AITaskEstimation(Base, OrganizationScopedMixin, CreatedAtMixin):
     prompt = Column(Text, nullable=False)
     ai_model = Column(String(100), nullable=False)
     confidence_score = Column(Numeric(5, 2), nullable=True)
+    is_applied = Column(Boolean, nullable=False, default=False, server_default="false")
+    applied_at = Column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         CheckConstraint("estimated_hours >= 0", name="ck_ai_task_estimations_hours_nonneg"),

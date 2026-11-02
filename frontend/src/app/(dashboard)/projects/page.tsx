@@ -9,7 +9,6 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ProjectStatusBadge } from "@/components/shared/status-badge";
-import { ProjectFormDialog } from "@/components/modules/projects/project-form-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,8 +35,6 @@ export default function ProjectsPage() {
   const { canManageProjects } = usePermissions();
 
   const [search, setSearch] = useState("");
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "ON_HOLD">("ALL");
 
@@ -49,16 +46,6 @@ export default function ProjectsPage() {
   const active = projects?.filter((p) => p.status === "ACTIVE").length ?? 0;
   const completed = projects?.filter((p) => p.status === "COMPLETED").length ?? 0;
   const onHold = projects?.filter((p) => p.status === "ON_HOLD").length ?? 0;
-
-  const openCreate = () => {
-    setEditingProject(null);
-    setFormOpen(true);
-  };
-
-  const openEdit = (project: Project) => {
-    setEditingProject(project);
-    setFormOpen(true);
-  };
 
   const confirmDelete = async () => {
     if (!deletingProject) return;
@@ -84,10 +71,10 @@ export default function ProjectsPage() {
         description="Manage all projects in your organization"
         actions={
           canManageProjects ? (
-            <Button onClick={openCreate}>
+            <Button asChild><Link href="/projects/new">
               <Plus className="h-4 w-4" />
               New Project
-            </Button>
+            </Link></Button>
           ) : undefined
         }
       />
@@ -105,7 +92,7 @@ export default function ProjectsPage() {
         ))}
       </div>
 
-      {goalPortfolio.length > 0 && <Card><CardContent className="space-y-3 p-4"><div className="flex items-center gap-2"><Target className="h-4 w-4 text-violet-700" /><h2 className="text-sm font-semibold">Goals across your projects</h2><span className="ml-auto text-xs text-muted-foreground">{goalPortfolio.length} goals</span></div><div className="grid gap-2 md:grid-cols-2">{goalPortfolio.slice(0, 6).map((goal) => <Link key={goal.goal_id} href={`/projects/${goal.project_id}#project-goals`} className="rounded-lg border p-3 transition hover:border-violet-300"><div className="flex justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{goal.name}</p><p className="truncate text-xs text-muted-foreground">{goal.project_name}{goal.target_date ? ` · target ${formatDate(goal.target_date)}` : ""}</p></div><span className="shrink-0 text-xs text-muted-foreground">{goal.progress_percent}%</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-violet-600" style={{ width: `${goal.progress_percent}%` }} /></div></Link>)}</div></CardContent></Card>}
+      {goalPortfolio.length > 0 && <Card><CardContent className="space-y-3 p-4"><div className="flex items-center gap-2"><Target className="h-4 w-4 text-violet-700" /><h2 className="text-sm font-semibold">Goals across your projects</h2><span className="ml-auto text-xs text-muted-foreground">{goalPortfolio.length} goals</span></div><div className="grid gap-2 md:grid-cols-2">{goalPortfolio.slice(0, 6).map((goal) => <Link key={goal.goal_id} href={`/projects/${goal.project_id}/goals/${goal.goal_id}`} className="rounded-lg border p-3 transition hover:border-violet-300"><div className="flex justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{goal.name}</p><p className="truncate text-xs text-muted-foreground">{goal.project_name}{goal.target_date ? ` · target ${formatDate(goal.target_date)}` : ""}</p></div><span className="shrink-0 text-xs text-muted-foreground">{goal.progress_percent}%</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-violet-600" style={{ width: `${goal.progress_percent}%` }} /></div></Link>)}</div></CardContent></Card>}
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -131,7 +118,7 @@ export default function ProjectsPage() {
               title={search ? "No projects match your search" : "No projects yet"}
               description={search ? "Try a different search term." : "Create your first project to get started."}
               actionLabel={search || !canManageProjects ? undefined : "New Project"}
-              onAction={search || !canManageProjects ? undefined : openCreate}
+              onAction={search || !canManageProjects ? undefined : () => router.push("/projects/new")}
             />
           </CardContent>
         ) : (
@@ -185,7 +172,7 @@ export default function ProjectsPage() {
                   {canManageProjects && (
                     <TableCell>
                       <div className="flex flex-nowrap items-center gap-1">
-                          <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit project" title="Edit project" onClick={(event) => { event.stopPropagation(); openEdit(project); }}><Pencil className="h-4 w-4" /></Button>
+                          <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Open project" title="Open project" onClick={(event) => { event.stopPropagation(); router.push(`/projects/${project.project_id}`); }}><Pencil className="h-4 w-4" /></Button>
                           <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete project" title="Delete project" onClick={(event) => { event.stopPropagation(); setDeletingProject(project); }}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </TableCell>
@@ -199,8 +186,6 @@ export default function ProjectsPage() {
 
       {canManageProjects && (
         <>
-          <ProjectFormDialog open={formOpen} onOpenChange={setFormOpen} project={editingProject} />
-
           <ConfirmDialog
             open={!!deletingProject}
             onOpenChange={(open) => !open && setDeletingProject(null)}

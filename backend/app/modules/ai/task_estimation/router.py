@@ -13,6 +13,7 @@ from app.modules.ai.task_estimation.schema import (
     AITaskEstimationUpdate,
 )
 from app.modules.ai.task_estimation.permissions import can_generate, can_view_results
+from app.modules.tasks.permissions import can_manage_tasks
 from app.modules.users.model import User
 
 router = APIRouter(
@@ -55,6 +56,19 @@ async def get_task_estimation(
     db: Session = Depends(get_db),
 ):
     return service.get_task_estimation(db, estimation_id)
+
+
+@router.post(
+    "/{estimation_id}/apply",
+    response_model=AITaskEstimationRead,
+    dependencies=[Depends(can_generate), Depends(can_manage_tasks)],
+)
+async def apply_task_estimation(
+    estimation_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.apply_task_estimation(db, estimation_id, current_user)
 
 
 @router.post(

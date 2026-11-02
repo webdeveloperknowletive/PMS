@@ -123,6 +123,13 @@ apiClient.interceptors.response.use(
 /** Pulls FastAPI's { detail: "..." } (or 422 validation array) into a readable string. */
 export function getApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
+    // A browser "Network Error" means no HTTP response was available. In
+    // deployed builds this is most often a missing/wrong API URL, a CORS
+    // origin mismatch, or mixed HTTP/HTTPS content.
+    if (!error.response && (error.code === "ERR_NETWORK" || error.message === "Network Error")) {
+      return "Cannot reach the SprintIX API. Check that NEXT_PUBLIC_API_URL points to your deployed HTTPS backend (ending in /api/v1), that the backend is running, and that its ALLOW_ORIGINS includes this website's exact HTTPS address.";
+    }
+
     const data = error.response?.data;
 
     // New custom error shape from register_exception_handlers:

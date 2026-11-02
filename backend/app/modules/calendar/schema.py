@@ -16,6 +16,7 @@ class CalendarEventBase(BaseModel):
     calendar_scope: str = Field("ORGANIZATION", pattern="^(ORGANIZATION|PERSONAL)$")
     calendar_owner_id: uuid.UUID | None = None
     related_task_id: uuid.UUID | None = None
+    related_milestone_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
     def _check_datetime_range(self):
@@ -61,3 +62,4 @@ class CalendarEventRead(CalendarEventBase):
     event_id: uuid.UUID
     created_at: datetime
     is_automatic: bool = False
+    related_milestone_id: uuid.UUID | None = None

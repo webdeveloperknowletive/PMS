@@ -8,6 +8,7 @@ ai/doc_generator/service.py — this module stores results,
 it does not call an LLM itself.
 """
 
+from datetime import date, timedelta
 from uuid import UUID
 from typing import Any
 
@@ -22,6 +23,11 @@ from app.modules.ai.sprint_planning.model import AISprintPlan
 from app.modules.ai.sprint_planning.schema import AISprintPlanCreate, AISprintPlanGenerationRequest, AISprintPlanUpdate
 from app.modules.projects.model import Project
 from app.modules.tasks.model import Task
+from app.modules.tasks.model import TaskSprint
+from app.modules.calendar.automatic import add_automatic_calendar_entries
+from app.modules.notifications.events import notify_project_users, project_recipient_ids
+from app.modules.users.model import User
+from app.modules.ai.sprint_planning.schema import AISprintPlanApplyRequest
 
 
 class _SprintOutput(BaseModel):
@@ -84,6 +90,82 @@ def update_sprint_plan(db: Session, sprint_plan_id: UUID, payload: AISprintPlanU
     if sprint_plan is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sprint plan not found")
     return sprint_plan
+
+
+def apply_sprint_plan(db: Session, sprint_plan_id: UUID, payload: AISprintPlanApplyRequest, actor: User) -> AISprintPlan:
+    plan = db.query(AISprintPlan).filter(
+        AISprintPlan.sprint_plan_id == sprint_plan_id,
+        AISprintPlan.organization_id == actor.organization_id,
+    ).with_for_update().one_or_none()
+    if plan is None:
+        raise HTTPException(status_code=404, detail="Sprint plan not found")
+    if plan.applied_sprint_id is not None:
+        raise HTTPException(status_code=409, detail="This AI plan has already been applied")
+    project = db.query(Project).filter(
+        Project.project_id == plan.project_id,
+        Project.organization_id == actor.organization_id,
+    ).one_or_none()
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    suggestions = {
+        str(item.get("task_id")): item
+        for item in (plan.suggested_tasks or [])
+        if isinstance(item, dict) and item.get("task_id")
+    }
+    selected = [str(task_id) for task_id in payload.selected_task_ids]
+    if any(task_id not in suggestions for task_id in selected):
+        raise HTTPException(status_code=400, detail="Select only tasks suggested by this AI plan")
+    tasks = db.query(Task).filter(
+        Task.task_id.in_(payload.selected_task_ids),
+        Task.project_id == plan.project_id,
+        Task.organization_id == actor.organization_id,
+    ).all()
+    if len(tasks) != len(selected):
+        raise HTTPException(status_code=400, detail="One or more suggested tasks are no longer available")
+    if any(task.sprint_id is not None for task in tasks):
+        raise HTTPException(status_code=409, detail="Remove tasks already assigned to a sprint before applying this plan")
+    if any(task.status in {"DONE", "CANCELLED"} or task.archived_at is not None for task in tasks):
+        raise HTTPException(status_code=409, detail="Completed, cancelled, or archived tasks cannot be added to this sprint")
+
+    def story_points_for(task_id: str) -> int:
+        value = suggestions[task_id].get("story_points")
+        return value if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 100 else 0
+
+    start_date = max(date.today(), project.start_date) if project.start_date else date.today()
+    end_date = start_date + timedelta(days=plan.sprint_duration_days - 1)
+    sprint = TaskSprint(
+        organization_id=actor.organization_id,
+        project_id=plan.project_id,
+        sprint_name=plan.sprint_name,
+        goal=plan.sprint_goal,
+        start_date=start_date,
+        end_date=end_date,
+        capacity_points=sum(story_points_for(key) for key in selected),
+        status="PLANNED",
+        created_by=actor.user_id,
+    )
+    db.add(sprint)
+    db.flush()
+    for task in tasks:
+        task.sprint_id = sprint.sprint_id
+        suggested_points = suggestions[str(task.task_id)].get("story_points")
+        if isinstance(suggested_points, int) and not isinstance(suggested_points, bool) and 0 <= suggested_points <= 100:
+            task.story_points = suggested_points
+    plan.applied_sprint_id = sprint.sprint_id
+    plan.status = "Applied"
+    add_automatic_calendar_entries(
+        db, project_id=plan.project_id, actor_id=actor.user_id,
+        title=f"Sprint planned: {sprint.sprint_name}", description=f"{actor.name} applied an AI sprint plan.",
+        event_type="Planning", personal_user_ids=project_recipient_ids(db, plan.project_id) | {actor.user_id},
+        event_date=start_date,
+    )
+    db.commit()
+    db.refresh(plan)
+    notify_project_users(db, plan.project_id, actor_id=actor.user_id,
+        title=f"Sprint planned: {sprint.sprint_name}", message=f"{actor.name} applied an AI sprint plan.",
+        notification_type="Sprint Created")
+    return plan
 
 
 def delete_sprint_plan(db: Session, sprint_plan_id: UUID) -> None:

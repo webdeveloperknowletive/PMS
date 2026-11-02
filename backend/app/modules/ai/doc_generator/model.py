@@ -20,6 +20,7 @@ class AIDocumentGeneration(Base, OrganizationScopedMixin, CreatedAtMixin):
     prompt = Column(Text, nullable=False)
     generated_content = Column(Text, nullable=False)
     document_url = Column(Text, nullable=True)
+    published_document_id = Column(UUID(as_uuid=True), ForeignKey("documents.document_id", ondelete="SET NULL"), nullable=True)
     version = Column(String(20), nullable=False, default="1.0")
     ai_model = Column(String(100), nullable=False)
     status = Column(String(20), nullable=False, default="Generated")

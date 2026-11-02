@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Check, KeyRound, Pencil, Plus, Search, ShieldCheck, Trash2, UsersRound } from "lucide-react";
 import { toast } from "sonner";
@@ -113,9 +114,9 @@ export default function RolesPage() {
     <Card id="role-results" className="scroll-mt-6">{isLoading ? <CardContent className="space-y-3 p-5">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</CardContent> :
       <Table><TableHeader><TableRow><TableHead>Role</TableHead><TableHead>Users</TableHead><TableHead>Created</TableHead><TableHead className="w-48" /></TableRow></TableHeader><TableBody>
         {filtered.map((role) => <TableRow key={role.role_id}>
-          <TableCell><div className="flex items-center gap-2 font-medium">{role.role_name}{role.is_system && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700">System</span>}</div>{role.description && <p className="mt-1 line-clamp-1 max-w-md text-xs text-muted-foreground">{role.description}</p>}</TableCell>
+          <TableCell><div className="flex items-center gap-2 font-medium"><Link href={`/roles/${role.role_id}`} className="text-[#0c66e4] hover:underline">{role.role_name}</Link>{role.is_system && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700">System</span>}</div>{role.description && <p className="mt-1 line-clamp-1 max-w-md text-xs text-muted-foreground">{role.description}</p>}</TableCell>
           <TableCell>{countFor(role.role_id)}</TableCell><TableCell className="text-sm text-muted-foreground">{formatDate(role.created_at)}</TableCell>
-          <TableCell><div className="flex justify-end gap-2">{can("roles.assignments.view") && <Button variant="outline" size="sm" onClick={() => setUsersRole(role)}>Users</Button>}{!role.is_system && (can("roles.update") || can("roles.permissions.view") || can("roles.permissions.update")) && <Button variant="ghost" size="icon" aria-label={`Edit ${role.role_name}`} onClick={() => setEditingRole(role)}><Pencil className="h-4 w-4" /></Button>}{!role.is_system && can("roles.delete") && <Button variant="ghost" size="icon" aria-label={`Delete ${role.role_name}`} onClick={() => removeRole(role)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}</div></TableCell>
+          <TableCell><div className="flex justify-end gap-2">{can("roles.assignments.view") && <Button variant="outline" size="sm" onClick={() => setUsersRole(role)}>Users</Button>}{!role.is_system && (can("roles.update") || can("roles.permissions.view") || can("roles.permissions.update")) && <Button asChild variant="ghost" size="icon" aria-label={`Open ${role.role_name}`}><Link href={`/roles/${role.role_id}`}><Pencil className="h-4 w-4" /></Link></Button>}{!role.is_system && can("roles.delete") && <Button variant="ghost" size="icon" aria-label={`Delete ${role.role_name}`} onClick={() => removeRole(role)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}</div></TableCell>
         </TableRow>)}
         {!filtered.length && <TableRow><TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">No roles found.</TableCell></TableRow>}
       </TableBody></Table>}

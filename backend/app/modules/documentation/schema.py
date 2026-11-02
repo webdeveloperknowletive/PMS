@@ -9,11 +9,11 @@ class DocumentBase(BaseModel):
     title: str = Field(..., max_length=255)
     file_url: str | None = None
     version: str = Field("1.0", max_length=20)
-    resource_type: str = Field("FILE", pattern="^(FILE|GITHUB|DRIVE)$")
+    resource_type: str = Field("FILE", pattern="^(FILE|GITHUB|DRIVE|AI_DOC)$")
 
 
 class DocumentCreate(DocumentBase):
-    pass
+    resource_type: str = Field("FILE", pattern="^(FILE|GITHUB|DRIVE)$")
 
 
 class DocumentUpdate(BaseModel):
@@ -36,3 +36,5 @@ class DocumentRead(DocumentBase):
     file_size: int | None = None
     created_by: str | None = None
     updated_by: str | None = None
+    content: str | None = None
+    resource_type: str = Field(..., pattern="^(FILE|GITHUB|DRIVE|AI_DOC)$")

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { Plus, Settings2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -101,7 +102,7 @@ export function ProjectCustomFieldsPanel({ projectId }: { projectId: string }) {
           <div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="ghost" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</Button><Button type="submit" disabled={createField.isPending || name.trim().length < 2}>{createField.isPending ? "Creating…" : "Create field"}</Button></div>
         </form>}
         {isLoading ? <p className="text-xs text-slate-500">Loading custom fields…</p> : fields.length === 0 ? <p className="rounded-xl bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">No custom fields are configured for this project.</p> : fields.map((field) => <div key={field.field_id} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3">
-          <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-slate-800">{field.name}</p><p className="mt-1 text-xs text-slate-500">{fieldTypes.find((type) => type.value === field.field_type)?.label} · {field.is_required ? "Required" : "Optional"}{field.options.length ? ` · ${field.options.join(", ")}` : ""}{field.default_value !== null ? ` · Default: ${String(field.default_value)}` : ""}</p></div>
+          <div className="min-w-0 flex-1"><Link href={`/projects/${projectId}/fields/${field.field_id}`} className="block truncate text-sm font-semibold text-[#0c66e4] hover:underline">{field.name}</Link><p className="mt-1 text-xs text-slate-500">{fieldTypes.find((type) => type.value === field.field_type)?.label} · {field.is_required ? "Required" : "Optional"}{field.options.length ? ` · ${field.options.join(", ")}` : ""}{field.default_value !== null ? ` · Default: ${String(field.default_value)}` : ""}</p></div>
           {canManage && <Button type="button" variant="ghost" size="icon" aria-label={`Remove ${field.name}`} onClick={() => setDeleting(field)}><Trash2 className="h-4 w-4" /></Button>}
         </div>)}
       </CardContent>

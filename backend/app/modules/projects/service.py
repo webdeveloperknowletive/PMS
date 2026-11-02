@@ -104,10 +104,16 @@ def get_projects(db: Session, current_user: User, skip: int = 0, limit: int = 10
     member_projects = db.query(Team.project_id).join(TeamMember, TeamMember.team_id == Team.team_id).filter(
         TeamMember.user_id == current_user.user_id
     )
+    assigned_task_projects = db.query(Task.project_id).filter(
+        Task.organization_id == current_user.organization_id,
+        Task.user_id == current_user.user_id,
+        Task.archived_at.is_(None),
+    ).distinct()
     return db.query(Project).filter(
         (Project.project_manager_user_id == current_user.user_id)
         | Project.project_id.in_(lead_projects)
         | Project.project_id.in_(member_projects)
+        | Project.project_id.in_(assigned_task_projects)
     ).order_by(Project.created_at.desc()).offset(skip).limit(limit).all()
 
 

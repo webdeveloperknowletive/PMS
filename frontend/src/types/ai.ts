@@ -26,6 +26,7 @@ export interface AISprintPlanUpdate {
 }
 export interface AISprintPlan extends AISprintPlanBase {
   sprint_plan_id: string;
+  applied_sprint_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -72,6 +73,7 @@ export interface AIDocumentGenerationBase {
   prompt: string;
   generated_content: string;
   document_url?: string | null;
+  published_document_id?: string | null;
   version: string;
   ai_model: string;
   status: string;
@@ -82,8 +84,20 @@ export interface AIDocumentGenerationCreate extends AIDocumentGenerationBase {}
 export interface AIDocumentGenerationRequest {
   project_id: string;
   document_type: string;
+  task_id?: string | null;
+  tone?: string;
+  length?: string;
+  audience?: string;
+  template?: string;
+  language?: string;
+  additional_instructions?: string | null;
+}
+export interface GeneratedDocumentPreview {
+  document_type: string;
   title: string;
-  prompt: string;
+  content: Record<string, unknown>;
+  ai_model: string;
+  source_metadata: { sources_used: string[]; task_count?: number | null; team_count?: number | null; milestone_count?: number | null };
 }
 export interface AIDocumentGenerationUpdate {
   title?: string;
@@ -124,6 +138,8 @@ export interface AITaskEstimationUpdate {
 export interface AITaskEstimation extends AITaskEstimationBase {
   estimation_id: string;
   created_at: string;
+  is_applied?: boolean;
+  applied_at?: string | null;
 }
 
 // ==========================================================

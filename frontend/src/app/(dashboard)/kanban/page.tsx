@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useMemo, useState } from "react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
@@ -46,13 +47,14 @@ import type { KanbanColumn as KanbanColumnType } from "@/types/kanban";
 const ALL_FILTERS = "__all__";
 
 export default function KanbanPage() {
-  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const router = useRouter();
+  const { data: projects, isLoading: projectsLoading, isError: projectsError } = useProjects();
   const [projectId, setProjectId] = useState<string>("");
 
-  const { data: columns, isLoading: columnsLoading } = useKanbanColumns();
+  const { data: columns, isLoading: columnsLoading, isError: columnsError } = useKanbanColumns(!!projectId, projectId || undefined);
   const { data: kanbanLabels = [] } = useKanbanLabels();
-  const { data: placements, isLoading: placementsLoading } = useKanbanTaskPlacements();
-  const { data: tasks } = useTasks({ limit: 500 });
+  const { data: placements, isLoading: placementsLoading, isError: placementsError } = useKanbanTaskPlacements(!!projectId, projectId || undefined);
+  const { data: tasks, isLoading: tasksLoading, isError: tasksError } = useTasks({ project_id: projectId, limit: 500 }, !!projectId);
   const { data: projectComponents = [] } = useProjectComponents(projectId || undefined);
   const { data: projectReleases = [] } = useProjectReleases(projectId || undefined);
   const { data: projectSprints = [] } = useSprints(projectId || undefined);
@@ -135,8 +137,26 @@ export default function KanbanPage() {
     }
   }, [isTeamLead]);
   useEffect(() => {
+    setBoardSearch("");
+    setBoardPriorityFilter(ALL_FILTERS);
+    setBoardAssigneeFilter(ALL_FILTERS);
+    setBoardComponentFilter(ALL_FILTERS);
+    setBoardReleaseFilter(ALL_FILTERS);
     setBoardEpicFilter(ALL_FILTERS);
     setBoardSprintFilter(ALL_FILTERS);
+    setBoardLabelFilter("");
+    setBoardGroupBy(ALL_FILTERS);
+    setArchivedOpen(false);
+    setAddTaskColumnId(null);
+    setEditingColumn(null);
+    setCardDetailsTask(null);
+    setCardMembersTask(null);
+    setArchivingTask(null);
+    setDeletingTask(null);
+    setApprovingReviewTaskId(null);
+    setCancellingReviewTaskId(null);
+    setApprovedReviewTaskIds(new Set());
+    setSeedingColumns(false);
   }, [projectId]);
   const taskWorkTimes = useMemo(() => new Map(workTimes.map((item) => [item.task_id, item])), [workTimes]);
   const labelColors = useMemo(() => Object.fromEntries(kanbanLabels.map((label) => [label.label_key, label.color])), [kanbanLabels]);
@@ -158,11 +178,26 @@ export default function KanbanPage() {
 
   // Default to a project assigned to this Team Lead (or the first visible project).
   useEffect(() => {
-    if (!projectId && selectableProjects.length > 0) setProjectId(selectableProjects[0].project_id);
-    else if (projectId && selectableProjects.length > 0 && !selectableProjects.some((project) => project.project_id === projectId)) {
+    if (selectableProjects.length === 0) {
+      if (projectId) setProjectId("");
+      return;
+    }
+    if (!projectId) {
+      const requestedProjectId = new URLSearchParams(window.location.search).get("project_id");
+      const requestedProject = selectableProjects.find((project) => project.project_id === requestedProjectId);
+      setProjectId(requestedProject?.project_id ?? selectableProjects[0].project_id);
+    } else if (!selectableProjects.some((project) => project.project_id === projectId)) {
       setProjectId(selectableProjects[0].project_id);
     }
   }, [selectableProjects, projectId]);
+  useEffect(() => {
+    if (!projectId) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("project_id") !== projectId) {
+      url.searchParams.set("project_id", projectId);
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, [projectId]);
 
   const projectTeams = useMemo(() => leadTeams.filter((team) => team.project_id === projectId), [leadTeams, projectId]);
   const projectTeamIds = useMemo(() => new Set(projectTeams.map((team) => team.team_id)), [projectTeams]);
@@ -174,7 +209,11 @@ export default function KanbanPage() {
   const userMap = useMemo(() => new Map((users ?? []).map((u) => [u.user_id, u])), [users]);
   const activeWorkSession = workSessions.find((session) => session.user_id === currentUser?.user_id && session.is_running);
   const activeTaskIds = useMemo(() => new Set(activeWorkSession?.task_ids ?? []), [activeWorkSession?.task_ids]);
-  const taskMap = useMemo(() => new Map((tasks ?? []).map((t) => [t.task_id, t])), [tasks]);
+  const taskMap = useMemo(() => new Map((tasks ?? []).filter((task) => task.project_id === projectId).map((t) => [t.task_id, t])), [tasks, projectId]);
+  const projectAssigneeIds = useMemo(
+    () => new Set([...taskMap.values()].flatMap((task) => task.user_id ? [task.user_id] : [])),
+    [taskMap],
+  );
   const currentCardDetailsTask = cardDetailsTask ? taskMap.get(cardDetailsTask.task_id) ?? cardDetailsTask : null;
   const currentCardMembersTask = cardMembersTask ? taskMap.get(cardMembersTask.task_id) ?? cardMembersTask : null;
 
@@ -474,17 +513,18 @@ export default function KanbanPage() {
     return hours ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
   };
 
-  const isLoading = projectsLoading || columnsLoading || placementsLoading;
+  const isLoading = projectsLoading || (!!projectId && (columnsLoading || placementsLoading || tasksLoading));
+  const selectedProject = selectableProjects.find((project) => project.project_id === projectId);
 
   return (
     <div className="flex min-h-[calc(100dvh-10rem)] flex-col gap-6">
-      <PageHeader title="Kanban Board" description="Visualize your workflow and track progress across all tasks" />
+      <PageHeader title="Kanban Board" description={selectedProject ? `${selectedProject.project_name} · Project board and tasks` : "Select a project to open its board and tasks."} />
 
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="w-56">
-          <Select value={projectId} onValueChange={setProjectId}>
-            <SelectTrigger>
+          <Select value={projectId} onValueChange={setProjectId} disabled={projectsLoading || selectableProjects.length === 0}>
+            <SelectTrigger aria-label="Select project">
               <SelectValue placeholder="Select project" />
             </SelectTrigger>
             <SelectContent>
@@ -538,7 +578,7 @@ export default function KanbanPage() {
           <SelectContent>
             <SelectItem value={ALL_FILTERS}>All assignees</SelectItem>
             <SelectItem value="__unassigned__">Unassigned</SelectItem>
-            {(users ?? []).filter((user) => user.is_active).map((user) => <SelectItem key={user.user_id} value={user.user_id}>{user.name}</SelectItem>)}
+            {(users ?? []).filter((user) => user.is_active && projectAssigneeIds.has(user.user_id)).map((user) => <SelectItem key={user.user_id} value={user.user_id}>{user.name}</SelectItem>)}
           </SelectContent>
         </Select>
         {projectComponents.length > 0 && <Select value={boardComponentFilter} onValueChange={setBoardComponentFilter}>
@@ -574,7 +614,9 @@ export default function KanbanPage() {
         </div>
       </div>}
 
-      {isLoading ? (
+      {projectsError || columnsError || placementsError || tasksError ? (
+        <EmptyState icon={KanbanSquare} title="Project board unavailable" description="The board or tasks for this project could not be loaded. Check your access and try again." />
+      ) : isLoading ? (
         <div className="flex min-h-[22rem] flex-1 gap-4 overflow-x-auto overflow-y-hidden scrollbar-thin">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-full min-h-[22rem] w-72 shrink-0" />
@@ -603,7 +645,7 @@ export default function KanbanPage() {
                 userMap={userMap}
                 canAddTask={canAddTaskToBoard}
                 canEditColumn={canManageKanbanBoard && !isTeamLead}
-                onEditColumn={setEditingColumn}
+                onEditColumn={(column) => router.push(`/kanban/columns/${column.column_id}`)}
                 canMoveTask={!boardViewConstrained && (isTeamLead ? showSelfTasks && canMoveKanbanCard : canMoveSelectedProjectCards)}
                 canEditCard={(task) => canEditCardDetails(task)}
                 canArchiveTask={() => canArchiveCard}
@@ -612,14 +654,14 @@ export default function KanbanPage() {
                 onAddTask={(columnId) => setAddTaskColumnId(columnId)}
                 canEditTask={(task) => canUpdateAssignedTask(task)}
                 canEditChecklist={(task) => canUseCardFeature("checklist", task)}
-                onEditTask={setCardDetailsTask}
-                onViewTaskDetails={setCardDetailsTask}
+                onEditTask={(task) => router.push(`/tasks/${task.task_id}`)}
+                onViewTaskDetails={(task) => router.push(`/tasks/${task.task_id}`)}
                 canManageCardMembers={() => canManageCardMembers()}
-                onManageCardMembers={setCardMembersTask}
+                onManageCardMembers={(task) => router.push(`/tasks/${task.task_id}`)}
                 canUseCardFeature={canUseCardFeature}
                 labelColors={labelColors}
                 labelNames={labelNames}
-                onCardFeature={(task) => setCardDetailsTask(task)}
+                onCardFeature={(task) => router.push(`/tasks/${task.task_id}`)}
                 onArchiveTask={setArchivingTask}
                 onDeleteTask={setDeletingTask}
                 onStartWork={(task) => void startTaskWork(task)}

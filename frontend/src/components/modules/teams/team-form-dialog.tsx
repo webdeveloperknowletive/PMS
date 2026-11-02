@@ -24,7 +24,10 @@ import { useAddTeamMember, useCreateTeam, useRemoveTeamMember, useTeamLeads, use
 import { useProjects } from "@/hooks/queries/use-projects";
 import { useAuthStore } from "@/store/auth-store";
 import { getApiErrorMessage } from "@/lib/api/client";
-import type { Team } from "@/types/team";
+import type { Team, TeamMember, TeamMemberCandidate } from "@/types/team";
+
+const EMPTY_MEMBER_CANDIDATES: TeamMemberCandidate[] = [];
+const EMPTY_TEAM_MEMBERS: TeamMember[] = [];
 
 const schema = z.object({
   project_id: z.string().min(1, "Project is required"),
@@ -43,16 +46,20 @@ export function TeamFormDialog({
   onOpenChange,
   team,
   defaultProjectId,
+  page = false,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   team?: Team | null;
   defaultProjectId?: string;
+  page?: boolean;
+  onSaved?: (teamId: string) => void;
 }) {
   const isEditing = !!team;
   const { data: projects } = useProjects();
-  const { data: memberCandidates = [], isLoading: candidatesLoading } = useTeamMemberCandidates();
-  const { data: currentTeamMembers = [], isLoading: membersLoading } = useTeamMembers(team?.team_id);
+  const { data: memberCandidates = EMPTY_MEMBER_CANDIDATES, isLoading: candidatesLoading } = useTeamMemberCandidates();
+  const { data: currentTeamMembers = EMPTY_TEAM_MEMBERS, isLoading: membersLoading } = useTeamMembers(team?.team_id);
   const { data: teamLeads } = useTeamLeads();
   const { data: teams } = useTeams();
   const currentUser = useAuthStore((state) => state.user);
@@ -93,12 +100,16 @@ export function TeamFormDialog({
 
   useEffect(() => {
     if (resolvedLeadUserId) {
-      setSelectedMemberIds((memberIds) => memberIds.filter((id) => id !== resolvedLeadUserId));
+      setSelectedMemberIds((memberIds) => memberIds.includes(resolvedLeadUserId)
+        ? memberIds.filter((id) => id !== resolvedLeadUserId)
+        : memberIds);
     }
   }, [resolvedLeadUserId]);
 
   useEffect(() => {
-    setSelectedMemberIds((memberIds) => memberIds.slice(0, selectedCapacity));
+    setSelectedMemberIds((memberIds) => memberIds.length > selectedCapacity
+      ? memberIds.slice(0, selectedCapacity)
+      : memberIds);
   }, [selectedCapacity]);
 
   useEffect(() => {
@@ -150,6 +161,7 @@ export function TeamFormDialog({
         ...(!isEditing ? { member_user_ids: selectedMemberIds } : {}),
       };
 
+      let savedTeamId = team?.team_id;
       if (isEditing && team) {
         await updateMutation.mutateAsync({ id: team.team_id, payload });
         const candidateIds = new Set(memberCandidates.map((member) => member.user_id));
@@ -168,26 +180,19 @@ export function TeamFormDialog({
         }
         toast.success("Team updated");
       } else {
-        await createMutation.mutateAsync(payload);
+        const created = await createMutation.mutateAsync(payload);
+        savedTeamId = created.team_id;
         toast.success("Team created");
       }
-      onOpenChange(false);
+      if (onSaved && savedTeamId) onSaved(savedTeamId);
+      else onOpenChange(false);
     } catch (err) {
       setError("root", { message: getApiErrorMessage(err) });
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] flex-col overflow-hidden sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Team" : "New Team"}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? "Update this team's details." : "Create a new team for a project."}
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+  const form = (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Project</Label>
             <Controller
@@ -303,7 +308,7 @@ export function TeamFormDialog({
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
   );
+  if (page) return <section className="mx-auto max-w-3xl rounded-md border bg-white p-5 shadow-sm sm:p-8">{form}</section>;
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] flex-col overflow-hidden sm:max-w-lg"><DialogHeader><DialogTitle>{isEditing ? "Edit Team" : "New Team"}</DialogTitle><DialogDescription>{isEditing ? "Update this team's details." : "Create a new team for a project."}</DialogDescription></DialogHeader>{form}</DialogContent></Dialog>;
 }

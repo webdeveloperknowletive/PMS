@@ -33,7 +33,15 @@ def backfill_role_module_access(db: Session, organization_id, role_ids=None) -> 
         ).filter(RolePermission.role_id == role.role_id).all()}
         target_codes = {"modules.dashboard.access"}
         for module, action_codes in WORKSPACE_MODULE_ACTIONS.items():
-            if module != "dashboard" and granted.intersection(action_codes):
+            # Profile and profile-picture permissions are self-service APIs,
+            # not access to the workspace-wide Users directory.
+            module_grants = action_codes
+            if module == "users":
+                module_grants = tuple(
+                    code for code in action_codes
+                    if not code.startswith(("users.profile.", "users.profile_picture."))
+                )
+            if module != "dashboard" and granted.intersection(module_grants):
                 target_codes.add(f"modules.{module}.access")
         existing = {row[0] for row in db.query(Permission.code).join(
             RolePermission, RolePermission.permission_id == Permission.permission_id
@@ -57,32 +65,92 @@ def ensure_employee_roles(db: Session, organization_id) -> None:
     }
     created_role_ids = []
     all_codes = {code for code in permissions if not code.startswith("modules.")}
+
+    def select(*, prefixes=(), exact=(), exclude=()):
+        """Build a role's initial action grants from the workspace catalog."""
+        return {
+            code for code in all_codes
+            if (code in exact or any(code.startswith(prefix) for prefix in prefixes))
+            and code not in exclude
+        }
+
+    def exclude_codes(*prefixes):
+        return {code for code in all_codes if any(code.startswith(prefix) for prefix in prefixes)}
+
+    ai_without_delete = {
+        code for code in all_codes
+        if code.startswith("ai.") and not code.endswith(".delete")
+    }
+    ai_view_create_generate = {
+        code for code in all_codes
+        if code.startswith("ai.") and code.rsplit(".", 1)[-1] in {"view", "create", "generate"}
+    }
+    profile_view = {"users.profile.view", "users.profile_picture.view"}
     role_permissions = {
         "Admin": all_codes,
-        "Project Manager": {code for code in all_codes if not code.startswith(("roles.", "users.permissions."))},
-        "Team Lead": {
-            code for code in all_codes
-            if code.endswith(".view") or code.startswith(("tasks.", "kanban.", "teams.", "workflow.", "gantt.", "milestones.", "calendar.", "documents.", "reports.", "ai.", "chat."))
+        "Project Manager": select(
+            prefixes=("tasks.", "teams.", "milestones.", "calendar.", "documents.", "workflow.", "kanban.", "gantt."),
+            exact=("projects.view", "projects.update", "reports.view", "reports.create", "notifications.view"),
+        ) | ai_without_delete | profile_view | {
+            "notifications.personal_settings.view", "notifications.personal_settings.update",
         },
-        "Developer": {
-            code for code in all_codes
-            if code.endswith(".view") or code in {
-                "tasks.create", "tasks.update_assigned", "tasks.comments.create",
-                "tasks.work_sessions.start", "tasks.work_sessions.stop",
-                "kanban.tasks.move", "kanban.cards.create", "documents.create", "documents.upload",
-                "chat.conversations.create", "chat.messages.create", "chat.reactions.create",
-            }
-        },
-        "Tester": {
-            code for code in all_codes
-            if code.endswith(".view") or code in {
-                "tasks.update_assigned", "tasks.comments.create",
-                "tasks.work_sessions.start", "tasks.work_sessions.stop",
-                "kanban.tasks.move", "documents.create", "documents.upload",
-                "chat.conversations.create", "chat.messages.create", "chat.reactions.create",
-            }
-        },
-        "Viewer": {code for code in all_codes if code.endswith(".view")},
+        "Team Lead": select(
+            prefixes=("kanban.", "teams.members.", "ai."),
+            exact=(
+                "projects.view", "tasks.activity.view", "tasks.comments.view", "tasks.comments.create",
+                "tasks.create", "tasks.sprints.view", "tasks.subtasks.view", "tasks.update",
+                "tasks.update_assigned", "tasks.view", "tasks.work_sessions.start", "tasks.work_sessions.stop",
+                "tasks.work_sessions.view", "tasks.work_time.view", "teams.view", "teams.leads.view",
+                "milestones.view", "milestones.update", "calendar.view", "calendar.create",
+                "documents.view", "documents.create", "documents.upload", "documents.download",
+                "workflow.view", "gantt.view", "reports.view", "notifications.view",
+                "notifications.personal_settings.view", "notifications.personal_settings.update",
+            ),
+            exclude=exclude_codes("ai.") - ai_view_create_generate | {
+                "kanban.card_attachments.delete", "kanban.tasks.delete",
+            },
+        ) | profile_view,
+        "Developer": select(
+            prefixes=("ai.",),
+            exact=(
+                "projects.view", "tasks.activity.view", "tasks.comments.view", "tasks.comments.create",
+                "tasks.sprints.view", "tasks.subtasks.view", "tasks.update_assigned", "tasks.view",
+                "tasks.work_sessions.start", "tasks.work_sessions.stop", "tasks.work_sessions.view", "tasks.work_time.view",
+                "teams.view", "teams.leads.view", "teams.members.view", "calendar.view",
+                "documents.view", "documents.create", "documents.upload", "documents.download",
+                "gantt.view", "kanban.card_attachments.view", "kanban.card_attachments.upload",
+                "kanban.columns.view", "kanban.tasks.view", "kanban.tasks.move", "milestones.view",
+                "notifications.view", "notifications.personal_settings.view", "notifications.personal_settings.update",
+                "reports.view", "workflow.view",
+            ),
+            exclude=exclude_codes("ai.") - ai_view_create_generate,
+        ) | profile_view,
+        "Tester": select(
+            prefixes=("ai.",),
+            exact=(
+                "projects.view", "tasks.activity.view", "tasks.comments.view", "tasks.comments.create",
+                "tasks.sprints.view", "tasks.subtasks.view", "tasks.update_assigned", "tasks.view",
+                "tasks.work_sessions.start", "tasks.work_sessions.stop", "tasks.work_sessions.view", "tasks.work_time.view",
+                "teams.view", "teams.leads.view", "teams.members.view", "calendar.view",
+                "documents.view", "documents.create", "documents.upload", "documents.download",
+                "gantt.view", "kanban.card_attachments.view", "kanban.card_attachments.upload",
+                "kanban.columns.view", "kanban.tasks.view", "kanban.tasks.move", "milestones.view",
+                "notifications.view", "notifications.personal_settings.view", "notifications.personal_settings.update",
+                "reports.view", "workflow.view",
+            ),
+            exclude=exclude_codes("ai.") - ai_view_create_generate,
+        ) | profile_view,
+        "Viewer": select(
+            exact=(
+                "projects.view", "tasks.activity.view", "tasks.comments.view", "tasks.sprints.view",
+                "tasks.subtasks.view", "tasks.view", "tasks.work_sessions.view", "tasks.work_time.view",
+                "teams.view", "teams.leads.view", "teams.members.view", "calendar.view", "documents.view",
+                "gantt.view", "kanban.card_attachments.view", "kanban.columns.view", "kanban.tasks.view",
+                "milestones.view", "notifications.view", "notifications.settings.view",
+                "notifications.personal_settings.view", "notifications.personal_settings.update",
+                "reports.view", "workflow.view",
+            ),
+        ),
     }
     for role_name, description in DEFAULT_EMPLOYEE_ROLES:
         created_role = False

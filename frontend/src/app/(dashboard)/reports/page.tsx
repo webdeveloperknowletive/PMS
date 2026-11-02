@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Plus, Trash2, BarChart3, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -182,7 +183,7 @@ export default function ReportsPage() {
               {filtered.map((r) => (
                 <TableRow key={r.report_id}>
                   <TableCell>
-                    <p className="font-medium text-foreground">{r.report_name}</p>
+                    <Link href={`/reports/${r.report_id}`} className="font-medium text-[#0c66e4] hover:underline">{r.report_name}</Link>
                     <p className="text-xs text-muted-foreground">{r.report_type}</p>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">

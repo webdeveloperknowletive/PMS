@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { Target, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -59,7 +60,7 @@ export function ProjectGoalsPanel({ projectId }: { projectId: string }) {
         <div className="flex items-end justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button><Button type="submit" disabled={createGoal.isPending}>Create goal</Button></div>
       </form>}
       {isLoading ? <p className="text-xs text-slate-500">Loading goals…</p> : goals.length === 0 ? <p className="rounded-xl bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">No goals are linked to this project yet.</p> : goals.map((goal) => <div key={goal.goal_id} className="rounded-xl border border-slate-100 p-3">
-        <div className="flex flex-wrap items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-sm font-semibold text-slate-800">{goal.name}</p>{goal.description && <p className="mt-1 text-xs text-slate-500">{goal.description}</p>}</div>
+        <div className="flex flex-wrap items-start justify-between gap-2"><div className="min-w-0"><Link href={`/projects/${projectId}/goals/${goal.goal_id}`} className="block truncate text-sm font-semibold text-[#0c66e4] hover:underline">{goal.name}</Link>{goal.description && <p className="mt-1 text-xs text-slate-500">{goal.description}</p>}</div>
           {canManageGoals ? <Select value={goal.status} onValueChange={(status) => updateGoal.mutate({ projectId, goalId: goal.goal_id, payload: { status: status as typeof goal.status } }, { onError: (error) => toast.error(getApiErrorMessage(error)) })}><SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger><SelectContent>{goalStatuses.map((status) => <SelectItem key={status} value={status}>{status.replace("_", " ")}</SelectItem>)}</SelectContent></Select> : <Badge variant="outline">{goal.status.replace("_", " ")}</Badge>}
         </div>
         {goal.success_measure && <p className="mt-2 text-xs text-slate-600"><span className="font-medium">Success measure:</span> {goal.success_measure}</p>}

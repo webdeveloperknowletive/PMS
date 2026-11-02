@@ -20,6 +20,7 @@ from app.modules.gantt.schema import GanttTaskCreate, GanttTaskUpdate
 from app.modules.notifications.events import notify_project_users
 from app.modules.projects.model import Project
 from app.modules.tasks.model import Task
+from app.modules.tasks.service import _validate_task_date_range, _validate_task_due_date
 from app.modules.users.model import User
 
 
@@ -73,6 +74,16 @@ def update_gantt_task(db: Session, gantt_id: UUID, payload: GanttTaskUpdate, act
         raise HTTPException(status_code=400, detail="End date must be on or after start date")
     if "dependency_task" in values:
         _validate_dependency(db, values["dependency_task"], current.project_id, current.gantt_id)
+    task = db.query(Task).filter(
+        Task.task_id == current.task_id,
+        Task.project_id == current.project_id,
+        Task.organization_id == actor.organization_id,
+    ).one_or_none() if current.task_id else None
+    if task:
+        _validate_task_due_date(db, task.project_id, end_date, actor.organization_id)
+        _validate_task_date_range(start_date, end_date)
+        task.start_date = start_date
+        task.due_date = end_date
     gantt_task = repository.update_gantt_task(db, gantt_id, payload)
     if gantt_task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Gantt task not found")

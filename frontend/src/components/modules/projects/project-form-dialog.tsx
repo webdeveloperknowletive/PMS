@@ -31,8 +31,8 @@ const schema = z.object({
 });
 type FormValues = z.infer<typeof schema>;
 
-export function ProjectFormDialog({ open, onOpenChange, project }: {
-  open: boolean; onOpenChange: (open: boolean) => void; project?: Project | null;
+export function ProjectFormDialog({ open, onOpenChange, project, page = false, onSaved }: {
+  open: boolean; onOpenChange: (open: boolean) => void; project?: Project | null; page?: boolean; onSaved?: (projectId: string) => void;
 }) {
   const isEditing = !!project;
   const createMutation = useCreateProject();
@@ -127,11 +127,13 @@ export function ProjectFormDialog({ open, onOpenChange, project }: {
           }
         }
       }
-      onOpenChange(false);
+      if (onSaved) onSaved(project?.project_id ?? createdId!);
+      else onOpenChange(false);
     } catch (err) {
       if (createdId) {
         toast.error(`Project was created, but setup needs attention: ${getApiErrorMessage(err)}`);
-        onOpenChange(false);
+        if (onSaved) onSaved(createdId);
+        else onOpenChange(false);
       } else {
         setError("root", { message: getApiErrorMessage(err) });
       }
@@ -150,12 +152,7 @@ export function ProjectFormDialog({ open, onOpenChange, project }: {
     setSelectedTeamMemberIds((current) => current.filter((userId) => userId !== selectedTeamLeadUserId));
   }, [selectedTeamLeadUserId]);
 
-  return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-      <DialogHeader>
-        <DialogTitle>{isEditing ? "Edit Project" : "Create Project"}</DialogTitle>
-        <DialogDescription>{isEditing ? "Update the project details, team assignments, or add a project file." : "Set up the project, assign its Team Lead and developers, and create its default board and workflow."}</DialogDescription>
-      </DialogHeader>
+  const form = (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <section className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="project_name">Project name</Label><Input id="project_name" placeholder="Website Redesign" required maxLength={200} aria-invalid={!!errors.project_name} {...register("project_name")} />{errors.project_name && <p className="text-xs text-destructive">{errors.project_name.message}</p>}</div>
@@ -192,6 +189,7 @@ export function ProjectFormDialog({ open, onOpenChange, project }: {
         {errors.root && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{errors.root.message}</p>}
         <DialogFooter><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button type="submit" disabled={isSaving || (isEditing && (currentAssignmentLoading || currentAssignmentError || assignmentCandidatesLoading || assignmentCandidatesError))}>{isSaving && <Loader2 className="h-4 w-4 animate-spin" />}{isEditing ? "Save changes" : "Create project"}</Button></DialogFooter>
       </form>
-    </DialogContent>
-  </Dialog>;
+  );
+  if (page) return <section className="mx-auto max-w-5xl rounded-md border bg-white p-5 shadow-sm sm:p-8">{form}</section>;
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>{isEditing ? "Edit Project" : "Create Project"}</DialogTitle><DialogDescription>{isEditing ? "Update the project details, team assignments, or add a project file." : "Set up the project, assign its Team Lead and developers, and create its default board and workflow."}</DialogDescription></DialogHeader>{form}</DialogContent></Dialog>;
 }

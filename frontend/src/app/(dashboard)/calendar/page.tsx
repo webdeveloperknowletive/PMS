@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, UserRound, Building2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
@@ -23,6 +24,7 @@ const ALL = "__all__";
 const LEGEND_TYPES = ["Meeting", "Project", "Deadline", "Milestone", "Review", "Planning", "Standup", "Work activity", "Holiday"];
 
 export default function CalendarPage() {
+  const router = useRouter();
   const [calendarMode, setCalendarMode] = useState<"events" | "cards">("events");
   const [projectFilter, setProjectFilter] = useState(ALL);
   const [calendarScope, setCalendarScope] = useState<"PERSONAL" | "ORGANIZATION">("PERSONAL");
@@ -144,10 +146,10 @@ export default function CalendarPage() {
         ) : (projects ?? []).length === 0 ? (
           <EmptyState icon={CalendarIcon} title="No projects yet" description="Create a project first to schedule events." />
         ) : (
-          <MonthGrid viewDate={viewDate} events={filteredEvents} tasks={isDeveloper && calendarScope === "PERSONAL" ? assignedCalendarTasks : []} onDayClick={canCreateEvent ? openCreate : undefined} onEventClick={canManageEvents ? (event) => { if (!event.is_automatic) openEdit(event); } : undefined} />
+          <MonthGrid viewDate={viewDate} events={filteredEvents} tasks={isDeveloper && calendarScope === "PERSONAL" ? assignedCalendarTasks : []} onDayClick={canCreateEvent ? openCreate : undefined} onEventClick={(event) => router.push(`/calendar/${event.event_id}`)} />
         )}
 
-        <UpcomingEventsList events={filteredEvents} onEventClick={canManageEvents ? (event) => { if (!event.is_automatic) openEdit(event); } : undefined} />
+        <UpcomingEventsList events={filteredEvents} onEventClick={(event) => router.push(`/calendar/${event.event_id}`)} />
       </div>
 
       {(canCreateEvent || canManageEvents) && <EventFormDialog

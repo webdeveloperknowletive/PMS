@@ -96,6 +96,7 @@ export interface TaskUpdate {
 
 export interface Task extends TaskBase {
   task_id: string;
+  estimated_hours?: number | string | null;
   backlog_rank: number;
   created_at: string;
   updated_at: string;

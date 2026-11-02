@@ -47,7 +47,7 @@ export function middleware(request: NextRequest) {
   const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   // Public images/fonts must load on signed-out pages too (for example the
   // logo shown on the login screen). They are files, not protected app routes.
-  const isPublicAsset = /\.(?:png|jpe?g|gif|svg|webp|ico|woff2?|ttf)$/i.test(pathname);
+  const isPublicAsset = /\.(?:png|jpe?g|gif|svg|webp|ico|woff2?|ttf|webmanifest)$/i.test(pathname);
 
   if (
     workspaceSlug &&

@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, CheckSquare, Search, MoveDown, MoveUp } from "lucide-react";
@@ -9,7 +11,6 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TaskStatusBadge } from "@/components/shared/status-badge";
 import { PriorityBadge } from "@/components/shared/priority-badge";
 import { UserAvatar } from "@/components/shared/user-avatar";
-import { TaskFormDialog } from "@/components/modules/tasks/task-form-dialog";
 import { TaskDependencyPanel } from "@/components/modules/tasks/task-dependency-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,7 @@ const STATUS_PROGRESS: Record<TaskStatus, number> = {
 };
 
 export default function TasksPage() {
+  const router = useRouter();
   const { data: allTasks, isLoading } = useTasks({ limit: 500 });
   const { data: projects } = useProjects();
   const { data: users } = useUsers();
@@ -75,8 +77,6 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState(ALL);
   const [dueFilter, setDueFilter] = useState<"ALL" | "OVERDUE">("ALL");
 
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(() => new Set());
   const [bulkPriority, setBulkPriority] = useState<(typeof TASK_PRIORITIES)[number]>("HIGH");
@@ -84,7 +84,15 @@ export default function TasksPage() {
   const [bulkAssigneeId, setBulkAssigneeId] = useState(BULK_ASSIGNEE_UNCHANGED);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("tab") === "blocked") setTab("blocked");
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = params.get("tab");
+    if (requestedTab === "all" || requestedTab === "mine" || requestedTab === "overdue" || requestedTab === "backlog" || requestedTab === "blocked") {
+      setTab(requestedTab);
+    }
+    const requestedStatus = params.get("status");
+    if (requestedStatus && TASK_STATUSES.includes(requestedStatus as TaskStatus)) {
+      setStatusFilter(requestedStatus as TaskStatus);
+    }
   }, []);
 
   const projectMap = useMemo(() => new Map((projects ?? []).map((p) => [p.project_id, p])), [projects]);
@@ -174,14 +182,6 @@ export default function TasksPage() {
     }
   };
 
-  const openCreate = () => {
-    setEditingTask(null);
-    setFormOpen(true);
-  };
-  const openEdit = (task: Task) => {
-    setEditingTask(task);
-    setFormOpen(true);
-  };
   const confirmDelete = async () => {
     if (!deletingTask) return;
     try {
@@ -200,7 +200,7 @@ export default function TasksPage() {
         description="Manage and track all tasks across your projects"
         showHome={false}
         actions={canManageTasks ? (
-          <Button onClick={openCreate}><Plus className="h-4 w-4" />New Task</Button>
+          <Button asChild><Link href="/tasks/new"><Plus className="h-4 w-4" />New work item</Link></Button>
         ) : undefined}
       />
 
@@ -379,7 +379,7 @@ export default function TasksPage() {
               title="No tasks found"
               description={canManageTasks ? "Try adjusting your filters, or create a new task." : "No tasks are available to view with your current filters."}
               actionLabel={canManageTasks ? "New Task" : undefined}
-              onAction={canManageTasks ? openCreate : undefined}
+              onAction={canManageTasks ? () => router.push("/tasks/new") : undefined}
             />
           </CardContent>
         ) : (
@@ -414,7 +414,7 @@ export default function TasksPage() {
                   <TableRow key={task.task_id}>
                     {canManageTasks && <TableCell><Checkbox aria-label={`Select ${task.task_name}`} checked={selectedTaskIds.has(task.task_id)} disabled={!selectedTaskIds.has(task.task_id) && selectedTaskIds.size >= 100} onCheckedChange={(checked) => setSelectedTaskIds((selected) => { const next = new Set(selected); if (checked === true) next.add(task.task_id); else next.delete(task.task_id); return next; })} /></TableCell>}
                     <TableCell>
-                      <p className="font-medium text-foreground">{task.task_name}</p>
+                      <Link href={`/tasks/${task.task_id}`} className="font-medium text-[#0c66e4] hover:underline">{task.task_name}</Link>
                       {!!task.labels?.length && <div className="mt-1 flex flex-wrap gap-1">{task.labels.map((label) => <span key={label} className="rounded-full border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{label}</span>)}</div>}
                       {task.description && (
                         <p className="line-clamp-1 max-w-xs text-xs text-muted-foreground">{task.description}</p>
@@ -448,7 +448,7 @@ export default function TasksPage() {
                           <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Move ${task.task_name} up`} disabled={taskIndex === 0 || moveBacklogTask.isPending} onClick={() => moveBacklogTask.mutate({ taskId: task.task_id, direction: "UP" }, { onError: (error) => toast.error(getApiErrorMessage(error)) })}><MoveUp className="h-4 w-4" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Move ${task.task_name} down`} disabled={taskIndex === (tasks?.length ?? 0) - 1 || moveBacklogTask.isPending} onClick={() => moveBacklogTask.mutate({ taskId: task.task_id, direction: "DOWN" }, { onError: (error) => toast.error(getApiErrorMessage(error)) })}><MoveDown className="h-4 w-4" /></Button>
                         </>}
-                        {canEdit && <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit task" title="Edit task" onClick={() => openEdit(task)}><Pencil className="h-4 w-4" /></Button>}
+                        {canEdit && <Button asChild variant="outline" size="icon" className="h-8 w-8" aria-label="Open task" title="Open task"><Link href={`/tasks/${task.task_id}`}><Pencil className="h-4 w-4" /></Link></Button>}
                         {canDelete && <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete task" title="Delete task" onClick={() => setDeletingTask(task)}><Trash2 className="h-4 w-4" /></Button>}
                       </div>
                       )}
@@ -461,7 +461,6 @@ export default function TasksPage() {
         )}
       </Card>
 
-      <TaskFormDialog open={formOpen} onOpenChange={setFormOpen} task={editingTask} />
 
       <ConfirmDialog
         open={!!deletingTask}

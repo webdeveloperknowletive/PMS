@@ -26,6 +26,7 @@ class CalendarEvent(Base, OrganizationScopedMixin):
     calendar_scope = Column(String(20), nullable=False, default="ORGANIZATION", index=True)
     calendar_owner_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=True, index=True)
     related_task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.task_id", ondelete="CASCADE"), nullable=True, index=True)
+    related_milestone_id = Column(UUID(as_uuid=True), ForeignKey("milestones.milestone_id", ondelete="CASCADE"), nullable=True, index=True)
     is_automatic = Column(Boolean, nullable=False, default=False, server_default="false")
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
