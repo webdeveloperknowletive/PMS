@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, FolderKanban, CheckSquare, Users, Flag, Calendar, FileText, Activity,
-  KanbanSquare, GanttChartSquare, BarChart3, Sparkles, ListChecks, ShieldAlert,
+  KanbanSquare, GanttChartSquare, BarChart3, Sparkles, ListChecks, ShieldAlert, IterationCw,
   FileStack, MessageSquareText, Bell, ShieldCheck, UserCog, Settings, Workflow, Building2,
   X, ChevronDown,
 } from "lucide-react";
@@ -17,6 +17,7 @@ import { canAccessModule } from "@/lib/permissions";
 const CORE_MODULES = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Projects", href: "/projects", icon: FolderKanban },
+  { label: "Sprint Planning", href: "/sprint-planning", icon: IterationCw },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
   { label: "Teams", href: "/teams", icon: Users },
   { label: "Milestones", href: "/milestones", icon: Flag },
@@ -29,7 +30,7 @@ const CORE_MODULES = [
 ];
 
 const AI_MODULES = [
-  { label: "Sprint Planning", href: "/ai/sprint-planning", icon: Sparkles },
+  { label: "AI Sprint Planning", href: "/ai/sprint-planning", icon: Sparkles },
   { label: "Task Estimation", href: "/ai/task-estimation", icon: ListChecks },
   { label: "Risk Prediction", href: "/ai/risk-prediction", icon: ShieldAlert },
   { label: "AI Documentation", href: "/ai/doc-generator", icon: FileStack },

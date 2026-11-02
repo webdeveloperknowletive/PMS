@@ -9,8 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCreateSprint } from "@/hooks/queries/use-tasks";
 import { getApiErrorMessage } from "@/lib/api/client";
+import type { Sprint } from "@/types/task";
 
-export function SprintFormDialog({ open, onOpenChange, projectId }: { open: boolean; onOpenChange: (open: boolean) => void; projectId: string }) {
+export function SprintFormDialog({ open, onOpenChange, projectId, onCreated }: { open: boolean; onOpenChange: (open: boolean) => void; projectId: string; onCreated?: (sprint: Sprint) => void }) {
   const [name, setName] = useState("");
   const [goal, setGoal] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -28,9 +29,10 @@ export function SprintFormDialog({ open, onOpenChange, projectId }: { open: bool
     const capacity = capacityPoints === "" ? null : Number(capacityPoints);
     if (capacity !== null && (!Number.isInteger(capacity) || capacity < 0 || capacity > 10000)) { toast.error("Capacity must be a whole number from 0 to 10,000 story points"); return; }
     try {
-      await createSprint.mutateAsync({ project_id: projectId, sprint_name: name.trim(), goal: goal.trim() || null, start_date: startDate || null, end_date: endDate || null, capacity_points: capacity });
+      const sprint = await createSprint.mutateAsync({ project_id: projectId, sprint_name: name.trim(), goal: goal.trim() || null, start_date: startDate || null, end_date: endDate || null, capacity_points: capacity });
       toast.success("Sprint created");
       close();
+      onCreated?.(sprint);
     } catch (error) { toast.error(getApiErrorMessage(error)); }
   };
 

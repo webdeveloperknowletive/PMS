@@ -35,7 +35,7 @@ import { AddColumnDialog } from "@/components/modules/kanban/add-column-dialog";
 import { SprintFormDialog } from "@/components/modules/tasks/sprint-form-dialog";
 import type { Sprint } from "@/types/task";
 
-export function ProjectWorkPanel({ projectId }: { projectId: string }) {
+export function ProjectWorkPanel({ projectId, initialTab = "board" }: { projectId: string; initialTab?: "board" | "backlog" | "list" }) {
   const router = useRouter();
   const { canManageTasks, canManageKanbanBoard, canMoveKanbanCard, permissionCodes } = usePermissions();
   const canViewTeamMembers = ["teams.view", "teams.manage", "teams.members.manage"].some((code) => permissionCodes.includes(code));
@@ -44,7 +44,7 @@ export function ProjectWorkPanel({ projectId }: { projectId: string }) {
   const { data: teamMemberCandidates = [] } = useTeamMemberCandidates(canViewTeamMembers);
   const { data: allColumns = [] } = useKanbanColumns();
   const { data: placements = [] } = useKanbanTaskPlacements();
-  const { data: sprints = [] } = useSprints(projectId);
+  const { data: sprints = [], isLoading: sprintsLoading, isError: sprintsError, refetch: refetchSprints } = useSprints(projectId);
   const { data: releases = [] } = useProjectReleases(projectId);
   const { data: workSessions = [] } = useWorkSessions();
   const { data: workTimes = [] } = useTaskWorkTimes();
@@ -54,7 +54,7 @@ export function ProjectWorkPanel({ projectId }: { projectId: string }) {
   const moveTask = useMoveKanbanTask();
   const createColumn = useCreateKanbanColumn();
   const startWork = useStartWorkSession();
-  const [tab, setTab] = useState("board");
+  const [tab, setTab] = useState(initialTab);
   const [search, setSearch] = useState("");
   const [addTaskColumnId, setAddTaskColumnId] = useState<string | null>(null);
   const [addColumnOpen, setAddColumnOpen] = useState(false);
@@ -198,8 +198,8 @@ export function ProjectWorkPanel({ projectId }: { projectId: string }) {
       <div><h2 className="flex items-center gap-2 text-base font-bold text-slate-900"><CheckSquare className="h-4 w-4 text-violet-600" />Project work</h2><p className="mt-1 text-xs text-slate-500">Create, assign, and track this project’s tasks from one place.</p></div>
       {canManageTasks && <Button asChild size="sm"><Link href={`/tasks/new?project_id=${projectId}`}><Plus className="h-4 w-4" />Create task</Link></Button>}
     </div>
-    <Tabs value={tab} onValueChange={setTab}>
-      <div className="flex flex-wrap items-center justify-between gap-2"><TabsList><TabsTrigger value="board"><KanbanSquare className="mr-1.5 h-4 w-4" />Board</TabsTrigger><TabsTrigger value="backlog">Backlog &amp; sprints</TabsTrigger><TabsTrigger value="list"><CheckSquare className="mr-1.5 h-4 w-4" />Task list <span className="ml-1 rounded-full bg-slate-200 px-1.5 text-[10px]">{tasks.length}</span></TabsTrigger></TabsList>{tab === "board" && columns.length > 0 && canManageKanbanBoard && <Button size="sm" variant="outline" onClick={() => setAddColumnOpen(true)}><Plus className="h-3.5 w-3.5" />Add column</Button>}{tab === "backlog" && canManageTasks && <Button size="sm" variant="outline" onClick={() => setSprintFormOpen(true)}><Plus className="h-3.5 w-3.5" />Create sprint</Button>}</div>
+    <Tabs value={tab} onValueChange={(value) => setTab(value as "board" | "backlog" | "list")}>
+      <div className="flex flex-wrap items-center justify-between gap-2"><TabsList><TabsTrigger value="board"><KanbanSquare className="mr-1.5 h-4 w-4" />Board</TabsTrigger><TabsTrigger value="backlog">Backlog &amp; sprints</TabsTrigger><TabsTrigger value="list"><CheckSquare className="mr-1.5 h-4 w-4" />Task list <span className="ml-1 rounded-full bg-slate-200 px-1.5 text-[10px]">{tasks.length}</span></TabsTrigger></TabsList>{tab === "board" && columns.length > 0 && canManageKanbanBoard && <Button size="sm" variant="outline" onClick={() => setAddColumnOpen(true)}><Plus className="h-3.5 w-3.5" />Add column</Button>}</div>
       <TabsContent value="board" className="mt-3">
         {activeWorkSession && <div className="mb-3 flex flex-col gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5"><div className="flex min-w-0 items-start gap-2"><Clock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" /><div className="min-w-0"><p className="text-sm font-semibold text-emerald-900">Timer running automatically</p><p className="truncate text-xs text-emerald-800">{activeWorkSession.task_names.join(" · ")} · Each task’s time saves when it is marked Done.</p></div></div></div>}
         {columns.length ? <DragDropContext onDragEnd={onDragEnd}><div className="flex gap-3 overflow-x-auto pb-3">
@@ -207,6 +207,27 @@ export function ProjectWorkPanel({ projectId }: { projectId: string }) {
         </div></DragDropContext> : <EmptyState icon={KanbanSquare} title="This project board is not set up yet" description={canManageKanbanBoard ? "Create a ready-to-use board here. You can adjust its columns later." : "Ask your Project Manager to set up the board."} actionLabel={canManageKanbanBoard ? (seedingBoard ? "Creating board…" : "Create board") : undefined} onAction={canManageKanbanBoard && !seedingBoard ? () => void createBoard() : undefined} />}
       </TabsContent>
       <TabsContent value="backlog" className="mt-3 space-y-3">
+        <section className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3" aria-labelledby="project-sprints-heading">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div><h3 id="project-sprints-heading" className="text-sm font-semibold text-slate-800">Sprints <span className="ml-1 rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px]">{sprints.length}</span></h3><p className="mt-1 text-xs text-slate-500">Select a sprint to view its work and progress.</p></div>
+            {canManageTasks && <Button size="sm" variant="outline" onClick={() => setSprintFormOpen(true)}><Plus className="h-3.5 w-3.5" />Create sprint</Button>}
+          </div>
+          {sprintsLoading ? <p className="rounded-lg bg-white px-3 py-4 text-sm text-slate-500">Loading sprints…</p> : sprintsError ? (
+            <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-700"><span>Could not load this project’s sprints.</span><Button size="sm" variant="outline" onClick={() => void refetchSprints()}>Try again</Button></div>
+          ) : sprints.length === 0 ? <p className="rounded-lg bg-white px-3 py-4 text-sm text-slate-500">No sprints yet. Create a sprint to start planning this project’s work.</p> : (
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {sprints.map((sprint) => {
+                const selected = selectedSprintId === sprint.sprint_id;
+                return <button key={sprint.sprint_id} type="button" aria-pressed={selected} onClick={() => setSelectedSprintId(sprint.sprint_id)} className={`rounded-xl border bg-white p-3 text-left transition hover:border-blue-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${selected ? "border-blue-500 ring-1 ring-blue-500" : "border-slate-200"}`}>
+                  <div className="flex items-start justify-between gap-2"><span className="min-w-0 truncate text-sm font-semibold text-slate-900">{sprint.sprint_name}</span><Badge variant={sprint.status === "ACTIVE" ? "default" : "outline"} className="shrink-0">{sprint.status === "PLANNED" ? "Planned" : sprint.status === "ACTIVE" ? "Active" : "Completed"}</Badge></div>
+                  <p className="mt-2 text-xs text-slate-500">{sprint.start_date ? formatDate(sprint.start_date) : "No start date"}{sprint.end_date ? ` – ${formatDate(sprint.end_date)}` : ""}</p>
+                  {sprint.goal && <p className="mt-2 line-clamp-2 text-xs text-slate-600">{sprint.goal}</p>}
+                  {sprint.capacity_points !== null && sprint.capacity_points !== undefined && <p className="mt-2 text-xs font-medium text-slate-600">Capacity: {sprint.capacity_points} points</p>}
+                </button>;
+              })}
+            </div>
+          )}
+        </section>
         <div className="flex flex-wrap items-center gap-2"><Select value={selectedSprintId} onValueChange={setSelectedSprintId}><SelectTrigger className="w-full sm:w-64"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__backlog__">Product backlog</SelectItem>{sprints.map((sprint) => <SelectItem key={sprint.sprint_id} value={sprint.sprint_id}>{sprint.sprint_name} · {sprint.status.toLowerCase()}</SelectItem>)}</SelectContent></Select><Select value={backlogGroupBy} onValueChange={(value) => setBacklogGroupBy(value as typeof backlogGroupBy)}><SelectTrigger className="w-40" aria-label="Group backlog by"><SelectValue placeholder="Group by" /></SelectTrigger><SelectContent><SelectItem value="none">No grouping</SelectItem><SelectItem value="epic">Epic</SelectItem><SelectItem value="release">Release</SelectItem></SelectContent></Select>{selectedSprint && <><Button asChild size="sm" variant="outline"><Link href={`/projects/${projectId}/sprints/${selectedSprint.sprint_id}`}>View sprint</Link></Button><Badge variant="outline">{selectedSprint.status}</Badge>{canManageTasks && selectedSprint.status === "PLANNED" && <Button size="sm" onClick={() => void changeSprintStatus(selectedSprint, "ACTIVE")}>Start sprint</Button>}{canManageTasks && selectedSprint.status === "ACTIVE" && <Button size="sm" variant="outline" onClick={() => void changeSprintStatus(selectedSprint, "COMPLETED")}>Complete sprint</Button>}</>}</div>
         {selectedSprint?.goal && <p className="rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-800">Sprint goal: {selectedSprint.goal}</p>}
         {selectedSprint && sprintReport && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label={`${selectedSprint.sprint_name} summary`}>
@@ -311,7 +332,7 @@ export function ProjectWorkPanel({ projectId }: { projectId: string }) {
       </TabsContent>
     </Tabs>
     {canManageKanbanBoard && <AddColumnDialog open={addColumnOpen} onOpenChange={setAddColumnOpen} projectId={projectId} nextPosition={columns.length} />}
-    {canManageTasks && <SprintFormDialog open={sprintFormOpen} onOpenChange={setSprintFormOpen} projectId={projectId} />}
+    {canManageTasks && <SprintFormDialog open={sprintFormOpen} onOpenChange={setSprintFormOpen} projectId={projectId} onCreated={(sprint) => setSelectedSprintId(sprint.sprint_id)} />}
     <AddTaskToColumnDialog open={!!addTaskColumnId} onOpenChange={(open) => !open && setAddTaskColumnId(null)} columnId={addTaskColumnId} columnName={selectedColumn?.column_name} projectId={projectId} unplacedTasks={unplacedTasks} nextPosition={addTaskColumnId ? cardsByColumn.get(addTaskColumnId)?.length ?? 0 : 0} canCreateTask={canManageTasks} canAttachExisting={canManageKanbanBoard} />
   </section>;
 }

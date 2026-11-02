@@ -15,7 +15,8 @@ const AUTH_PATHS = [
 const PUBLIC_PATHS = [...AUTH_PATHS];
 // Keep login and registration pages open even with an existing session. This
 // lets users explicitly reach the credential form from company signup.
-const RESERVED_WORKSPACE_NAMES = new Set(["www", "api", "admin", "app", "mail", "support", "status", "help"]);
+// pms.knowletive.in is the public app host, not a customer workspace.
+const RESERVED_WORKSPACE_NAMES = new Set(["www", "api", "admin", "app", "pms", "mail", "support", "status", "help"]);
 
 function getWorkspaceSlug(host: string | null): string | null {
   const domain = (process.env.NEXT_PUBLIC_WORKSPACE_DOMAIN ?? "localhost:3000").trim().toLowerCase();

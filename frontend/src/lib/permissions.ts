@@ -46,7 +46,7 @@ export function getCapabilities(codes: string[]): Capabilities {
 export function canAccessModule(pathname: string, codes: string[]): boolean {
   if (pathname === "/settings") return true; // personal account settings
   const modules: Record<string, string> = {
-    "/dashboard": "dashboard", "/projects": "projects", "/tasks": "tasks", "/teams": "teams",
+    "/dashboard": "dashboard", "/projects": "projects", "/sprint-planning": "tasks", "/tasks": "tasks", "/teams": "teams",
     "/milestones": "milestones", "/calendar": "calendar", "/documentation": "documentation",
     "/workflow": "workflow", "/kanban": "kanban", "/gantt": "gantt", "/reports": "reports",
     "/ai": "ai_studio", "/notifications": "notifications", "/users": "users", "/roles": "roles",
