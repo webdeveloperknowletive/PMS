@@ -7,6 +7,11 @@ import { Loader2 } from "lucide-react";
 
 const MIN_VISIBLE_MS = 250;
 const MAX_NAVIGATION_MS = 15000;
+const AUTH_PATHS = new Set([
+  "/", "/login", "/platform/login", "/register", "/forgot-password",
+  "/reset-password", "/accept-invitation", "/verify-email",
+  "/verify-email-pending", "/terms",
+]);
 
 export function NavigationLoadingIndicator() {
   const pathname = usePathname();
@@ -58,8 +63,9 @@ export function NavigationLoadingIndicator() {
   if (!visible) return null;
 
   const message = pendingFrom !== null ? "Loading page…" : mutations > 0 ? "Working…" : "Loading data…";
+  const headerBottom = AUTH_PATHS.has(pathname) ? 0 : pathname.startsWith("/platform") ? 72 : 56;
   return (
-    <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 top-0 z-[100]">
+    <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 z-[100]" style={{ top: headerBottom }}>
       <div className="h-1 overflow-hidden bg-blue-100"><div className="navigation-loading-bar h-full w-1/3 bg-[#0c66e4]" /></div>
       <div className="absolute right-3 top-3 flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-2 text-xs font-medium text-[#172b4d] shadow-lg">
         <Loader2 className="h-4 w-4 animate-spin text-[#0c66e4]" />{message}
