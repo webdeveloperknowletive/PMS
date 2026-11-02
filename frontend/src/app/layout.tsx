@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/query-provider";
 import { AuthProvider } from "@/providers/auth-provider";
+import { NavigationLoadingIndicator } from "@/components/shared/navigation-loading-indicator";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans antialiased">
         <QueryProvider>
           <AuthProvider>
+            <Suspense fallback={null}><NavigationLoadingIndicator /></Suspense>
             {children}
             <Toaster position="top-right" richColors closeButton />
           </AuthProvider>
