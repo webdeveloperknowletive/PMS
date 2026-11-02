@@ -25,7 +25,7 @@ def get_reports(
 
     return (
         db.query(Report)
-        .order_by(Report.created_at.desc())
+        .order_by(Report.generated_at.desc())
         .offset(skip)
         .limit(limit)
         .all()
