@@ -76,30 +76,30 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { data: toastDurationSetting } = useQuery({
     queryKey: ["notification-toast-duration"],
     queryFn: notificationSettingsApi.getToastDuration,
-    enabled: !!user && permissionCodes.includes("modules.notifications.access") && permissionCodes.includes("notifications.settings.view"),
+    enabled: !!user && !!notifications?.length && permissionCodes.includes("modules.notifications.access") && permissionCodes.includes("notifications.settings.view"),
   });
   const { data: notificationSoundSetting } = useQuery({
     queryKey: ["notification-sound-setting"],
     queryFn: notificationSettingsApi.getSound,
-    enabled: !!user && permissionCodes.includes("modules.notifications.access") && permissionCodes.includes("notifications.settings.view"),
+    enabled: !!user && !!notifications?.length && permissionCodes.includes("modules.notifications.access") && permissionCodes.includes("notifications.settings.view"),
     refetchInterval: 30_000,
   });
   const { data: notificationVolumeSetting } = useQuery({
     queryKey: ["notification-volume-setting", user?.user_id],
     queryFn: notificationSettingsApi.getVolume,
-    enabled: !!user && permissionCodes.includes("modules.notifications.access") && permissionCodes.includes("notifications.personal_settings.view"),
+    enabled: !!user && !!notifications?.length && permissionCodes.includes("modules.notifications.access") && permissionCodes.includes("notifications.personal_settings.view"),
     refetchInterval: 30_000,
   });
   const { data: chatSettings } = useQuery({
     queryKey: ["chat-settings", user?.user_id],
     queryFn: chatApi.settings,
-    enabled: !!user && permissionCodes.includes("modules.chat.access") && permissionCodes.includes("chat.settings.view"),
+    enabled: !!user && (chatWindowOpen || !!notifications?.some((notification) => notification.notification_type.startsWith("Chat "))) && permissionCodes.includes("modules.chat.access") && permissionCodes.includes("chat.settings.view"),
     refetchInterval: 30_000,
   });
   const { data: chatOrganizationSettings } = useQuery({
     queryKey: ["chat-organization-settings"],
     queryFn: chatApi.organizationSettings,
-    enabled: !!user && permissionCodes.includes("modules.chat.access") && permissionCodes.includes("chat.organization_settings.view"),
+    enabled: !!user && (chatWindowOpen || !!notifications?.some((notification) => notification.notification_type.startsWith("Chat "))) && permissionCodes.includes("modules.chat.access") && permissionCodes.includes("chat.organization_settings.view"),
     refetchInterval: 30_000,
   });
   const { data: searchResults = [], isFetching: isSearching } = useQuery({

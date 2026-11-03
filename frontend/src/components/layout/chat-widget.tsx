@@ -97,7 +97,7 @@ export function ChatWidget() {
   const conversations = useQuery({
     queryKey: CHAT_QUERY_KEY,
     queryFn: chatApi.conversations,
-    enabled: !!user && has("chat.conversations.view"),
+    enabled: !!user && open && has("chat.conversations.view"),
     refetchInterval: open ? 5_000 : false,
     refetchIntervalInBackground: false,
   });
@@ -112,7 +112,7 @@ export function ChatWidget() {
   const settings = useQuery({
     queryKey: ["chat-settings", user?.user_id],
     queryFn: chatApi.settings,
-    enabled: !!user && has("chat.settings.view"),
+    enabled: !!user && open && has("chat.settings.view"),
   });
   const orgSettings = useQuery({
     queryKey: ["chat-organization-settings"],

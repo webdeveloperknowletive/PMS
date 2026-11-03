@@ -11,7 +11,13 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProjectStatusBadge } from "@/components/shared/status-badge";
 import { EventFormDialog } from "@/components/modules/calendar/event-form-dialog";
-import { WorkOverview } from "@/components/modules/dashboard/work-overview";
+import dynamic from "next/dynamic";
+import { ViewportSection } from "@/components/shared/viewport-section";
+
+const WorkOverview = dynamic(
+  () => import("@/components/modules/dashboard/work-overview").then((module) => module.WorkOverview),
+  { loading: () => <Skeleton className="h-48 w-full" /> },
+);
 import { useProjects } from "@/hooks/queries/use-projects";
 import { useTeamLeads, useTeamMemberCandidates, useTeams } from "@/hooks/queries/use-teams";
 import { useApproveKanbanReview, useKanbanColumns, useKanbanTaskPlacements } from "@/hooks/queries/use-kanban";
@@ -352,7 +358,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>}
 
-      {canViewWork && canAccessTasks && <WorkOverview />}
+      {canViewWork && canAccessTasks && <ViewportSection label="work overview"><WorkOverview /></ViewportSection>}
 
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
         {canViewProjects && <Card className="min-w-0 overflow-hidden border-white/90">

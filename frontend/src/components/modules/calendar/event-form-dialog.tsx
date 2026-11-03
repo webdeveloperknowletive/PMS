@@ -67,7 +67,7 @@ export function EventFormDialog({
   calendarScope?: "PERSONAL" | "ORGANIZATION";
 }) {
   const isEditing = !!event;
-  const { data: projects } = useProjects();
+  const { data: projects } = useProjects(undefined, open);
   const currentUser = useAuthStore((s) => s.user);
   const createMutation = useCreateCalendarEvent();
   const updateMutation = useUpdateCalendarEvent();
