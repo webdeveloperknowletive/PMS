@@ -34,3 +34,15 @@ class PlatformAdminSession(Base):
     ip_address = Column(String(50), nullable=True)
     user_agent = Column(String(500), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class PlatformAuditEvent(Base):
+    """Platform mutation history survives deletion of its target workspace."""
+    __tablename__ = "platform_audit_events"
+
+    event_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    platform_admin_id = Column(UUID(as_uuid=True), ForeignKey("platform_admins.platform_admin_id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    workspace_slug = Column(String(80), nullable=False)
+    action = Column(String(40), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

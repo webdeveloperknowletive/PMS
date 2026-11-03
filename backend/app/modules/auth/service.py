@@ -250,6 +250,9 @@ def login(
                 detail="Incorrect email or password for this workspace.",
             )
 
+    from app.core.workspaces import require_active_workspace
+    require_active_workspace(db, user.organization_id)
+
     db.info["organization_id"] = user.organization_id
 
     access_token, _ = create_token(
@@ -358,6 +361,11 @@ def refresh_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
+
+    from app.core.workspaces import require_active_workspace
+    require_active_workspace(db, user.organization_id)
+    if not user.is_active or not user.is_email_verified:
+        raise HTTPException(status_code=403, detail="Account is not available for sign-in.")
 
     db.info["organization_id"] = user.organization_id
 

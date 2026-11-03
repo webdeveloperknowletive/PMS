@@ -1,24 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import { useState } from "react";
 import { ArrowLeft, Building2, Loader2, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
-import { InlineDetailField } from "@/components/shared/inline-detail-field";
+import { WorkspaceActions } from "@/components/modules/platform/workspace-management";
 import { useAuthStore } from "@/store/auth-store";
 import { platformApi } from "@/lib/api/platform";
 import { formatDate, formatTime } from "@/lib/utils";
 
 export default function PlatformOrganizationDetailPage() {
   const params = useParams<{ organizationId: string }>();
-  const queryClient = useQueryClient();
-  const [statusUpdating, setStatusUpdating] = useState(false);
-  const [statusFeedback, setStatusFeedback] = useState("");
   const roleNames = useAuthStore((state) => state.user?.role_names ?? []);
   const isSuperAdmin = roleNames.some((role) => role.trim().toLowerCase() === "super admin");
   const organization = useQuery({ queryKey: ["platform-organization", params.organizationId], queryFn: () => platformApi.organization(params.organizationId), enabled: isSuperAdmin && !!params.organizationId });
@@ -30,30 +26,9 @@ export default function PlatformOrganizationDetailPage() {
   const organizationUsers = item.users ?? [];
   const recentActivity = item.recent_activity ?? [];
 
-  const changeStatus = async (next: string) => {
-    if (statusUpdating || next === item.status) return;
-    if (!window.confirm(`Are you sure you want to ${next === "SUSPENDED" ? "suspend" : "reactivate"} ${item.name}?`)) throw new Error("Change cancelled");
-    setStatusUpdating(true);
-    setStatusFeedback("");
-    try {
-      await platformApi.setOrganizationStatus(item.organization_id, next as "ACTIVE" | "SUSPENDED");
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["platform-organization", item.organization_id] }),
-        queryClient.invalidateQueries({ queryKey: ["platform-organizations"] }),
-        queryClient.invalidateQueries({ queryKey: ["platform-overview"] }),
-      ]);
-      setStatusFeedback(`Organization ${next === "SUSPENDED" ? "suspended" : "reactivated"}.`);
-    } catch {
-      setStatusFeedback("Could not update this organization. Please try again.");
-      throw new Error("Could not update this organization");
-    } finally {
-      setStatusUpdating(false);
-    }
-  };
-
   return <div className="space-y-6">
-    <PageHeader title={item.name} description={`Platform details for /${item.slug}`} actions={<Button variant="outline" asChild><Link href="/platform"><ArrowLeft className="h-4 w-4" />All organizations</Link></Button>} />
-    <div className="flex flex-wrap items-center gap-3"><div className="w-44"><InlineDetailField label="Status" value={item.status} canEdit type="select" options={[{ value: "ACTIVE", label: "Active" }, { value: "SUSPENDED", label: "Suspended" }]} onSave={changeStatus} /></div><Badge variant="secondary">{item.plan_code}</Badge>{statusFeedback && <p role="status" className={`text-sm ${statusFeedback.startsWith("Could not") ? "text-destructive" : "text-emerald-700"}`}>{statusFeedback}</p>}</div>
+    <PageHeader title={item.name} description={`Manage client workspace /${item.slug}`} actions={<Button variant="outline" asChild><Link href="/platform"><ArrowLeft className="h-4 w-4" />All organizations</Link></Button>} />
+    <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex gap-2"><Badge variant={item.status === "ACTIVE" ? "secondary" : "destructive"}>{item.status}</Badge><Badge variant="outline">{item.plan_code}</Badge></div><WorkspaceActions workspace={item} /></div>
     <div className="grid gap-6 lg:grid-cols-2">
       <Card><CardHeader><CardTitle className="text-base">Organization summary</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">
         <p><span className="text-muted-foreground">Owner:</span> {item.owner?.name ?? "Not identified"}</p>

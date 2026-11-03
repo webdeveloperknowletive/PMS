@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/shared/page-header";
 import { useAuthStore } from "@/store/auth-store";
 import { platformApi } from "@/lib/api/platform";
+import { CreateWorkspaceButton } from "@/components/modules/platform/workspace-management";
 import { formatDate } from "@/lib/utils";
 
 export default function PlatformDashboardPage() {
@@ -39,7 +40,7 @@ export default function PlatformDashboardPage() {
   if (organizations.isLoading && isSuperAdmin) return <div className="flex min-h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   if (!isSuperAdmin) return <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-24 text-center"><ShieldAlert className="mb-4 h-8 w-8 text-destructive" /><h1 className="text-base font-semibold">Platform access restricted</h1><p className="mt-1 text-sm text-muted-foreground">Only the developer company Super Admin can view registered organizations.</p></div>;
   return <div className="space-y-6">
-    <PageHeader title="Platform overview" description="Organization level view of SprintIX customer workspaces." />
+    <PageHeader title="Platform overview" description="Create and manage client workspaces, access and owner setup." actions={<CreateWorkspaceButton />} />
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <Card><CardContent className="flex items-center gap-4 p-5"><div className="rounded-xl bg-violet-100 p-3 text-violet-700"><Building2 className="h-5 w-5" /></div><div><p className="text-sm text-muted-foreground">Organizations</p><p className="text-2xl font-bold">{overview.data?.total_organizations ?? "—"}</p></div></CardContent></Card>
       <Card><CardContent className="flex items-center gap-4 p-5"><div className="rounded-xl bg-blue-100 p-3 text-blue-700"><Users className="h-5 w-5" /></div><div><p className="text-sm text-muted-foreground">Workspace users</p><p className="text-2xl font-bold">{overview.data?.total_users ?? "—"}</p></div></CardContent></Card>

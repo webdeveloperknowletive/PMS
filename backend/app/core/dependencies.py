@@ -58,6 +58,9 @@ def get_current_user(
             detail="Inactive account",
         )
 
+    from app.core.workspaces import require_active_workspace
+    require_active_workspace(db, user.organization_id)
+
     # All subsequent ORM operations in this request are limited to this
     # user's company workspace. Authentication lookup itself happens first.
     db.info["organization_id"] = user.organization_id

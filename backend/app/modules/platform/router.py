@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, text
@@ -8,10 +9,13 @@ from db.session import get_db
 from app.core.dependencies import get_current_platform_admin
 from app.modules.audit.model import AuditEvent
 from app.modules.auth.model import LoginHistory
-from app.modules.organizations.model import Organization, OrganizationSubscription
+from app.modules.organizations.model import Organization, OrganizationSubscription, OrganizationInvitation
 from app.modules.roles.model import Role, UserRole
 from app.modules.users.model import User
 from app.modules.platform.model import PlatformAdmin
+from app.modules.platform import service
+from app.modules.platform.schema import PlatformWorkspaceCreate, WorkspaceDelete
+from app.modules.organizations.schema import WorkspaceUpdate
 
 router = APIRouter(prefix="/platform", tags=["Platform Administration"])
 
@@ -107,6 +111,15 @@ def platform_organizations(
         owners = {}
         for row in owner_rows:
             owners.setdefault(row.organization_id, {"name": row.name, "email": row.email})
+        pending_owners = db.query(OrganizationInvitation.organization_id, OrganizationInvitation.email).join(
+            Role, Role.role_id == OrganizationInvitation.role_id,
+        ).filter(
+            OrganizationInvitation.organization_id.in_(organization_ids), Role.role_name == "Workspace Owner",
+            OrganizationInvitation.invited_by_user_id.is_(None), OrganizationInvitation.accepted_at.is_(None),
+            OrganizationInvitation.revoked_at.is_(None),
+        ).all()
+        for pending in pending_owners:
+            owners.setdefault(pending.organization_id, {"name": "Awaiting account setup", "email": pending.email})
         return {
             "items": [{
                 "organization_id": item.organization_id, "name": item.name, "slug": item.slug,
@@ -124,7 +137,7 @@ def platform_organizations(
 
 
 @router.get("/organizations/{organization_id}")
-def platform_organization_detail(organization_id: str, current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+def platform_organization_detail(organization_id: UUID, current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
     previous = _global_session(db)
     try:
         organization = db.query(Organization).filter(Organization.organization_id == organization_id).one_or_none()
@@ -140,13 +153,19 @@ def platform_organization_detail(organization_id: str, current_admin: PlatformAd
             .order_by(User.created_at.asc())
             .first()
         )
+        owner_setup = db.query(OrganizationInvitation).join(Role, Role.role_id == OrganizationInvitation.role_id).filter(
+            OrganizationInvitation.organization_id == organization.organization_id,
+            Role.role_name == "Workspace Owner", OrganizationInvitation.invited_by_user_id.is_(None),
+            OrganizationInvitation.accepted_at.is_(None), OrganizationInvitation.revoked_at.is_(None),
+        ).first()
         last_activity = db.query(AuditEvent.created_at).filter(AuditEvent.organization_id == organization.organization_id).order_by(AuditEvent.created_at.desc()).first()
         recent_audit = db.query(AuditEvent).filter(AuditEvent.organization_id == organization.organization_id).order_by(AuditEvent.created_at.desc()).limit(10).all()
         return {
             "organization_id": organization.organization_id, "name": organization.name, "slug": organization.slug,
             "status": organization.status, "plan_code": organization.plan_code, "created_at": organization.created_at,
             "last_activity_at": last_activity[0] if last_activity else None,
-            "owner": {"name": owner.name, "email": owner.email} if owner else None,
+            "owner": {"name": owner.name, "email": owner.email} if owner else ({"name": "Awaiting account setup", "email": owner_setup.email} if owner_setup else None),
+            "owner_setup_pending": owner_setup is not None,
             "user_count": db.query(func.count(User.user_id)).filter(User.organization_id == organization.organization_id).scalar() or 0,
             "subscription": {"status": subscription.status, "plan_code": subscription.plan_code, "trial_ends_at": subscription.trial_ends_at, "period_ends_at": subscription.period_ends_at, "cancel_at_period_end": subscription.cancel_at_period_end} if subscription else None,
             "users": [{"user_id": user.user_id, "name": user.name, "email": user.email, "is_active": user.is_active, "role_names": user.role_names} for user in users],
@@ -159,25 +178,12 @@ def platform_organization_detail(organization_id: str, current_admin: PlatformAd
 @router.post("/organizations/{organization_id}/status")
 def platform_organization_status(
     request: Request,
-    organization_id: str,
+    organization_id: UUID,
     status: str = Query(..., pattern="^(ACTIVE|SUSPENDED)$"),
     current_admin: PlatformAdmin = Depends(get_current_platform_admin),
     db: Session = Depends(get_db),
 ):
-    previous = _global_session(db)
-    try:
-        organization = db.query(Organization).filter(Organization.organization_id == organization_id).one_or_none()
-        if organization is None:
-            raise HTTPException(status_code=404, detail="Organization not found")
-        organization.status = status
-        db.commit()
-        if request is not None:
-            request.state.audit_organization_id = str(organization.organization_id)
-            request.state.audit_actor = current_admin.name
-            request.state.audit_roles = "Super Admin"
-        return {"organization_id": organization.organization_id, "status": organization.status}
-    finally:
-        _restore_session(db, previous)
+    return service.set_status(db, current_admin, organization_id, status)
 
 
 @router.get("/plans")
@@ -284,3 +290,23 @@ def platform_health(current_admin: PlatformAdmin = Depends(get_current_platform_
         "email_delivery": "not_checked",
         "checked_at": datetime.now(timezone.utc),
     }
+
+
+@router.post("/organizations", status_code=201)
+def create_workspace(payload: PlatformWorkspaceCreate, current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+    return service.create_workspace(db, current_admin, payload)
+
+
+@router.patch("/organizations/{organization_id}")
+def update_workspace(organization_id: UUID, payload: WorkspaceUpdate, current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+    return service.update_workspace(db, current_admin, organization_id, payload)
+
+
+@router.delete("/organizations/{organization_id}", status_code=204)
+def delete_workspace(organization_id: UUID, payload: WorkspaceDelete, current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+    service.delete_workspace(db, current_admin, organization_id, payload.confirmation_slug)
+
+
+@router.post("/organizations/{organization_id}/owner-setup/resend")
+def resend_owner_setup(organization_id: UUID, current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+    return service.resend_owner_setup(db, current_admin, organization_id)

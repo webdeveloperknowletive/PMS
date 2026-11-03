@@ -22,7 +22,7 @@ from app.modules.users.model import User
 
 logger = logging.getLogger(__name__)
 INVITATION_EXPIRE_HOURS = 72
-RESERVED_SLUGS = {"www", "api", "admin", "app", "mail", "support", "status", "help"}
+RESERVED_SLUGS = {"www", "api", "admin", "app", "pms", "mail", "support", "status", "help"}
 
 
 def _pending_invitation_for_token(db: Session, raw_token: str) -> OrganizationInvitation:
@@ -46,21 +46,14 @@ def _pending_invitation_for_token(db: Session, raw_token: str) -> OrganizationIn
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     if expires_at <= now:
         raise HTTPException(status_code=410, detail="This invitation expired. Ask the workspace owner to resend it.")
+    from app.core.workspaces import require_active_workspace
+    require_active_workspace(db, invitation.organization_id)
     return invitation
 
 
-def register_workspace_owner(db: Session, payload: WorkspaceOwnerCreate) -> tuple[User, Organization, bool, str | None]:
-    if APP_ENV == "production" and (not SMTP_HOST or not SMTP_FROM_EMAIL):
-        raise HTTPException(status_code=503, detail="Email delivery is not configured. Workspace signup is temporarily unavailable.")
-    email = str(payload.email).lower()
-    if db.query(User.user_id).filter(func.lower(User.email) == email).first():
-        raise HTTPException(status_code=409, detail="Email already registered")
-    if db.query(Organization.organization_id).filter(Organization.slug == payload.workspace_slug).first():
-        raise HTTPException(status_code=409, detail="That workspace address is already taken")
-    if payload.workspace_slug in RESERVED_SLUGS:
-        raise HTTPException(status_code=422, detail="Choose a different workspace address")
-
-    organization = Organization(name=payload.organization_name.strip(), slug=payload.workspace_slug)
+def initialize_workspace(db: Session, name: str, slug: str):
+    """Initialize tenant settings and roles inside the caller's transaction."""
+    organization = Organization(name=name, slug=slug)
     db.add(organization)
     db.flush()
     db.add(OrganizationSubscription(
@@ -116,6 +109,22 @@ def register_workspace_owner(db: Session, payload: WorkspaceOwnerCreate) -> tupl
             ))
     db.flush()
     ensure_employee_roles(db, organization.organization_id)
+
+    return organization, owner_role
+
+
+def register_workspace_owner(db: Session, payload: WorkspaceOwnerCreate) -> tuple[User, Organization, bool, str | None]:
+    if APP_ENV == "production" and (not SMTP_HOST or not SMTP_FROM_EMAIL):
+        raise HTTPException(status_code=503, detail="Email delivery is not configured. Workspace signup is temporarily unavailable.")
+    email = str(payload.email).lower()
+    if db.query(User.user_id).filter(func.lower(User.email) == email).first():
+        raise HTTPException(status_code=409, detail="Email already registered")
+    if db.query(Organization.organization_id).filter(Organization.slug == payload.workspace_slug).first():
+        raise HTTPException(status_code=409, detail="That workspace address is already taken")
+    if payload.workspace_slug in RESERVED_SLUGS:
+        raise HTTPException(status_code=422, detail="Choose a different workspace address")
+
+    organization, owner_role = initialize_workspace(db, payload.organization_name.strip(), payload.workspace_slug)
 
     user = User(
         name=payload.name.strip(),

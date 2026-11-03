@@ -65,6 +65,8 @@ def test_full_migration_chain(legacy):
                 assert MigrationContext.configure(connection).get_current_revision() == head
 
                 inspector = inspect(connection)
+                assert inspector.has_table("platform_audit_events")
+                assert next(column for column in inspector.get_columns("organization_invitations") if column["name"] == "invited_by_user_id")["nullable"]
                 assert inspector.has_table("task_work_sessions")
                 assert inspector.has_table("task_reminder_deliveries")
                 assert {"linked_at", "ended_at", "duration_seconds"} <= {

@@ -26,6 +26,7 @@ export interface PlatformSubscription {
 }
 
 export interface PlatformOrganizationDetail extends PlatformOrganization {
+  owner_setup_pending?: boolean;
   last_activity_at?: string | null;
   subscription?: { status: string; plan_code: string; trial_ends_at?: string | null; period_ends_at?: string | null; cancel_at_period_end: boolean } | null;
   users: Array<{ user_id: string; name: string; email: string; is_active: boolean; role_names: string[] }>;
@@ -38,6 +39,10 @@ export interface PlatformUser {
 }
 
 export const platformApi = {
+  createOrganization: async (payload: { name: string; slug: string; owner_email: string }) => (await apiClient.post<{ organization_id: string; email_sent: boolean }>("/platform/organizations", payload)).data,
+  updateOrganization: async (id: string, payload: { name: string; slug: string }) => (await apiClient.patch(`/platform/organizations/${id}`, payload)).data,
+  deleteOrganization: async (id: string, confirmation_slug: string) => apiClient.delete(`/platform/organizations/${id}`, { data: { confirmation_slug } }),
+  resendOwnerSetup: async (id: string) => (await apiClient.post<{ email_sent: boolean }>(`/platform/organizations/${id}/owner-setup/resend`)).data,
   overview: async () => (await apiClient.get<PlatformOverview>("/platform/overview")).data,
   organizations: async (filters: OrganizationFilters = {}) => {
     const { data } = await apiClient.get<PlatformPage<PlatformOrganization> | PlatformOrganization[]>("/platform/organizations", { params: filters });
