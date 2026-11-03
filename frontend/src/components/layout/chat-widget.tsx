@@ -98,7 +98,8 @@ export function ChatWidget() {
     queryKey: CHAT_QUERY_KEY,
     queryFn: chatApi.conversations,
     enabled: !!user && has("chat.conversations.view"),
-    refetchInterval: open ? 1200 : 3500,
+    refetchInterval: open ? 5_000 : false,
+    refetchIntervalInBackground: false,
   });
   const activeConversation = conversations.data?.find((item) => item.conversation_id === activeId) ?? null;
   const isActiveGroupAdmin = !!activeConversation?.members.some((member) => member.user_id === user?.user_id && member.is_group_admin);
@@ -122,7 +123,8 @@ export function ChatWidget() {
     queryKey: ["chat-messages", activeId],
     queryFn: () => chatApi.messages(activeId!),
     enabled: open && screen === "thread" && !!activeId && has("chat.messages.view"),
-    refetchInterval: 1000,
+    refetchInterval: open ? 5_000 : false,
+    refetchIntervalInBackground: false,
   });
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("chat-window-state", { detail: open }));

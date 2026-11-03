@@ -22,7 +22,7 @@ router = APIRouter(
 
 
 @router.get("/permissions/catalog", response_model=list[PermissionRead])
-async def get_user_permission_catalog(
+def get_user_permission_catalog(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -33,7 +33,7 @@ async def get_user_permission_catalog(
 
 @router.get("/", response_model=list[UserRead], status_code=status.HTTP_200_OK,
             dependencies=[Depends(require_any_permission("users.manage", "teams.manage", "teams.members.manage", "tasks.manage"))])
-async def get_users(
+def get_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(get_current_user),
@@ -46,7 +46,7 @@ async def get_users(
 
 
 @router.get("/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK)
-async def get_user(
+def get_user(
     user_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -62,7 +62,7 @@ async def get_user(
 
 
 @router.get("/{user_id}/permissions", response_model=UserPermissionsRead)
-async def get_user_permissions(
+def get_user_permissions(
     user_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -89,7 +89,7 @@ async def get_user_permissions(
 
 
 @router.put("/{user_id}/permissions", response_model=UserPermissionsRead)
-async def set_user_permissions(
+def set_user_permissions(
     user_id: UUID,
     payload: UserPermissionsUpdate,
     current_user: User = Depends(get_current_user),
@@ -130,12 +130,12 @@ async def set_user_permissions(
 
 
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(can_manage_users)])
-async def create_user():
+def create_user():
     raise HTTPException(status_code=410, detail="Invite employees from Organization → People so they set their own password and accept their assigned role.")
 
 
 @router.put("/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK)
-async def update_user(
+def update_user(
     user_id: UUID,
     payload: UserUpdate,
     current_user: User = Depends(get_current_user),
@@ -149,7 +149,7 @@ async def update_user(
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(can_manage_users)])
-async def delete_user(
+def delete_user(
     user_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -158,7 +158,7 @@ async def delete_user(
 
 
 @router.patch("/{user_id}/status", response_model=UserRead, status_code=status.HTTP_200_OK, dependencies=[Depends(can_manage_users)])
-async def update_user_status(
+def update_user_status(
     user_id: UUID,
     is_active: bool = Body(..., embed=True),
     current_user: User = Depends(get_current_user),
@@ -168,7 +168,7 @@ async def update_user_status(
 
 
 @router.patch("/{user_id}/password", response_model=UserRead, status_code=status.HTTP_200_OK)
-async def change_password(
+def change_password(
     user_id: UUID,
     new_password: str = Body(..., embed=True, min_length=8),
     current_user: User = Depends(get_current_user),
@@ -180,7 +180,7 @@ async def change_password(
 
 
 @router.patch("/{user_id}/profile", response_model=UserRead, status_code=status.HTTP_200_OK)
-async def update_profile(
+def update_profile(
     user_id: UUID,
     payload: UserUpdate,
     current_user: User = Depends(get_current_user),
@@ -203,7 +203,7 @@ async def update_profile_picture(
 
 
 @router.delete("/{user_id}/profile-picture", response_model=UserRead)
-async def remove_profile_picture(
+def remove_profile_picture(
     user_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -213,7 +213,7 @@ async def remove_profile_picture(
 
 
 @router.get("/{user_id}/profile-picture")
-async def get_profile_picture(
+def get_profile_picture(
     user_id: UUID,
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

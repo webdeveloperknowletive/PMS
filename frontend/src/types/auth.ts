@@ -6,10 +6,13 @@ export interface LoginRequest {
 }
 
 /** Response from POST /auth/login */
+import type { User } from "@/types/user";
+
 export interface LoginResponse {
   access_token: string;
   refresh_token: string;
   token_type: "bearer";
+  user?: User;
 }
 
 /** Response from POST /auth/refresh-token */

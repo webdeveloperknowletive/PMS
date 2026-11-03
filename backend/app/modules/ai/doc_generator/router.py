@@ -28,7 +28,7 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_results)],
 )
-async def get_generated_documents(
+def get_generated_documents(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -42,7 +42,7 @@ async def get_generated_documents(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_results)],
 )
-async def get_generated_document(
+def get_generated_document(
     document_generation_id: UUID,
     db: Session = Depends(get_db),
 ):
@@ -55,7 +55,7 @@ async def get_generated_document(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_generate)],
 )
-async def generate_document_preview(
+def generate_document_preview(
     payload: DocumentGenerationRequest,
     db: Session = Depends(get_db),
 ):
@@ -73,7 +73,7 @@ async def generate_document_preview(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_generate)],
 )
-async def save_document(
+def save_document(
     payload: SaveDocumentRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -87,7 +87,7 @@ async def save_document(
     response_model=AIDocumentGenerationRead,
     dependencies=[Depends(can_generate), Depends(can_upload_documents)],
 )
-async def publish_generated_document(
+def publish_generated_document(
     document_generation_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -96,5 +96,5 @@ async def publish_generated_document(
 
 
 @router.delete("/{document_generation_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(can_generate)])
-async def delete_generated_document(document_generation_id: UUID, db: Session = Depends(get_db)):
+def delete_generated_document(document_generation_id: UUID, db: Session = Depends(get_db)):
     service.delete_generated_document(db, document_generation_id)

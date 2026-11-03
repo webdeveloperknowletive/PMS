@@ -22,7 +22,7 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_workflows)],
 )
-async def get_workflows(
+def get_workflows(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -36,7 +36,7 @@ async def get_workflows(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_workflows)],
 )
-async def get_workflow(
+def get_workflow(
     workflow_id: UUID,
     db: Session = Depends(get_db),
 ):
@@ -49,7 +49,7 @@ async def get_workflow(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_manage_workflows)],
 )
-async def create_workflow(
+def create_workflow(
     payload: WorkflowCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -63,7 +63,7 @@ async def create_workflow(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_manage_workflows)],
 )
-async def update_workflow(
+def update_workflow(
     workflow_id: UUID,
     payload: WorkflowUpdate,
     current_user: User = Depends(get_current_user),
@@ -77,7 +77,7 @@ async def update_workflow(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_manage_workflows)],
 )
-async def delete_workflow(
+def delete_workflow(
     workflow_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

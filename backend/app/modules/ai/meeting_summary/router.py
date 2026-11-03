@@ -24,7 +24,7 @@ router = APIRouter(
 
 
 @router.post("/generate", response_model=AIMeetingSummaryRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(can_generate)])
-async def generate_meeting_summary_with_ai(
+def generate_meeting_summary_with_ai(
     payload: AIMeetingSummaryGenerationRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -38,7 +38,7 @@ async def generate_meeting_summary_with_ai(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_results)],
 )
-async def get_meeting_summaries(
+def get_meeting_summaries(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -52,7 +52,7 @@ async def get_meeting_summaries(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_results)],
 )
-async def get_meeting_summary(
+def get_meeting_summary(
     summary_id: UUID,
     db: Session = Depends(get_db),
 ):
@@ -64,7 +64,7 @@ async def get_meeting_summary(
     response_model=AIMeetingSummaryRead,
     dependencies=[Depends(can_generate), Depends(can_manage_tasks)],
 )
-async def apply_meeting_actions(
+def apply_meeting_actions(
     summary_id: UUID,
     payload: AIMeetingApplyRequest,
     current_user: User = Depends(get_current_user),
@@ -79,7 +79,7 @@ async def apply_meeting_actions(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_generate)],
 )
-async def generate_meeting_summary(
+def generate_meeting_summary(
     payload: AIMeetingSummaryCreate,
     db: Session = Depends(get_db),
 ):
@@ -92,7 +92,7 @@ async def generate_meeting_summary(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_generate)],
 )
-async def update_meeting_summary(
+def update_meeting_summary(
     summary_id: UUID,
     payload: AIMeetingSummaryUpdate,
     db: Session = Depends(get_db),
@@ -105,7 +105,7 @@ async def update_meeting_summary(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_generate)],
 )
-async def delete_meeting_summary(
+def delete_meeting_summary(
     summary_id: UUID,
     db: Session = Depends(get_db),
 ):

@@ -28,7 +28,7 @@ def _restore_session(db: Session, organization_id) -> None:
 
 
 @router.get("/overview")
-async def platform_overview(current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+def platform_overview(current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
     previous = _global_session(db)
     try:
         now = datetime.now(timezone.utc)
@@ -55,7 +55,7 @@ async def platform_overview(current_admin: PlatformAdmin = Depends(get_current_p
 
 
 @router.get("/organizations")
-async def platform_organizations(
+def platform_organizations(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     search: str | None = Query(None, max_length=120),
@@ -124,7 +124,7 @@ async def platform_organizations(
 
 
 @router.get("/organizations/{organization_id}")
-async def platform_organization_detail(organization_id: str, current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+def platform_organization_detail(organization_id: str, current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
     previous = _global_session(db)
     try:
         organization = db.query(Organization).filter(Organization.organization_id == organization_id).one_or_none()
@@ -157,7 +157,7 @@ async def platform_organization_detail(organization_id: str, current_admin: Plat
 
 
 @router.post("/organizations/{organization_id}/status")
-async def platform_organization_status(
+def platform_organization_status(
     request: Request,
     organization_id: str,
     status: str = Query(..., pattern="^(ACTIVE|SUSPENDED)$"),
@@ -181,7 +181,7 @@ async def platform_organization_status(
 
 
 @router.get("/plans")
-async def platform_plans(current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+def platform_plans(current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
     previous = _global_session(db)
     try:
         rows = db.query(OrganizationSubscription.plan_code, OrganizationSubscription.status, func.count(OrganizationSubscription.subscription_id)).group_by(OrganizationSubscription.plan_code, OrganizationSubscription.status).all()
@@ -191,7 +191,7 @@ async def platform_plans(current_admin: PlatformAdmin = Depends(get_current_plat
 
 
 @router.get("/subscriptions")
-async def platform_subscriptions(
+def platform_subscriptions(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     plan_code: str | None = Query(None, max_length=32),
@@ -231,7 +231,7 @@ async def platform_subscriptions(
 
 
 @router.get("/users")
-async def platform_users(
+def platform_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     search: str | None = Query(None, max_length=120),
@@ -257,7 +257,7 @@ async def platform_users(
 
 
 @router.get("/audit-logs")
-async def platform_audit_logs(
+def platform_audit_logs(
     skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500),
     current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
 ):
@@ -269,7 +269,7 @@ async def platform_audit_logs(
 
 
 @router.get("/health")
-async def platform_health(current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+def platform_health(current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
     database = "healthy"
     try:
         db.execute(text("SELECT 1"))

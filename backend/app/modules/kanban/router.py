@@ -44,7 +44,7 @@ router = APIRouter(
     response_model=list[KanbanLabelRead],
     dependencies=[Depends(require_any_permission("kanban.tasks.view", "tasks.create", "tasks.update", "tasks.update_assigned"))],
 )
-async def list_kanban_labels(
+def list_kanban_labels(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -57,7 +57,7 @@ async def list_kanban_labels(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_permission("kanban.labels.manage"))],
 )
-async def create_kanban_label(
+def create_kanban_label(
     payload: KanbanLabelCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -70,7 +70,7 @@ async def create_kanban_label(
     response_model=KanbanLabelRead,
     dependencies=[Depends(require_permission("kanban.labels.manage"))],
 )
-async def update_kanban_label(
+def update_kanban_label(
     label_id: UUID,
     payload: KanbanLabelUpdate,
     current_user: User = Depends(get_current_user),
@@ -133,7 +133,7 @@ def require_card_details_edit(db: Session, task: Task, user: User) -> bool:
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_board)],
 )
-async def get_kanban_columns(
+def get_kanban_columns(
     skip: int = 0,
     limit: int = 100,
     project_id: UUID | None = Query(None),
@@ -149,7 +149,7 @@ async def get_kanban_columns(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_board)],
 )
-async def get_kanban_column(
+def get_kanban_column(
     column_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -163,7 +163,7 @@ async def get_kanban_column(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_manage_board)],
 )
-async def create_kanban_column(
+def create_kanban_column(
     payload: KanbanColumnCreate,
     current_user: User = Depends(can_manage_board),
     db: Session = Depends(get_db),
@@ -177,7 +177,7 @@ async def create_kanban_column(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_manage_board)],
 )
-async def update_kanban_column(
+def update_kanban_column(
     column_id: UUID,
     payload: KanbanColumnUpdate,
     current_user: User = Depends(can_manage_board),
@@ -191,7 +191,7 @@ async def update_kanban_column(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_manage_board)],
 )
-async def delete_kanban_column(
+def delete_kanban_column(
     column_id: UUID,
     current_user: User = Depends(can_manage_board),
     db: Session = Depends(get_db),
@@ -209,7 +209,7 @@ async def delete_kanban_column(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_permission("kanban.cards.create"))],
 )
-async def create_kanban_card(
+def create_kanban_card(
     payload: TaskCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -232,7 +232,7 @@ async def create_kanban_card(
     response_model=list[TaskRead],
     dependencies=[Depends(can_view_board)],
 )
-async def get_archived_kanban_cards(
+def get_archived_kanban_cards(
     project_id: UUID | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -244,7 +244,7 @@ async def get_archived_kanban_cards(
     "/cards/{task_id}",
     response_model=TaskRead,
 )
-async def update_kanban_card_details(
+def update_kanban_card_details(
     task_id: UUID,
     payload: KanbanCardDetailsUpdate,
     current_user: User = Depends(get_current_user),
@@ -263,7 +263,7 @@ async def update_kanban_card_details(
     response_model=TaskRead,
     dependencies=[Depends(require_permission("kanban.cards.archive"))],
 )
-async def archive_kanban_card(
+def archive_kanban_card(
     task_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -277,7 +277,7 @@ async def archive_kanban_card(
     response_model=TaskRead,
     dependencies=[Depends(require_permission("kanban.cards.restore"))],
 )
-async def restore_kanban_card(
+def restore_kanban_card(
     task_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -291,7 +291,7 @@ async def restore_kanban_card(
     response_model=list[KanbanCardMemberOptionRead],
     dependencies=[Depends(require_permission("kanban.cards.members.manage"))],
 )
-async def get_kanban_card_member_options(
+def get_kanban_card_member_options(
     task_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -305,7 +305,7 @@ async def get_kanban_card_member_options(
     response_model=TaskRead,
     dependencies=[Depends(require_permission("kanban.cards.members.manage"))],
 )
-async def update_kanban_card_members(
+def update_kanban_card_members(
     task_id: UUID,
     payload: KanbanCardMembersUpdate,
     current_user: User = Depends(get_current_user),
@@ -320,7 +320,7 @@ async def update_kanban_card_members(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_board)],
 )
-async def get_kanban_tasks(
+def get_kanban_tasks(
     skip: int = 0,
     limit: int = 100,
     project_id: UUID | None = Query(None),
@@ -336,7 +336,7 @@ async def get_kanban_tasks(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_board)],
 )
-async def get_kanban_task(
+def get_kanban_task(
     task_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -350,7 +350,7 @@ async def get_kanban_task(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_manage_board)],
 )
-async def create_kanban_task(
+def create_kanban_task(
     payload: KanbanTaskCreate,
     current_user: User = Depends(can_manage_board),
     db: Session = Depends(get_db),
@@ -363,7 +363,7 @@ async def create_kanban_task(
     response_model=KanbanTaskRead,
     status_code=status.HTTP_200_OK,
 )
-async def update_kanban_task(
+def update_kanban_task(
     task_id: UUID,
     payload: KanbanTaskUpdate,
     current_user: User = Depends(can_move_task),
@@ -379,7 +379,7 @@ async def update_kanban_task(
         ).one_or_none()
         _require_review_approval(db, task, source_column, target_column, current_user)
         if placement and payload.column_id != placement.column_id:
-            return await move_kanban_task(
+            return move_kanban_task(
                 task_id,
                 payload.column_id,
                 payload.position if payload.position is not None else placement.position,
@@ -394,7 +394,7 @@ async def update_kanban_task(
     response_model=KanbanTaskRead,
     status_code=status.HTTP_200_OK,
 )
-async def move_kanban_task(
+def move_kanban_task(
     task_id: UUID,
     column_id: UUID = Body(...),
     position: int = Body(...),
@@ -472,7 +472,7 @@ async def move_kanban_task(
     response_model=KanbanTaskRead,
     status_code=status.HTTP_200_OK,
 )
-async def approve_task_review(
+def approve_task_review(
     task_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -500,7 +500,7 @@ async def approve_task_review(
         KanbanTask.column_id == done_column.column_id,
     ).order_by(KanbanTask.position.desc()).first()
     position = (last_position[0] + 1) if last_position else 0
-    return await move_kanban_task(
+    return move_kanban_task(
         placement.kanban_task_id,
         done_column.column_id,
         position,
@@ -514,7 +514,7 @@ async def approve_task_review(
     response_model=KanbanTaskRead,
     status_code=status.HTTP_200_OK,
 )
-async def cancel_task_review(
+def cancel_task_review(
     task_id: UUID,
     payload: TaskCommentCreate,
     current_user: User = Depends(get_current_user),
@@ -532,7 +532,7 @@ async def cancel_task_review(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_manage_board)],
 )
-async def delete_kanban_task(
+def delete_kanban_task(
     task_id: UUID,
     current_user: User = Depends(can_manage_board),
     db: Session = Depends(get_db),

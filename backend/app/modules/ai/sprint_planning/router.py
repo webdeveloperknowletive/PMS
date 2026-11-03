@@ -18,7 +18,7 @@ router = APIRouter(
 
 
 @router.post("/generate", response_model=AISprintPlanRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(can_generate)])
-async def generate_sprint_plan_with_ai(
+def generate_sprint_plan_with_ai(
     payload: AISprintPlanGenerationRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -32,7 +32,7 @@ async def generate_sprint_plan_with_ai(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_results)],
 )
-async def get_sprint_plans(
+def get_sprint_plans(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -46,7 +46,7 @@ async def get_sprint_plans(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_results)],
 )
-async def get_sprint_plan(
+def get_sprint_plan(
     sprint_plan_id: UUID,
     db: Session = Depends(get_db),
 ):
@@ -58,7 +58,7 @@ async def get_sprint_plan(
     response_model=AISprintPlanRead,
     dependencies=[Depends(can_generate), Depends(can_manage_tasks)],
 )
-async def apply_sprint_plan(
+def apply_sprint_plan(
     sprint_plan_id: UUID,
     payload: AISprintPlanApplyRequest,
     current_user: User = Depends(get_current_user),
@@ -73,7 +73,7 @@ async def apply_sprint_plan(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_generate)],
 )
-async def generate_sprint_plan(
+def generate_sprint_plan(
     payload: AISprintPlanCreate,
     db: Session = Depends(get_db),
 ):
@@ -86,7 +86,7 @@ async def generate_sprint_plan(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_generate)],
 )
-async def update_sprint_plan(
+def update_sprint_plan(
     sprint_plan_id: UUID,
     payload: AISprintPlanUpdate,
     db: Session = Depends(get_db),
@@ -99,7 +99,7 @@ async def update_sprint_plan(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_generate)],
 )
-async def delete_sprint_plan(
+def delete_sprint_plan(
     sprint_plan_id: UUID,
     db: Session = Depends(get_db),
 ):

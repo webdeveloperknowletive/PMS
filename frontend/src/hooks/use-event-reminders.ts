@@ -50,7 +50,6 @@ export function useEventReminders(enabled = true) {
     queryKey: ["meeting-reminder-setting"],
     queryFn: notificationSettingsApi.getMeetingReminder,
     enabled: enabled && !!user && calendarAccess && canViewReminderSettings,
-    refetchInterval: 10_000,
   });
   const queryClient = useQueryClient();
   const remindedRef = useRef<Set<string>>(new Set());

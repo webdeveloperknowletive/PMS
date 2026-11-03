@@ -22,7 +22,7 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_schedule)],
 )
-async def get_gantt_tasks(
+def get_gantt_tasks(
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_user),
@@ -37,7 +37,7 @@ async def get_gantt_tasks(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_schedule)],
 )
-async def get_gantt_task(
+def get_gantt_task(
     gantt_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -51,7 +51,7 @@ async def get_gantt_task(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_manage_schedule)],
 )
-async def create_gantt_task(
+def create_gantt_task(
     payload: GanttTaskCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -65,7 +65,7 @@ async def create_gantt_task(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_manage_schedule)],
 )
-async def update_gantt_task(
+def update_gantt_task(
     gantt_id: UUID,
     payload: GanttTaskUpdate,
     current_user: User = Depends(get_current_user),
@@ -79,7 +79,7 @@ async def update_gantt_task(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_manage_schedule)],
 )
-async def delete_gantt_task(
+def delete_gantt_task(
     gantt_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

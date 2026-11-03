@@ -34,7 +34,7 @@ def require_invitation_manager(user: User, db: Session) -> None:
 
 
 @router.post("/register", response_model=WorkspaceRegistrationRead, status_code=status.HTTP_201_CREATED)
-async def register_workspace(payload: WorkspaceOwnerCreate, request: Request, db: Session = Depends(get_db)):
+def register_workspace(payload: WorkspaceOwnerCreate, request: Request, db: Session = Depends(get_db)):
     user, organization, email_sent, verification_url = service.register_workspace_owner(db, payload)
     request.state.audit_actor = user.name
     request.state.audit_roles = ["Super Admin"]
@@ -49,7 +49,7 @@ async def register_workspace(payload: WorkspaceOwnerCreate, request: Request, db
 
 
 @router.get("/current", response_model=WorkspaceRead)
-async def get_current_organization(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_current_organization(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     organization = db.get(Organization, current_user.organization_id)
     if organization is None:
         raise HTTPException(status_code=404, detail="Workspace not found")
@@ -69,7 +69,7 @@ async def get_current_organization(current_user: User = Depends(get_current_user
 
 
 @router.patch("/current", response_model=WorkspaceRead)
-async def update_current_organization(
+def update_current_organization(
     payload: WorkspaceUpdate,
     current_user: User = Depends(require_permission("organization.manage")),
     db: Session = Depends(get_db),
@@ -91,7 +91,7 @@ async def update_current_organization(
 
 
 @router.get("/invitations", response_model=list[WorkspaceInviteRead])
-async def list_invitations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def list_invitations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     require_invitation_manager(current_user, db)
     invitations = db.query(OrganizationInvitation).filter(
         OrganizationInvitation.organization_id == current_user.organization_id,
@@ -100,7 +100,7 @@ async def list_invitations(current_user: User = Depends(get_current_user), db: S
 
 
 @router.post("/invitations", response_model=WorkspaceInviteRead, status_code=status.HTTP_201_CREATED)
-async def invite_member(
+def invite_member(
     payload: WorkspaceInviteCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -124,7 +124,7 @@ async def invite_member(
 
 
 @router.delete("/invitations/{invitation_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def revoke_invitation(
+def revoke_invitation(
     invitation_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -143,7 +143,7 @@ async def revoke_invitation(
 
 
 @router.post("/invitations/{invitation_id}/resend", response_model=WorkspaceInviteRead)
-async def resend_workspace_invitation(
+def resend_workspace_invitation(
     invitation_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -169,7 +169,7 @@ async def resend_workspace_invitation(
 
 
 @router.post("/invitations/accept", response_model=InvitationAcceptRead, status_code=status.HTTP_201_CREATED)
-async def accept_workspace_invitation(payload: InvitationAccept, request: Request, db: Session = Depends(get_db)):
+def accept_workspace_invitation(payload: InvitationAccept, request: Request, db: Session = Depends(get_db)):
     user, organization = service.accept_invitation(db, payload)
     role_names = db.query(Role.role_name).join(UserRole, UserRole.role_id == Role.role_id).filter(
         UserRole.user_id == user.user_id
@@ -181,7 +181,7 @@ async def accept_workspace_invitation(payload: InvitationAccept, request: Reques
 
 
 @router.get("/invitations/preview", response_model=InvitationPreviewRead)
-async def preview_workspace_invitation(
+def preview_workspace_invitation(
     token: str = Query(min_length=20, max_length=256),
     db: Session = Depends(get_db),
 ):

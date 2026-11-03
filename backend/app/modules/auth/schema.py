@@ -2,6 +2,14 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr
+from app.modules.users.schema import UserRead
+
+
+class LoginRead(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    user: UserRead
 
 
 # ==========================================================

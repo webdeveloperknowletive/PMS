@@ -22,7 +22,7 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_milestones)],
 )
-async def get_milestones(
+def get_milestones(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -36,7 +36,7 @@ async def get_milestones(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_milestones)],
 )
-async def get_milestone(
+def get_milestone(
     milestone_id: UUID,
     db: Session = Depends(get_db),
 ):
@@ -49,7 +49,7 @@ async def get_milestone(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_manage_milestones)],
 )
-async def create_milestone(
+def create_milestone(
     payload: MilestoneCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -63,7 +63,7 @@ async def create_milestone(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_manage_milestones)],
 )
-async def update_milestone(
+def update_milestone(
     milestone_id: UUID,
     payload: MilestoneUpdate,
     current_user: User = Depends(get_current_user),
@@ -77,7 +77,7 @@ async def update_milestone(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_manage_milestones)],
 )
-async def delete_milestone(
+def delete_milestone(
     milestone_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

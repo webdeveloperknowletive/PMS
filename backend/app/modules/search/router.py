@@ -22,7 +22,7 @@ router = APIRouter(prefix="/search", tags=["Search"])
 
 
 @router.get("/global")
-async def global_search(
+def global_search(
     q: str = Query(..., min_length=2, max_length=120),
     limit: int = Query(8, ge=1, le=20),
     current_user: User = Depends(get_current_user),

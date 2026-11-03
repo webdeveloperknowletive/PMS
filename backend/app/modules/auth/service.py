@@ -61,6 +61,7 @@ from app.modules.auth.schema import (
     RefreshTokenCreate,
 )
 from app.modules.users.model import User
+from app.modules.users.schema import UserRead
 from app.modules.roles.model import Role, UserRole
 from urllib.parse import quote
 
@@ -290,6 +291,7 @@ def login(
         "access_token": access_token,
         "refresh_token": refresh_token_str,
         "token_type": "bearer",
+        "user": UserRead.model_validate(user),
     }
 
 

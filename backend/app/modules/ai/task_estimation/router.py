@@ -23,7 +23,7 @@ router = APIRouter(
 
 
 @router.post("/generate", response_model=AITaskEstimationRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(can_generate)])
-async def generate_task_estimation_with_ai(
+def generate_task_estimation_with_ai(
     payload: AITaskEstimationGenerationRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -37,7 +37,7 @@ async def generate_task_estimation_with_ai(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_results)],
 )
-async def get_task_estimations(
+def get_task_estimations(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -51,7 +51,7 @@ async def get_task_estimations(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_results)],
 )
-async def get_task_estimation(
+def get_task_estimation(
     estimation_id: UUID,
     db: Session = Depends(get_db),
 ):
@@ -63,7 +63,7 @@ async def get_task_estimation(
     response_model=AITaskEstimationRead,
     dependencies=[Depends(can_generate), Depends(can_manage_tasks)],
 )
-async def apply_task_estimation(
+def apply_task_estimation(
     estimation_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -77,7 +77,7 @@ async def apply_task_estimation(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_generate)],
 )
-async def generate_task_estimation(
+def generate_task_estimation(
     payload: AITaskEstimationCreate,
     db: Session = Depends(get_db),
 ):
@@ -90,7 +90,7 @@ async def generate_task_estimation(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_generate)],
 )
-async def update_task_estimation(
+def update_task_estimation(
     estimation_id: UUID,
     payload: AITaskEstimationUpdate,
     db: Session = Depends(get_db),
@@ -103,7 +103,7 @@ async def update_task_estimation(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_generate)],
 )
-async def delete_task_estimation(
+def delete_task_estimation(
     estimation_id: UUID,
     db: Session = Depends(get_db),
 ):

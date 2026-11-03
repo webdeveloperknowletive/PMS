@@ -117,21 +117,19 @@ export default function DashboardPage() {
     queryKey: ["tasks", "dashboard"],
     queryFn: () => tasksApi.list({ limit: 500 }),
     enabled: canAccessTasks,
-    // Deletions are made in the Team Lead's session; poll so the PM's
-    // dashboard counts and project summaries converge without a manual reload.
-    refetchInterval: canAccessTasks ? 2_000 : false,
-    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
   });
   const adminTaskPageSize = 100;
-  const { data: organizationTaskPage, isLoading: organizationTasksLoading } = useQuery({
-    queryKey: ["tasks", "organization-register", taskPage],
+  const needsAdditionalTaskPage = canAccessTasks && !tasksLoading && (tasks?.length ?? 0) >= 500 && taskPage * adminTaskPageSize >= 500;
+  const { data: additionalTaskPage, isLoading: additionalTaskPageLoading } = useQuery({
+    queryKey: ["tasks", "dashboard-additional-page", taskPage],
     queryFn: () => tasksApi.list({ limit: adminTaskPageSize, skip: taskPage * adminTaskPageSize }),
-    enabled: canAccessTasks,
-    refetchInterval: 2_000,
-    refetchIntervalInBackground: true,
-    refetchOnWindowFocus: true,
+    enabled: needsAdditionalTaskPage,
   });
+  const organizationTaskPage = taskPage * adminTaskPageSize < 500
+    ? tasks?.slice(taskPage * adminTaskPageSize, (taskPage + 1) * adminTaskPageSize)
+    : additionalTaskPage;
+  const organizationTasksLoading = tasksLoading || (needsAdditionalTaskPage && additionalTaskPageLoading);
   const dashboardProjects = isProjectManager
     ? (projects ?? []).filter((project) => project.project_manager_user_id === user?.user_id)
     : projects ?? [];
@@ -222,7 +220,8 @@ export default function DashboardPage() {
     queryKey: ["tasks", expandedActivityTaskId, "activity"],
     queryFn: () => tasksApi.getActivity(expandedActivityTaskId as string),
     enabled: !!expandedActivityTaskId && canShowReviewActions,
-    refetchInterval: expandedActivityTaskId && canShowReviewActions ? 5_000 : false,
+    refetchInterval: expandedActivityTaskId && canShowReviewActions ? 15_000 : false,
+    refetchIntervalInBackground: false,
   });
   const taskTableColumnCount = 6 + Number(canViewMyTeamTaskTimes) + (canShowReviewActions ? 2 : 0);
   const roleStats = [

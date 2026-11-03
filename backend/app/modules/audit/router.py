@@ -48,7 +48,7 @@ def _csv_safe(value: object) -> str:
 
 
 @router.get("/", response_model=list[AuditEventRead])
-async def list_audit_events(
+def list_audit_events(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     actor_id: UUID | None = None,
@@ -66,7 +66,7 @@ async def list_audit_events(
 
 
 @router.get("/export")
-async def export_audit_events(
+def export_audit_events(
     actor_id: UUID | None = None,
     method: str | None = Query(None, min_length=3, max_length=10),
     from_date: datetime | None = None,

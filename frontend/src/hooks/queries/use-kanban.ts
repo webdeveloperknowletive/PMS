@@ -51,7 +51,8 @@ export function useKanbanTaskPlacements(enabled = true, projectId?: string) {
     queryKey: [PLACEMENTS_KEY, projectId ?? "all"],
     queryFn: () => kanbanApi.listTasks(projectId),
     enabled,
-    refetchInterval: 2_000,
+    refetchInterval: enabled ? 15_000 : false,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
   });
 }

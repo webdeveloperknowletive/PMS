@@ -31,7 +31,7 @@ router = APIRouter(
 # ==========================================================
 
 @router.get("/member-candidates", response_model=list[TeamMemberCandidateRead], status_code=status.HTTP_200_OK)
-async def get_team_member_candidates(
+def get_team_member_candidates(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -39,7 +39,7 @@ async def get_team_member_candidates(
 
 
 @router.get("/{team_id}/available-members", response_model=list[TeamMemberCandidateRead], status_code=status.HTTP_200_OK)
-async def get_available_team_members(
+def get_available_team_members(
     team_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -47,7 +47,7 @@ async def get_available_team_members(
     return service.get_available_team_members(db, team_id=team_id, current_user=current_user)
 
 @router.get("/leads", response_model=list[TeamLeadRead], status_code=status.HTTP_200_OK)
-async def get_team_leads(
+def get_team_leads(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(get_current_user),
@@ -57,7 +57,7 @@ async def get_team_leads(
 
 
 @router.get("/leads/by-user/{user_id}", response_model=TeamLeadRead, status_code=status.HTTP_200_OK)
-async def get_team_lead_by_user(
+def get_team_lead_by_user(
     user_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -66,7 +66,7 @@ async def get_team_lead_by_user(
 
 
 @router.get("/leads/{team_lead_id}", response_model=TeamLeadRead, status_code=status.HTTP_200_OK)
-async def get_team_lead(
+def get_team_lead(
     team_lead_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -79,7 +79,7 @@ async def get_team_lead(
     response_model=TeamLeadRead,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_team_lead(
+def create_team_lead(
     payload: TeamLeadCreate,
     db: Session = Depends(get_db),
 ):
@@ -91,7 +91,7 @@ async def create_team_lead(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_manage_teams)],
 )
-async def delete_team_lead(
+def delete_team_lead(
     team_lead_id: UUID,
     db: Session = Depends(get_db),
 ):
@@ -108,7 +108,7 @@ async def delete_team_lead(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_teams)],
 )
-async def get_teams(
+def get_teams(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(get_current_user),
@@ -123,7 +123,7 @@ async def get_teams(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_teams)],
 )
-async def get_team(
+def get_team(
     team_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -137,7 +137,7 @@ async def get_team(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_create_team)],
 )
-async def create_team(
+def create_team(
     payload: TeamCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -151,7 +151,7 @@ async def create_team(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_manage_teams)],
 )
-async def update_team(
+def update_team(
     team_id: UUID,
     payload: TeamUpdate,
     current_user: User = Depends(get_current_user),
@@ -165,7 +165,7 @@ async def update_team(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_manage_teams)],
 )
-async def delete_team(
+def delete_team(
     team_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -183,7 +183,7 @@ async def delete_team(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_teams)],
 )
-async def get_team_members(
+def get_team_members(
     team_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -192,7 +192,7 @@ async def get_team_members(
 
 
 @router.post("/{team_id}/members", response_model=TeamMemberRead, status_code=status.HTTP_201_CREATED)
-async def add_team_member(
+def add_team_member(
     team_id: UUID,
     payload: TeamMemberCreate,
     current_user: User = Depends(get_current_user),
@@ -204,7 +204,7 @@ async def add_team_member(
 
 
 @router.put("/{team_id}/members/{member_id}", response_model=TeamMemberRead, status_code=status.HTTP_200_OK)
-async def update_team_member(
+def update_team_member(
     team_id: UUID,
     member_id: UUID,
     payload: TeamMemberUpdate,
@@ -217,7 +217,7 @@ async def update_team_member(
 
 
 @router.delete("/{team_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_team_member(
+def remove_team_member(
     team_id: UUID,
     member_id: UUID,
     current_user: User = Depends(get_current_user),

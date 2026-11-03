@@ -20,7 +20,7 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_reports)],
 )
-async def get_reports(
+def get_reports(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -34,7 +34,7 @@ async def get_reports(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_reports)],
 )
-async def get_report(
+def get_report(
     report_id: UUID,
     db: Session = Depends(get_db),
 ):
@@ -47,7 +47,7 @@ async def get_report(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_manage_reports)],
 )
-async def generate_report(
+def generate_report(
     payload: ReportCreate,
     db: Session = Depends(get_db),
 ):
@@ -60,7 +60,7 @@ async def generate_report(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_manage_reports)],
 )
-async def update_report(
+def update_report(
     report_id: UUID,
     payload: ReportUpdate,
     db: Session = Depends(get_db),
@@ -73,7 +73,7 @@ async def update_report(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_manage_reports)],
 )
-async def delete_report(
+def delete_report(
     report_id: UUID,
     db: Session = Depends(get_db),
 ):

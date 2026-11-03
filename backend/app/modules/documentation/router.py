@@ -23,7 +23,7 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_documents)],
 )
-async def get_documents(
+def get_documents(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -37,7 +37,7 @@ async def get_documents(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_documents)],
 )
-async def get_project_documents(
+def get_project_documents(
     project_id: UUID,
     skip: int = 0,
     limit: int = 100,
@@ -53,7 +53,7 @@ async def get_project_documents(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_documents)],
 )
-async def get_document(
+def get_document(
     document_id: UUID,
     db: Session = Depends(get_db),
 ):
@@ -66,7 +66,7 @@ async def get_document(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_upload_documents)],
 )
-async def create_document(
+def create_document(
     payload: DocumentCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(can_upload_documents),
@@ -92,7 +92,7 @@ async def upload_document(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_upload_documents)],
 )
-async def update_document(
+def update_document(
     document_id: UUID,
     payload: DocumentUpdate,
     db: Session = Depends(get_db),
@@ -112,7 +112,7 @@ async def replace_document_upload(
 
 
 @router.get("/{document_id}/download", dependencies=[Depends(can_view_documents)])
-async def download_document(document_id: UUID, db: Session = Depends(get_db)):
+def download_document(document_id: UUID, db: Session = Depends(get_db)):
     document = service.get_document(db, document_id)
     return FileResponse(
         service.document_file_path(document),
@@ -126,7 +126,7 @@ async def download_document(document_id: UUID, db: Session = Depends(get_db)):
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(can_delete_documents)],
 )
-async def delete_document(
+def delete_document(
     document_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

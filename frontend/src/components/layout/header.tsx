@@ -69,7 +69,8 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     queryFn: () => notificationsApi.list({ limit: 500 }),
     // The API returns only the signed-in user's personal notification feed.
     enabled: !!user && permissionCodes.includes("modules.notifications.access"),
-    refetchInterval: 1_500,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
     select: (data) => data.filter((n) => !n.is_read && n.user_id === user?.user_id),
   });
   const { data: toastDurationSetting } = useQuery({

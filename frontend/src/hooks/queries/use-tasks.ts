@@ -12,7 +12,6 @@ export function useTasks(params?: TaskListParams, enabled = true) {
     queryKey: [KEY, params],
     queryFn: () => tasksApi.list(params),
     enabled,
-    refetchInterval: 2_000,
     refetchOnWindowFocus: true,
   });
 }
@@ -82,7 +81,8 @@ export function useBlockedTasksSummary(enabled = true) {
     queryKey: ["task-blockers-summary"],
     queryFn: tasksApi.getBlockerSummary,
     enabled,
-    refetchInterval: enabled ? 5_000 : false,
+    refetchInterval: enabled ? 30_000 : false,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -91,7 +91,8 @@ export function useTaskDependencies(params: TaskDependencyParams, enabled = true
     queryKey: ["task-dependencies", params],
     queryFn: () => tasksApi.getDependencies(params),
     enabled,
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -150,7 +151,8 @@ export function useWorkSessions(enabled = true) {
     queryKey: ["task-work-sessions"],
     queryFn: () => tasksApi.getWorkSessions(),
     enabled,
-    refetchInterval: 5_000,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -159,7 +161,8 @@ export function useTaskWorkTimes(enabled = true) {
     queryKey: ["task-work-times"],
     queryFn: tasksApi.getTaskWorkTimes,
     enabled,
-    refetchInterval: 5_000,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
   });
 }
 

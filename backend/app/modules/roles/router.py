@@ -28,7 +28,7 @@ router = APIRouter(
 
 
 @router.get("/", response_model=list[RoleRead], status_code=status.HTTP_200_OK)
-async def get_roles(
+def get_roles(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     current_user=Depends(get_current_user),
@@ -43,17 +43,17 @@ async def get_roles(
 
 
 @router.get("/permissions", response_model=list[PermissionRead], status_code=status.HTTP_200_OK)
-async def get_permissions(db: Session = Depends(get_db)):
+def get_permissions(db: Session = Depends(get_db)):
     return db.query(Permission).order_by(Permission.category, Permission.name).all()
 
 
 @router.get("/me/permissions", response_model=list[str], status_code=status.HTTP_200_OK)
-async def get_my_permissions(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+def get_my_permissions(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     return get_user_permission_codes(db, current_user)
 
 
 @router.get("/assignments", response_model=list[UserRoleAssignmentsRead], status_code=status.HTTP_200_OK)
-async def get_role_assignments(
+def get_role_assignments(
     skip: int = Query(0, ge=0),
     limit: int = Query(10000, ge=1, le=10000),
     db: Session = Depends(get_db),
@@ -68,7 +68,7 @@ async def get_role_assignments(
 
 
 @router.get("/{role_id}/permissions", response_model=list[PermissionRead], status_code=status.HTTP_200_OK)
-async def get_role_permissions(role_id: UUID, db: Session = Depends(get_db)):
+def get_role_permissions(role_id: UUID, db: Session = Depends(get_db)):
     role = db.get(Role, role_id)
     if role is None:
         raise HTTPException(status_code=404, detail="Role not found")
@@ -76,7 +76,7 @@ async def get_role_permissions(role_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/{role_id}/permissions", response_model=list[PermissionRead], status_code=status.HTTP_200_OK)
-async def update_role_permissions(role_id: UUID, payload: RolePermissionsUpdate, db: Session = Depends(get_db)):
+def update_role_permissions(role_id: UUID, payload: RolePermissionsUpdate, db: Session = Depends(get_db)):
     role = db.get(Role, role_id)
     if role is None:
         raise HTTPException(status_code=404, detail="Role not found")
@@ -94,7 +94,7 @@ async def update_role_permissions(role_id: UUID, payload: RolePermissionsUpdate,
 
 
 @router.get("/{role_id}", response_model=RoleRead, status_code=status.HTTP_200_OK)
-async def get_role(
+def get_role(
     role_id: UUID,
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -103,12 +103,12 @@ async def get_role(
 
 
 @router.post("/", response_model=RoleRead, status_code=status.HTTP_201_CREATED)
-async def create_role(payload: RoleCreate, db: Session = Depends(get_db)):
+def create_role(payload: RoleCreate, db: Session = Depends(get_db)):
     return service.create_role(db, payload)
 
 
 @router.put("/{role_id}", response_model=RoleRead, status_code=status.HTTP_200_OK)
-async def update_role(
+def update_role(
     role_id: UUID,
     payload: RoleUpdate,
     db: Session = Depends(get_db),
@@ -117,7 +117,7 @@ async def update_role(
 
 
 @router.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_role(role_id: UUID, db: Session = Depends(get_db)):
+def delete_role(role_id: UUID, db: Session = Depends(get_db)):
     service.delete_role(db, role_id)
 
 
@@ -126,7 +126,7 @@ async def delete_role(role_id: UUID, db: Session = Depends(get_db)):
 # ==========================================================
 
 @router.get("/users/{user_id}", response_model=list[UserRoleRead], status_code=status.HTTP_200_OK)
-async def get_user_roles(
+def get_user_roles(
     user_id: UUID,
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -140,7 +140,7 @@ async def get_user_roles(
 
 
 @router.post("/users/{user_id}", response_model=UserRoleRead, status_code=status.HTTP_201_CREATED)
-async def assign_role_to_user(
+def assign_role_to_user(
     user_id: UUID,
     payload: UserRoleCreate,
     current_user=Depends(get_current_user),
@@ -150,7 +150,7 @@ async def assign_role_to_user(
 
 
 @router.delete("/users/{user_id}/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_role_from_user(
+def remove_role_from_user(
     user_id: UUID,
     role_id: UUID,
     current_user=Depends(get_current_user),

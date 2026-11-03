@@ -23,7 +23,7 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_calendar)],
 )
-async def get_calendar_events(
+def get_calendar_events(
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_user),
@@ -38,7 +38,7 @@ async def get_calendar_events(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(can_view_calendar)],
 )
-async def get_calendar_event(
+def get_calendar_event(
     event_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -52,7 +52,7 @@ async def get_calendar_event(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(can_create_event)],
 )
-async def create_calendar_event(
+def create_calendar_event(
     payload: CalendarEventCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -61,7 +61,7 @@ async def create_calendar_event(
 
 
 @router.put("/{event_id}", response_model=CalendarEventRead, status_code=status.HTTP_200_OK)
-async def update_calendar_event(
+def update_calendar_event(
     event_id: UUID,
     payload: CalendarEventUpdate,
     current_user: User = Depends(get_current_user),
@@ -79,7 +79,7 @@ async def update_calendar_event(
 
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_calendar_event(
+def delete_calendar_event(
     event_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

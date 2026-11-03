@@ -16,7 +16,8 @@ export function useTeams(enabled = true) {
     enabled,
     // Team Leads and Project Managers use separate sessions, so local query
     // invalidation cannot refresh the other dashboard after a team is deleted.
-    refetchInterval: enabled ? 5_000 : false,
+    refetchInterval: enabled ? 30_000 : false,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -34,7 +35,8 @@ export function useAvailableTeamMembers(teamId: string | undefined, enabled = tr
     queryKey: ["team-available-members", teamId],
     queryFn: () => teamsApi.getAvailableMembers(teamId!),
     enabled: !!teamId && enabled,
-    refetchInterval: 5_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
 }
 

@@ -33,7 +33,7 @@ router = APIRouter(
 
 
 @router.get("/settings/meeting-reminder", response_model=MeetingReminderSettingRead)
-async def get_meeting_reminder_setting(
+def get_meeting_reminder_setting(
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -42,7 +42,7 @@ async def get_meeting_reminder_setting(
 
 
 @router.put("/settings/meeting-reminder", response_model=MeetingReminderSettingRead)
-async def update_meeting_reminder_setting(
+def update_meeting_reminder_setting(
     payload: MeetingReminderSettingUpdate,
     db: Session = Depends(get_db),
     _admin: User = Depends(can_manage_roles),
@@ -58,7 +58,7 @@ async def update_meeting_reminder_setting(
 
 
 @router.get("/settings/toast-duration", response_model=ToastDurationSettingRead)
-async def get_toast_duration_setting(
+def get_toast_duration_setting(
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -67,7 +67,7 @@ async def get_toast_duration_setting(
 
 
 @router.put("/settings/toast-duration", response_model=ToastDurationSettingRead)
-async def update_toast_duration_setting(
+def update_toast_duration_setting(
     payload: ToastDurationSettingUpdate,
     db: Session = Depends(get_db),
     _admin: User = Depends(can_manage_roles),
@@ -83,7 +83,7 @@ async def update_toast_duration_setting(
 
 
 @router.get("/settings/sound", response_model=NotificationSoundSettingRead)
-async def get_notification_sound_setting(
+def get_notification_sound_setting(
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -93,7 +93,7 @@ async def get_notification_sound_setting(
 
 
 @router.put("/settings/sound", response_model=NotificationSoundSettingRead)
-async def update_notification_sound_setting(
+def update_notification_sound_setting(
     payload: NotificationSoundSettingUpdate,
     db: Session = Depends(get_db),
     _admin: User = Depends(can_manage_roles),
@@ -111,7 +111,7 @@ async def update_notification_sound_setting(
 
 
 @router.get("/settings/volume", response_model=NotificationVolumeRead)
-async def get_notification_volume_setting(
+def get_notification_volume_setting(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -120,7 +120,7 @@ async def get_notification_volume_setting(
 
 
 @router.put("/settings/volume", response_model=NotificationVolumeRead)
-async def update_notification_volume_setting(
+def update_notification_volume_setting(
     payload: NotificationVolumeUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -136,13 +136,13 @@ async def update_notification_volume_setting(
 
 
 @router.get("/settings/task-deadline-email", response_model=TaskDeadlineEmailSetting)
-async def get_task_deadline_email_setting(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_task_deadline_email_setting(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     setting = db.get(NotificationUserSetting, current_user.user_id)
     return {"enabled": setting.email_task_deadline_reminders if setting else True}
 
 
 @router.put("/settings/task-deadline-email", response_model=TaskDeadlineEmailSetting)
-async def update_task_deadline_email_setting(payload: TaskDeadlineEmailSetting, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_task_deadline_email_setting(payload: TaskDeadlineEmailSetting, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     setting = db.get(NotificationUserSetting, current_user.user_id)
     if setting is None:
         setting = NotificationUserSetting(user_id=current_user.user_id, email_task_deadline_reminders=payload.enabled)
@@ -154,7 +154,7 @@ async def update_task_deadline_email_setting(payload: TaskDeadlineEmailSetting, 
 
 
 @router.get("/", response_model=list[NotificationRead], status_code=status.HTTP_200_OK)
-async def get_notifications(
+def get_notifications(
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_user),
@@ -164,7 +164,7 @@ async def get_notifications(
 
 
 @router.get("/{notification_id}", response_model=NotificationRead, status_code=status.HTTP_200_OK)
-async def get_notification(
+def get_notification(
     notification_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -175,7 +175,7 @@ async def get_notification(
 
 
 @router.post("/", response_model=NotificationRead, status_code=status.HTTP_201_CREATED)
-async def create_notification(
+def create_notification(
     payload: NotificationCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -189,7 +189,7 @@ async def create_notification(
 
 
 @router.put("/{notification_id}", response_model=NotificationRead, status_code=status.HTTP_200_OK)
-async def update_notification(
+def update_notification(
     notification_id: UUID,
     payload: NotificationUpdate,
     current_user: User = Depends(get_current_user),
@@ -201,7 +201,7 @@ async def update_notification(
 
 
 @router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_notification(
+def delete_notification(
     notification_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from db.session import get_db
 from app.core.dependencies import get_current_user, get_current_platform_admin
 from app.modules.auth import service
-from app.modules.auth.schema import VerificationResendRead, VerificationResendRequest
+from app.modules.auth.schema import LoginRead, VerificationResendRead, VerificationResendRequest
 from app.modules.users.model import User
 from app.modules.users.schema import UserRead
 from app.modules.platform.model import PlatformAdmin
@@ -30,15 +30,15 @@ router = APIRouter(
 
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-async def register():
+def register():
     raise HTTPException(
         status_code=status.HTTP_410_GONE,
         detail="Create a company workspace at /organizations/register.",
     )
 
 
-@router.post("/login", status_code=status.HTTP_200_OK)
-async def login(
+@router.post("/login", response_model=LoginRead, status_code=status.HTTP_200_OK)
+def login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     workspace_slug: str | None = Query(default=None, min_length=3, max_length=63),
@@ -55,7 +55,7 @@ async def login(
 
 
 @router.post("/platform-login", status_code=status.HTTP_200_OK)
-async def platform_login(
+def platform_login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
@@ -70,12 +70,12 @@ async def platform_login(
 
 
 @router.post("/platform/logout", status_code=status.HTTP_200_OK)
-async def platform_logout(current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+def platform_logout(current_admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
     return service.platform_logout(db, current_admin)
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
-async def logout(
+def logout(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -83,7 +83,7 @@ async def logout(
 
 
 @router.post("/refresh-token", status_code=status.HTTP_200_OK)
-async def refresh_token(
+def refresh_token(
     refresh_token: str = Body(..., embed=True),
     db: Session = Depends(get_db),
 ):
@@ -91,7 +91,7 @@ async def refresh_token(
 
 
 @router.post("/forgot-password", status_code=status.HTTP_200_OK)
-async def forgot_password(
+def forgot_password(
     email: EmailStr = Body(..., embed=True),
     db: Session = Depends(get_db),
 ):
@@ -99,7 +99,7 @@ async def forgot_password(
 
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
-async def reset_password(
+def reset_password(
     token: str = Body(..., embed=True),
     new_password: str = Body(..., embed=True, min_length=8),
     db: Session = Depends(get_db),
@@ -108,7 +108,7 @@ async def reset_password(
 
 
 @router.post("/verify-email", status_code=status.HTTP_200_OK)
-async def verify_email(
+def verify_email(
     token: str = Body(..., embed=True),
     workspace_slug: str | None = Body(default=None, embed=True, max_length=63),
     db: Session = Depends(get_db),
@@ -117,19 +117,19 @@ async def verify_email(
 
 
 @router.post("/resend-verification", response_model=VerificationResendRead, status_code=status.HTTP_200_OK)
-async def resend_email_verification(payload: VerificationResendRequest, db: Session = Depends(get_db)):
+def resend_email_verification(payload: VerificationResendRequest, db: Session = Depends(get_db)):
     return service.resend_verification(db, payload.email)
 
 
 @router.get("/me", response_model=UserRead, status_code=status.HTTP_200_OK)
-async def get_current_user_route(
+def get_current_user_route(
     current_user: User = Depends(get_current_user),
 ):
     return current_user
 
 
 @router.get("/platform/me", status_code=status.HTTP_200_OK)
-async def get_current_platform_admin_route(current_admin: PlatformAdmin = Depends(get_current_platform_admin)):
+def get_current_platform_admin_route(current_admin: PlatformAdmin = Depends(get_current_platform_admin)):
     return {
         "user_id": current_admin.platform_admin_id,
         "name": current_admin.name,

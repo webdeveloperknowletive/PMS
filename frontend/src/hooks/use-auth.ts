@@ -15,8 +15,7 @@ export function useAuth() {
     mutationFn: (payload: LoginRequest) => authApi.login(payload),
     onSuccess: async (data) => {
       tokenStorage.setTokens(data.access_token, data.refresh_token);
-      const me = await authApi.getMe();
-      setUser(me);
+      setUser(data.user ?? await authApi.getMe());
       router.push("/dashboard");
     },
   });
