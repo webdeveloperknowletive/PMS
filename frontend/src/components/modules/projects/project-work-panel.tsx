@@ -35,7 +35,7 @@ import { AddColumnDialog } from "@/components/modules/kanban/add-column-dialog";
 import { SprintFormDialog } from "@/components/modules/tasks/sprint-form-dialog";
 import type { Sprint } from "@/types/task";
 
-export function ProjectWorkPanel({ projectId, initialTab = "board" }: { projectId: string; initialTab?: "board" | "backlog" | "list" }) {
+export function ProjectWorkPanel({ projectId, initialTab = "board", showTabs = true }: { projectId: string; initialTab?: "board" | "backlog" | "list"; showTabs?: boolean }) {
   const router = useRouter();
   const { canManageTasks, canManageKanbanBoard, canMoveKanbanCard, permissionCodes } = usePermissions();
   const canViewTeamMembers = ["teams.view", "teams.manage", "teams.members.manage"].some((code) => permissionCodes.includes(code));
@@ -199,7 +199,7 @@ export function ProjectWorkPanel({ projectId, initialTab = "board" }: { projectI
       {canManageTasks && <Button asChild size="sm"><Link href={`/tasks/new?project_id=${projectId}`}><Plus className="h-4 w-4" />Create task</Link></Button>}
     </div>
     <Tabs value={tab} onValueChange={(value) => setTab(value as "board" | "backlog" | "list")}>
-      <div className="flex flex-wrap items-center justify-between gap-2"><TabsList><TabsTrigger value="board"><KanbanSquare className="mr-1.5 h-4 w-4" />Board</TabsTrigger><TabsTrigger value="backlog">Backlog &amp; sprints</TabsTrigger><TabsTrigger value="list"><CheckSquare className="mr-1.5 h-4 w-4" />Task list <span className="ml-1 rounded-full bg-slate-200 px-1.5 text-[10px]">{tasks.length}</span></TabsTrigger></TabsList>{tab === "board" && columns.length > 0 && canManageKanbanBoard && <Button size="sm" variant="outline" onClick={() => setAddColumnOpen(true)}><Plus className="h-3.5 w-3.5" />Add column</Button>}</div>
+      <div className="flex flex-wrap items-center justify-between gap-2">{showTabs && <TabsList><TabsTrigger value="board"><KanbanSquare className="mr-1.5 h-4 w-4" />Board</TabsTrigger><TabsTrigger value="backlog">Backlog &amp; sprints</TabsTrigger><TabsTrigger value="list"><CheckSquare className="mr-1.5 h-4 w-4" />Task list <span className="ml-1 rounded-full bg-slate-200 px-1.5 text-[10px]">{tasks.length}</span></TabsTrigger></TabsList>}{tab === "board" && columns.length > 0 && canManageKanbanBoard && <Button size="sm" variant="outline" onClick={() => setAddColumnOpen(true)}><Plus className="h-3.5 w-3.5" />Add column</Button>}</div>
       <TabsContent value="board" className="mt-3">
         {activeWorkSession && <div className="mb-3 flex flex-col gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5"><div className="flex min-w-0 items-start gap-2"><Clock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" /><div className="min-w-0"><p className="text-sm font-semibold text-emerald-900">Timer running automatically</p><p className="truncate text-xs text-emerald-800">{activeWorkSession.task_names.join(" · ")} · Each task’s time saves when it is marked Done.</p></div></div></div>}
         {columns.length ? <DragDropContext onDragEnd={onDragEnd}><div className="flex gap-3 overflow-x-auto pb-3">

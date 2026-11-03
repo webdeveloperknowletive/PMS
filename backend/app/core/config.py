@@ -189,7 +189,9 @@ if APP_ENV == "production":
     ):
         raise RuntimeError("Production requires WORKSPACE_DOMAIN as a hostname, without a scheme or path.")
     public_url = urlsplit(PUBLIC_APP_URL)
-    if public_url.scheme != "https" or not public_url.hostname or public_url.username or public_url.password:
+    if (public_url.scheme != "https" or not public_url.hostname or public_url.username or public_url.password
+        or public_url.path not in ("", "/") or public_url.query or public_url.fragment
+        or public_url.hostname == "localhost" or "." not in public_url.hostname):
         raise RuntimeError("Production PUBLIC_APP_URL must use HTTPS.")
     if not ALLOW_ORIGINS or any(
         urlsplit(origin).scheme != "https"
@@ -232,3 +234,11 @@ if __name__ == "__main__":
     print(f"Log File      : {LOG_FILE}")
 
     # Never print DATABASE_URL: it may contain a live database password.
+
+
+def verification_app_url(workspace_slug: str | None, token: str) -> str:
+    """Use the canonical public frontend, without requiring wildcard DNS."""
+    parameters = {"token": token}
+    if workspace_slug:
+        parameters["workspace_slug"] = workspace_slug
+    return f"{PUBLIC_APP_URL.rstrip('/')}/verify-email?{urlencode(parameters)}"

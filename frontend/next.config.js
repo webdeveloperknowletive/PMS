@@ -8,6 +8,13 @@ const nextConfig = {
     config.resolve.alias["@"] = path.resolve(__dirname, "src");
     return config;
   },
+  async headers() {
+    return [{ source: "/verify-email", headers: [
+      { key: "Referrer-Policy", value: "no-referrer" },
+      { key: "Cache-Control", value: "no-store" },
+      { key: "X-Robots-Tag", value: "noindex, nofollow" },
+    ] }];
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**" },

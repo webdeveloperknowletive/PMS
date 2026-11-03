@@ -83,10 +83,10 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
     <>
       {open && <button aria-label="Close navigation" onClick={close} className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden" />}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex h-screen w-[252px] shrink-0 flex-col border-r border-[#dfe1e6] bg-[#f7f8f9] shadow-xl transition-transform duration-300 lg:static lg:z-auto lg:translate-x-0 lg:shadow-none",
+        "sidebar-shell fixed inset-y-0 left-0 z-50 flex h-screen w-[252px] shrink-0 flex-col border-r border-[#dfe1e6] bg-[#f7f8f9] shadow-xl transition-transform duration-300 lg:static lg:z-auto lg:translate-x-0 lg:shadow-none",
         open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
-        <div className="flex h-[68px] shrink-0 items-center justify-between border-b border-[#dfe1e6] px-4">
+        <div className="flex h-[56px] shrink-0 items-center justify-between border-b border-[#dfe1e6] px-4">
           <Link href={homeHref} onClick={close} className="flex items-center gap-3">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-white p-0.5 ring-1 ring-[#dfe1e6]">
               <img src="/sprintix-logo-hd.png" alt="SprintIX logo" className="h-full w-full rounded object-contain" />
@@ -99,7 +99,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
           <button aria-label="Close navigation" onClick={close} className="rounded-md p-2 text-[#626f86] hover:bg-[#e9edf2] lg:hidden"><X className="h-4 w-4" /></button>
         </div>
 
-        <nav className="scrollbar-thin flex-1 overflow-y-auto px-3 pb-5 pt-3" aria-label="Workspace navigation">
+        <nav className="sidebar-scrollbar flex-1 overflow-y-auto px-3 pb-5 pt-3" aria-label="Workspace navigation">
           <div className="mb-3 flex items-center justify-between rounded-md px-3 py-2 text-sm font-semibold text-[#172b4d]"><span className="truncate">{organization?.name ?? "Workspace"}</span><ChevronDown className="h-4 w-4 shrink-0 text-[#626f86]" /></div>
           {canOpen(CORE_MODULES[0].href) && <div className="space-y-1"><NavLink {...CORE_MODULES[0]} onClick={close} /></div>}
           <SectionLabel>Project</SectionLabel>

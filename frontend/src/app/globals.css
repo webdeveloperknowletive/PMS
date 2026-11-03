@@ -88,6 +88,34 @@
     @apply rounded-full bg-border;
   }
 
+  .sidebar-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-track,
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+  }
+
+  .sidebar-shell:hover .sidebar-scrollbar,
+  .sidebar-shell:focus-within .sidebar-scrollbar {
+    scrollbar-color: #a8b0be transparent;
+  }
+
+  .sidebar-shell:hover .sidebar-scrollbar::-webkit-scrollbar-thumb,
+  .sidebar-shell:focus-within .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: #a8b0be;
+  }
+
   .animate-enter {
     animation: enter 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }

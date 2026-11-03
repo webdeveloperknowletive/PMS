@@ -92,14 +92,17 @@ def get_available_team_members(db: Session, team_id: UUID, current_user: User) -
 
 
 def get_team_leads(db: Session, current_user: User, skip: int = 0, limit: int = 100) -> list[TeamLead]:
-    query = db.query(TeamLead)
+    query = db.query(TeamLead).filter(TeamLead.organization_id == current_user.organization_id)
     if not has_permission(db, current_user, "teams.manage"):
         query = query.filter(TeamLead.user_id == current_user.user_id)
     return query.order_by(TeamLead.created_at.desc()).offset(skip).limit(limit).all()
 
 
-def get_team_lead(db: Session, team_lead_id: UUID) -> TeamLead:
-    team_lead = repository.get_team_lead(db, team_lead_id)
+def get_team_lead(db: Session, team_lead_id: UUID, current_user: User) -> TeamLead:
+    team_lead = db.query(TeamLead).filter(
+        TeamLead.team_lead_id == team_lead_id,
+        TeamLead.organization_id == current_user.organization_id,
+    ).one_or_none()
     if team_lead is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team lead not found")
     return team_lead

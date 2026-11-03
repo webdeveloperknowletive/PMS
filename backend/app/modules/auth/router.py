@@ -110,9 +110,10 @@ async def reset_password(
 @router.post("/verify-email", status_code=status.HTTP_200_OK)
 async def verify_email(
     token: str = Body(..., embed=True),
+    workspace_slug: str | None = Body(default=None, embed=True, max_length=63),
     db: Session = Depends(get_db),
 ):
-    return service.verify_email(db, token)
+    return service.verify_email(db, token, workspace_slug)
 
 
 @router.post("/resend-verification", response_model=VerificationResendRead, status_code=status.HTTP_200_OK)

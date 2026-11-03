@@ -8,8 +8,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.core.config import APP_ENV, SMTP_FROM_EMAIL, SMTP_HOST, TERMS_VERSION, TRIAL_DURATION_DAYS, workspace_app_url
-from app.core.email import send_product_email, send_workspace_invitation
+from app.core.config import APP_ENV, SMTP_FROM_EMAIL, SMTP_HOST, TERMS_VERSION, TRIAL_DURATION_DAYS, workspace_app_url, verification_app_url
+from app.core.email import send_verification_email, send_product_email, send_workspace_invitation
 from app.core.permissions import PERMISSION_CATALOG
 from app.modules.auth.service import VERIFY_TOKEN_EXPIRE_MINUTES, create_token, hash_password
 from app.modules.auth.model import EmailVerificationToken
@@ -135,7 +135,7 @@ def register_workspace_owner(db: Session, payload: WorkspaceOwnerCreate) -> tupl
     )
     verification = EmailVerificationToken(
         user_id=user.user_id,
-        token=verify_token,
+        token=hashlib.sha256(verify_token.encode()).hexdigest(),
         expires_at=verify_expiry,
     )
     db.add(verification)
@@ -147,17 +147,9 @@ def register_workspace_owner(db: Session, payload: WorkspaceOwnerCreate) -> tupl
     db.refresh(user)
     db.refresh(organization)
 
-    verification_url = workspace_app_url(
-        organization.slug,
-        "/verify-email",
-        {"token": verify_token},
-    )
+    verification_url = verification_app_url(organization.slug, verify_token)
     try:
-        email_sent = send_product_email(
-            email,
-            "Verify your SprintIX workspace account",
-            f"Hello {user.name},\n\nVerify your email and activate the {organization.name} workspace:\n{verification_url}\n\nThis link expires in 24 hours.",
-        )
+        email_sent = send_verification_email(user.email, user.name, verification_url)
     except HTTPException:
         # Keep the created account intact; the owner can request a new link.
         logger.exception("Workspace account created but verification email could not be delivered")

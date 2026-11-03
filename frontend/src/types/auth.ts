@@ -46,6 +46,7 @@ export interface ResetPasswordRequest {
 }
 
 export interface VerifyEmailRequest {
+  workspace_slug?: string;
   token: string;
 }
 

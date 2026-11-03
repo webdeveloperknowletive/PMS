@@ -83,3 +83,25 @@ def send_workspace_invitation(
 <p style="font-size:12px;color:#64748b">Button not working? Open this address:<br><a href="{escape(invitation_url, quote=True)}" style="word-break:break-all">{escape(invitation_url)}</a></p>
 </div></body></html>"""
     return send_product_email(to_email, f"Invitation to {organization_name} | SprintIX", body, html_body=html_body)
+
+
+def send_verification_email(to_email: str, name: str, verification_url: str) -> bool:
+    from app.core.config import PUBLIC_APP_URL
+    fallback = f"{PUBLIC_APP_URL.rstrip('/')}/verify-email-pending"
+    body = (
+        f"Hello {name},\n\nVerify your SprintIX email:\n{verification_url}\n\n"
+        f"This link expires in 24 hours and can activate your account only once.\n"
+        f"Need another link? Open {fallback} and request a new verification email.\n\n"
+        "If you did not create this account, ignore this email."
+    )
+    html = (
+        '<html><body style="font-family:Arial,sans-serif;color:#1e293b;padding:32px">'
+        '<h1>SprintIX</h1><h2>Verify your email</h2>'
+        f'<p>Hello {escape(name)},</p><p>Confirm your email to activate your workspace.</p>'
+        f'<p><a href="{escape(verification_url, quote=True)}">Verify email</a></p>'
+        '<p>This link expires in 24 hours. A new link replaces previous links.</p>'
+        f'<p>Button not working? Copy this address: {escape(verification_url)}</p>'
+        f'<p><a href="{escape(fallback, quote=True)}">Request another verification email</a></p>'
+        '<p>If you did not create this account, ignore this email.</p></body></html>'
+    )
+    return send_product_email(to_email, "Verify your SprintIX account", body, html_body=html)

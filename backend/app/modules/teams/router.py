@@ -71,7 +71,7 @@ async def get_team_lead(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return service.get_team_lead(db, team_lead_id)
+    return service.get_team_lead(db, team_lead_id, current_user)
 
 
 @router.post(

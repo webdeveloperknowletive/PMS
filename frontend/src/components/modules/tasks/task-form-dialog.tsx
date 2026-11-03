@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Paperclip, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,8 @@ import { KanbanLabelColorPicker } from "@/components/modules/kanban/kanban-label
 import { useCreateTask, useProjectAssigneeCandidates, useUpdateTask } from "@/hooks/queries/use-tasks";
 import { useProjectComponents, useProjectCustomFields, useProjectGoals, useProjectReleases, useProjects } from "@/hooks/queries/use-projects";
 import { getApiErrorMessage } from "@/lib/api/client";
+import { tasksApi } from "@/lib/api/tasks";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { Task } from "@/types/task";
 
 const UNASSIGNED = "__unassigned__";
@@ -35,6 +38,8 @@ const NO_REMINDER = "none";
 const TASK_TYPES = ["EPIC", "STORY", "TASK", "BUG", "SPIKE"] as const;
 // Subtasks require a parent task and are created from a parent task's detail view.
 const TASK_TYPE_VALUES = ["EPIC", "STORY", "TASK", "BUG", "SPIKE", "SUBTASK"] as const;
+const ATTACHMENT_EXTENSIONS = [".csv", ".doc", ".docx", ".gif", ".jpeg", ".jpg", ".pdf", ".png", ".ppt", ".pptx", ".txt", ".webp", ".xls", ".xlsx", ".zip"];
+const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 
 function isValidDateInput(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -50,6 +55,7 @@ const schema = z.object({
   labels: z.string().max(839, "Labels must be 20 items or fewer").optional(),
   custom_fields: z.record(z.string(), z.unknown()).optional(),
   task_name: z.string().trim().min(2, "Task name must have at least 2 characters").max(255, "Task name must be 255 characters or fewer"),
+  description: z.string().max(10000, "Description must be 10,000 characters or fewer").optional(),
   status: z.enum(TASK_STATUSES),
   priority: z.enum(TASK_PRIORITIES),
   task_type: z.enum(TASK_TYPE_VALUES),
@@ -90,6 +96,10 @@ export function TaskFormDialog({
   const createMutation = useCreateTask();
   const updateMutation = useUpdateTask();
   const isSaving = createMutation.isPending || updateMutation.isPending;
+  const { permissionCodes } = usePermissions();
+  const canUploadAttachments = permissionCodes.includes("kanban.card_attachments.upload") || permissionCodes.includes("roles.manage");
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const {
     register,
@@ -110,6 +120,7 @@ export function TaskFormDialog({
       labels: "",
       custom_fields: {},
       task_name: "",
+      description: "",
       status: "TODO",
       priority: "MEDIUM",
       task_type: defaultTaskType,
@@ -170,6 +181,7 @@ export function TaskFormDialog({
 
   useEffect(() => {
     if (open) {
+      setPendingFiles([]);
       reset(
         task
           ? {
@@ -180,6 +192,7 @@ export function TaskFormDialog({
               labels: (task.labels ?? []).join(", "),
               custom_fields: task.custom_fields ?? {},
               task_name: task.task_name,
+              description: task.description ?? "",
               status: task.status,
               priority: task.priority,
               task_type: task.task_type ?? "TASK",
@@ -197,6 +210,7 @@ export function TaskFormDialog({
               labels: "",
               custom_fields: {},
               task_name: "",
+              description: "",
               status: "TODO",
               priority: "MEDIUM",
               task_type: defaultTaskType,
@@ -257,6 +271,7 @@ export function TaskFormDialog({
     }
     const taskFields = {
       task_name: values.task_name,
+      description: values.description?.trim() || null,
       goal_id: values.goal_id && values.goal_id !== NO_GOAL ? values.goal_id : null,
       release_id: values.release_id && values.release_id !== NO_RELEASE ? values.release_id : null,
       component_id: values.component_id && values.component_id !== NO_COMPONENT ? values.component_id : null,
@@ -282,7 +297,20 @@ export function TaskFormDialog({
         toast.success("Task updated");
       } else {
         savedTask = await createMutation.mutateAsync({ project_id: values.project_id, team_id: assigneeTeam?.team_id ?? null, ...taskFields });
-        toast.success("Task created");
+        let failedUploads = 0;
+        if (pendingFiles.length > 0) {
+          setIsUploading(true);
+          for (const file of pendingFiles) {
+            try {
+              await tasksApi.uploadCardAttachment(savedTask.task_id, file);
+            } catch {
+              failedUploads += 1;
+            }
+          }
+          setIsUploading(false);
+        }
+        if (failedUploads > 0) toast.error(`Task created, but ${failedUploads} attachment${failedUploads === 1 ? "" : "s"} could not be uploaded. Add them from the task detail page.`);
+        else toast.success("Task created");
       }
       if (onSaved) onSaved(savedTask);
       else onOpenChange(false);
@@ -297,6 +325,12 @@ export function TaskFormDialog({
             <Label htmlFor="task_name">Task name</Label>
             <Input id="task_name" placeholder="Design homepage UI" required maxLength={255} aria-invalid={!!errors.task_name} {...register("task_name")} />
             {errors.task_name && <p className="text-xs text-destructive">{errors.task_name.message}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="task_description">Description</Label>
+            <Textarea id="task_description" placeholder="Describe the work, context, and acceptance details…" maxLength={10000} rows={4} {...register("description")} />
+            {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -523,6 +557,23 @@ export function TaskFormDialog({
             ))}
           </div>
 
+          {!isEditing && canUploadAttachments && <div className="space-y-2 rounded-lg border p-3">
+            <Label htmlFor="task-attachments">Attachments</Label>
+            <p className="text-xs text-muted-foreground">Choose files now; they will upload after the task is created. Maximum 20 MB per file.</p>
+            <Input id="task-attachments" type="file" multiple accept={ATTACHMENT_EXTENSIONS.join(",")} disabled={isSaving || isUploading} onChange={(event) => {
+              const selected = Array.from(event.target.files ?? []);
+              const valid = selected.filter((file) => {
+                const extension = `.${file.name.split(".").pop()?.toLowerCase() ?? ""}`;
+                if (!ATTACHMENT_EXTENSIONS.includes(extension)) { toast.error(`${file.name}: unsupported file type`); return false; }
+                if (file.size === 0 || file.size > MAX_ATTACHMENT_BYTES) { toast.error(`${file.name}: file must be between 1 byte and 20 MB`); return false; }
+                return true;
+              });
+              setPendingFiles((current) => [...current, ...valid]);
+              event.target.value = "";
+            }} />
+            {pendingFiles.length > 0 && <ul className="space-y-1">{pendingFiles.map((file, index) => <li key={`${file.name}-${index}`} className="flex items-center gap-2 text-sm"><Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" /><span className="min-w-0 flex-1 truncate">{file.name}</span><Button type="button" size="icon" variant="ghost" aria-label={`Remove ${file.name}`} disabled={isSaving || isUploading} onClick={() => setPendingFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}><Trash2 className="h-4 w-4" /></Button></li>)}</ul>}
+          </div>}
+
           {errors.root && (
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{errors.root.message}</p>
           )}
@@ -531,9 +582,9 @@ export function TaskFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isEditing ? "Save changes" : "Create task"}
+            <Button type="submit" disabled={isSaving || isUploading}>
+              {(isSaving || isUploading) && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isUploading ? "Uploading files…" : isEditing ? "Save changes" : "Create task"}
             </Button>
           </div>
         </form>

@@ -4,6 +4,8 @@ export interface TeamLead {
   team_lead_id: string;
   user_id: string;
   created_at: string;
+  user_name?: string | null;
+  role_names?: string[];
 }
 
 export interface TeamLeadCreate {

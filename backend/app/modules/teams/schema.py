@@ -17,6 +17,8 @@ class TeamLeadRead(TeamLeadBase):
 
     team_lead_id: uuid.UUID
     created_at: datetime
+    user_name: str | None = None
+    role_names: list[str] = Field(default_factory=list)
 
 
 class TeamMemberCandidateRead(BaseModel):

@@ -87,6 +87,15 @@ export default function LoginPage() {
           </Button>
         </form>
 
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Need to verify your email?{" "}
+          <Link
+            href={workspaceSlug ? `/verify-email-pending?workspace_slug=${encodeURIComponent(workspaceSlug)}` : "/verify-email-pending"}
+            className="font-medium text-primary hover:underline"
+          >
+            Resend verification email
+          </Link>
+        </p>
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
           <Link href="/register" className="font-medium text-primary hover:underline">

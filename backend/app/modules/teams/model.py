@@ -27,6 +27,14 @@ class TeamLead(Base, OrganizationScopedMixin, CreatedAtMixin):
     teams_led = relationship("Team", back_populates="team_lead")
     workflows = relationship("Workflow", back_populates="team_lead")
 
+    @property
+    def user_name(self) -> str | None:
+        return self.user.name if self.user else None
+
+    @property
+    def role_names(self) -> list[str]:
+        return self.user.role_names if self.user else []
+
     def __repr__(self) -> str:
         return f"<TeamLead user_id={self.user_id}>"
 

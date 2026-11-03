@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Search, LogOut, UserRound, ChevronDown, Menu, ArrowUpRight, Command, Home, Plus } from "lucide-react";
+import { Bell, Search, LogOut, UserRound, ChevronDown, Menu, ArrowUpRight, Command, Home } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
@@ -204,7 +204,10 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          {permissionCodes.includes("modules.tasks.access") && permissionCodes.includes("tasks.create") && <Button asChild size="sm" className="h-8 rounded-md bg-[#0c66e4] px-3 text-white hover:bg-[#0055cc]"><Link href="/tasks/new"><Plus className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Create</span></Link></Button>}
+          {permissionCodes.includes("modules.notifications.access") && <Link href="/notifications" aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"} title="Notifications" className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#44546f] transition hover:bg-[#f1f2f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c66e4]">
+            <Bell className="h-[18px] w-[18px]" />
+            {unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-rose-500 px-1 text-[9px] font-bold leading-none text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}
+          </Link>}
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 rounded-xl p-1.5 outline-none transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-violet-300">
               <UserAvatar user={user} showName={false} size="md" />
@@ -222,10 +225,6 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               <DropdownMenuItem onClick={() => logout()} className="text-destructive focus:text-destructive"><LogOut /> Log out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {permissionCodes.includes("modules.notifications.access") && <Link href="/notifications" aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"} title="Notifications" className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#44546f] transition hover:bg-[#f1f2f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c66e4]">
-            <Bell className="h-[18px] w-[18px]" />
-            {unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-rose-500 px-1 text-[9px] font-bold leading-none text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}
-          </Link>}
         </div>
       </header>
 

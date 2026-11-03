@@ -70,7 +70,7 @@ export function ProjectComponentsPanel({ projectId }: { projectId: string }) {
   };
 
   return <>
-    <Card id="project-components" className="scroll-mt-24 border-white/90">
+    <Card className="scroll-mt-24 border-white/90">
       <CardHeader className="flex flex-row items-center gap-3 border-b border-slate-100 px-4 py-3.5">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><Component className="h-4 w-4" /></span>
         <CardTitle className="min-w-0 flex-1 text-sm">Project components</CardTitle>

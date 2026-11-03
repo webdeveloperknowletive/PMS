@@ -9,7 +9,7 @@ import { InlineDetailField } from "@/components/shared/inline-detail-field";
 import { Button } from "@/components/ui/button";
 import { TEAM_STATUSES } from "@/lib/constants";
 import { getApiErrorMessage } from "@/lib/api/client";
-import { useAddTeamMember, useRemoveTeamMember, useTeamLeads, useTeamMemberCandidates, useTeamMembers, useTeams, useUpdateTeam, useUpdateTeamMember } from "@/hooks/queries/use-teams";
+import { useAddTeamMember, useRemoveTeamMember, useTeamLead, useTeamLeads, useTeamMemberCandidates, useTeamMembers, useTeams, useUpdateTeam, useUpdateTeamMember } from "@/hooks/queries/use-teams";
 import { usePermissions } from "@/hooks/use-permissions";
 import type { TeamUpdate } from "@/types/team";
 
@@ -20,6 +20,7 @@ export default function TeamPage() {
   const { data: members = [] } = useTeamMembers(teamId);
   const { data: candidates = [] } = useTeamMemberCandidates();
   const { data: leads = [] } = useTeamLeads();
+  const { data: currentLead } = useTeamLead(teams?.find((item) => item.team_id === teamId)?.team_lead_id);
   const update = useUpdateTeam();
   const addMember = useAddTeamMember();
   const removeMember = useRemoveTeamMember();
@@ -30,7 +31,8 @@ export default function TeamPage() {
   if (!team) return <p className="text-sm text-destructive">This team is unavailable.</p>;
   const canEdit = permissionCodes.includes("teams.update");
   const canManageMembers = permissionCodes.includes("teams.members.manage") || permissionCodes.includes("roles.manage");
-  const lead = leads.find((item) => item.team_lead_id === team.team_lead_id);
+  const lead = currentLead ?? leads.find((item) => item.team_lead_id === team.team_lead_id);
+  const leadOptions = lead && !leads.some((item) => item.team_lead_id === lead.team_lead_id) ? [lead, ...leads] : leads;
   const availableMembers = candidates.filter((item) => !members.some((member) => member.user_id === item.user_id) && item.user_id !== lead?.user_id);
   const save = async (payload: TeamUpdate) => { await update.mutateAsync({ id: teamId, payload }); toast.success("Team updated"); };
   const add = async () => {
@@ -54,7 +56,7 @@ export default function TeamPage() {
           {canManageMembers && <div className="mt-4 flex gap-2"><select aria-label="Add team member" value={newMemberId} onChange={(event) => setNewMemberId(event.target.value)} className="min-w-0 flex-1 rounded border px-2 py-1.5 text-sm"><option value="">Choose a member</option>{availableMembers.map((candidate) => <option key={candidate.user_id} value={candidate.user_id}>{candidate.name}</option>)}</select><Button size="sm" onClick={() => void add()} disabled={!newMemberId || addMember.isPending}>Add member</Button></div>}
         </section>
       </div>
-      <aside className="space-y-5"><section className="rounded-md border border-[#dfe1e6] bg-white p-5 shadow-sm"><h2 className="mb-4 font-semibold text-[#172b4d]">Team lead</h2><InlineDetailField label="Lead" value={team.team_lead_id} canEdit={canEdit} type="select" options={leads.map((item) => ({ value: item.team_lead_id, label: candidates.find((candidate) => candidate.user_id === item.user_id)?.name ?? item.user_id }))} display={candidates.find((item) => item.user_id === lead?.user_id)?.name ?? lead?.user_id} onSave={(value) => save({ team_lead_id: value })} /></section><section className="rounded-md border border-[#dfe1e6] bg-white p-5 text-xs text-[#626f86] shadow-sm"><p>Created {new Date(team.created_at).toLocaleString()}</p><p className="mt-2">Updated {new Date(team.updated_at).toLocaleString()}</p></section></aside>
+      <aside className="space-y-5"><section className="rounded-md border border-[#dfe1e6] bg-white p-5 shadow-sm"><h2 className="mb-4 font-semibold text-[#172b4d]">Team lead</h2><InlineDetailField label="Lead" value={team.team_lead_id} canEdit={canEdit} type="select" options={leadOptions.map((item) => ({ value: item.team_lead_id, label: item.user_name ? `${item.user_name} (Team Lead)` : "Team Lead unavailable" }))} display={lead?.user_name ? `${lead.user_name} (Team Lead)` : "Loading Team Lead…"} onSave={(value) => save({ team_lead_id: value })} /></section><section className="rounded-md border border-[#dfe1e6] bg-white p-5 text-xs text-[#626f86] shadow-sm"><p>Created {new Date(team.created_at).toLocaleString()}</p><p className="mt-2">Updated {new Date(team.updated_at).toLocaleString()}</p></section></aside>
     </div>
   </div>;
 }

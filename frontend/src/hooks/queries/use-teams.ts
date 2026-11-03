@@ -129,6 +129,14 @@ export function useTeamLeads(enabled = true) {
   });
 }
 
+export function useTeamLead(teamLeadId: string | undefined) {
+  return useQuery({
+    queryKey: [LEADS_KEY, teamLeadId],
+    queryFn: () => teamLeadsApi.get(teamLeadId!),
+    enabled: !!teamLeadId,
+  });
+}
+
 /** Ensures the given user has a TeamLead record, creating one if they don't yet — used right before assigning them to lead a team. */
 export function usePromoteToTeamLead() {
   const queryClient = useQueryClient();

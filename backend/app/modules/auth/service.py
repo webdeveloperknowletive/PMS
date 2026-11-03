@@ -35,6 +35,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from urllib.parse import quote
 import hashlib
+import secrets
 
 import bcrypt
 from fastapi import HTTPException, status
@@ -48,8 +49,8 @@ from app.core.config import (
     ALGORITHM,
     SECRET_KEY,
 )
-from app.core.config import APP_ENV, PUBLIC_APP_URL, workspace_app_url
-from app.core.email import send_product_email
+from app.core.config import APP_ENV, PUBLIC_APP_URL, workspace_app_url, verification_app_url
+from app.core.email import send_verification_email, send_product_email
 from app.modules.auth.model import EmailVerificationToken
 from app.modules.platform.model import PlatformAdmin, PlatformAdminSession
 from app.modules.auth import repository
@@ -107,6 +108,7 @@ def create_token(
     payload = {
         "sub": subject,
         "purpose": purpose,
+        "jti": secrets.token_urlsafe(32),
         "exp": expire,
     }
 
@@ -147,37 +149,37 @@ def decode_token(
 
 
 def resend_verification(db: Session, email: EmailStr) -> dict:
-    user = db.query(User).filter(User.email == str(email).lower()).one_or_none()
-    response = {"success": True, "message": "If that account needs verification, a new link has been sent.", "email_sent": False}
+    user = db.query(User).filter(User.email == str(email).lower()).with_for_update().one_or_none()
+    response = {"success": True, "message": "If that account needs verification, a new link has been sent.", "email_sent": APP_ENV == "production"}
     if user is None or user.is_email_verified:
         return response
 
     db.info["organization_id"] = user.organization_id
+    latest = db.query(EmailVerificationToken).filter(
+        EmailVerificationToken.user_id == user.user_id,
+    ).order_by(EmailVerificationToken.created_at.desc()).first()
+    if latest and latest.created_at.replace(tzinfo=timezone.utc) > datetime.now(timezone.utc) - timedelta(seconds=60):
+        db.rollback()
+        return response
     token, expiry = create_token(str(user.user_id), VERIFY_TOKEN_EXPIRE_MINUTES, "email_verification")
     db.query(EmailVerificationToken).filter(
         EmailVerificationToken.user_id == user.user_id,
         EmailVerificationToken.is_used.is_(False),
     ).update({EmailVerificationToken.is_used: True}, synchronize_session=False)
-    db.add(EmailVerificationToken(user_id=user.user_id, token=token, expires_at=expiry))
+    db.add(EmailVerificationToken(user_id=user.user_id, token=hashlib.sha256(token.encode()).hexdigest(), expires_at=expiry))
     db.commit()
     workspace_slug = db.query(Organization.slug).filter(
         Organization.organization_id == user.organization_id
     ).scalar()
-    verification_url = (
-        workspace_app_url(workspace_slug, "/verify-email", {"token": token})
-        if workspace_slug
-        else f"{PUBLIC_APP_URL.rstrip('/')}/verify-email?token={quote(token)}"
-    )
+    verification_url = verification_app_url(workspace_slug, token)
     try:
-        response["email_sent"] = send_product_email(
-            user.email,
-            "Verify your SprintIX account",
-            f"Hello {user.name},\n\nVerify your SprintIX account:\n{verification_url}\n\nThis link expires in 24 hours.",
-        )
+        response["email_sent"] = send_verification_email(user.email, user.name, verification_url)
     except HTTPException:
         response["email_sent"] = False
     if not response["email_sent"] and APP_ENV != "production":
         response["verification_url"] = verification_url
+    if APP_ENV == "production":
+        response["email_sent"] = True  # Generic acknowledgement, including unknown accounts.
     return response
 
 
@@ -491,46 +493,42 @@ def reset_password(
     }
 
 
-def verify_email(
-    db: Session,
-    token: str,
-):
-
-    payload = decode_token(
-        token,
-        "email_verification",
-    )
-
-    user = db.get(
-        User,
-        UUID(payload["sub"]),
-    )
-
+def verify_email(db: Session, token: str, workspace_slug: str | None = None):
+    from jose import ExpiredSignatureError
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("purpose") != "email_verification":
+            raise ValueError()
+        user_id = UUID(payload["sub"])
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=410, detail="This verification link has expired. Request a new email.")
+    except (JWTError, ValueError, KeyError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid verification link.")
+    user = db.query(User).filter(User.user_id == user_id).with_for_update().one_or_none()
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-        )
-
+        raise HTTPException(status_code=400, detail="Invalid verification link.")
     db.info["organization_id"] = user.organization_id
-
-    stored = repository.get_email_verification_token_by_token(db, token)
-    if stored is None or stored.is_used:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This verification link has already been used or is invalid",
-        )
-
+    organization = db.get(Organization, user.organization_id)
+    if not organization or (workspace_slug and organization.slug != workspace_slug):
+        raise HTTPException(status_code=400, detail="Invalid verification link for this workspace.")
+    stored = db.query(EmailVerificationToken).filter(
+        EmailVerificationToken.token.in_([hashlib.sha256(token.encode()).hexdigest(), token]),
+        EmailVerificationToken.user_id == user.user_id,
+        EmailVerificationToken.organization_id == user.organization_id,
+    ).with_for_update().one_or_none()
+    if stored is None:
+        raise HTTPException(status_code=400, detail="Invalid verification link.")
+    if stored.expires_at.replace(tzinfo=timezone.utc) <= datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail="This verification link has expired. Request a new email.")
+    if stored.is_used:
+        if user.is_email_verified:
+            return {"success": True, "message": "Email already verified.", "already_verified": True}
+        raise HTTPException(status_code=400, detail="This verification link has been replaced. Request a new email.")
     user.is_active = True
     user.is_email_verified = True
+    stored.is_used = True
     db.commit()
-
-    repository.mark_email_verification_token_used(db, stored.email_verification_token_id)
-
-    return {
-        "success": True,
-        "message": "Email verified.",
-    }
+    return {"success": True, "message": "Email verified."}
 
 
 def get_current_user(

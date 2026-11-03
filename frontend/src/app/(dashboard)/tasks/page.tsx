@@ -32,10 +32,18 @@ import { TASK_PRIORITIES, TASK_STATUSES, TASK_STATUS_LABEL, PRIORITY_LABEL, type
 import type { Task } from "@/types/task";
 import { usePermissions } from "@/hooks/use-permissions";
 import { canUpdateTask } from "@/lib/permissions";
+import { normalizeKanbanLabelKey } from "@/lib/kanban-labels";
 
 const ALL = "__all__";
 const BULK_ASSIGNEE_UNCHANGED = "__unchanged__";
 const BULK_ASSIGNEE_UNASSIGNED = "__unassigned__";
+const LABEL_COLOR_NAMES: Record<string, string> = {
+  "#4bce97": "Green", "#f5cd47": "Yellow", "#fea362": "Orange", "#f87168": "Red",
+  "#9f8fef": "Purple", "#579dff": "Blue", "#00b8d9": "Teal", "#8590a2": "Gray",
+};
+const labelDisplayName = (label: string) => /^#[0-9a-f]{6}$/i.test(label)
+  ? LABEL_COLOR_NAMES[normalizeKanbanLabelKey(label)] ?? "Custom color"
+  : label;
 const isOverdueTask = (task: Task) => {
   if (!task.due_date || task.status === "DONE" || task.status === "CANCELLED") return false;
   const dueDate = new Date(`${task.due_date}T00:00:00`);
@@ -415,7 +423,7 @@ export default function TasksPage() {
                     {canManageTasks && <TableCell><Checkbox aria-label={`Select ${task.task_name}`} checked={selectedTaskIds.has(task.task_id)} disabled={!selectedTaskIds.has(task.task_id) && selectedTaskIds.size >= 100} onCheckedChange={(checked) => setSelectedTaskIds((selected) => { const next = new Set(selected); if (checked === true) next.add(task.task_id); else next.delete(task.task_id); return next; })} /></TableCell>}
                     <TableCell>
                       <Link href={`/tasks/${task.task_id}`} className="font-medium text-[#0c66e4] hover:underline">{task.task_name}</Link>
-                      {!!task.labels?.length && <div className="mt-1 flex flex-wrap gap-1">{task.labels.map((label) => <span key={label} className="rounded-full border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{label}</span>)}</div>}
+                      {!!task.labels?.length && <div className="mt-1 flex flex-wrap gap-1">{task.labels.map((label) => <span key={label} className="rounded-full border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{labelDisplayName(label)}</span>)}</div>}
                       {task.description && (
                         <p className="line-clamp-1 max-w-xs text-xs text-muted-foreground">{task.description}</p>
                       )}
