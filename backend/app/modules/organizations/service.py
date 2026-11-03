@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.core.config import APP_ENV, SMTP_FROM_EMAIL, SMTP_HOST, TERMS_VERSION, TRIAL_DURATION_DAYS, workspace_app_url, verification_app_url
+from app.core.config import APP_ENV, SMTP_FROM_EMAIL, SMTP_HOST, TERMS_VERSION, TRIAL_DURATION_DAYS, invitation_app_url, verification_app_url
 from app.core.email import send_verification_email, send_product_email, send_workspace_invitation
 from app.core.permissions import PERMISSION_CATALOG
 from app.modules.auth.service import VERIFY_TOKEN_EXPIRE_MINUTES, create_token, hash_password
@@ -202,11 +202,7 @@ def create_invitation(
     db.refresh(invitation)
     # The private acceptance link is emailed to the employee, not shown to the admin.
     organization = db.query(Organization).filter_by(organization_id=organization_id).one()
-    invite_url = workspace_app_url(
-        organization.slug,
-        "/accept-invitation",
-        {"token": raw_token},
-    )
+    invite_url = invitation_app_url(organization.slug, raw_token)
     try:
         email_sent = send_workspace_invitation(
             email, organization.name, invite_url, INVITATION_EXPIRE_HOURS, inviter_name=invited_by.name,
@@ -231,11 +227,7 @@ def resend_invitation(db: Session, invitation: OrganizationInvitation) -> tuple[
     db.refresh(invitation)
 
     organization = db.query(Organization).filter_by(organization_id=invitation.organization_id).one()
-    invite_url = workspace_app_url(
-        organization.slug,
-        "/accept-invitation",
-        {"token": raw_token},
-    )
+    invite_url = invitation_app_url(organization.slug, raw_token)
     try:
         email_sent = send_workspace_invitation(
             invitation.email, organization.name, invite_url, INVITATION_EXPIRE_HOURS,

@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { organizationsApi } from "@/lib/api/organizations";
 import { getApiErrorMessage } from "@/lib/api/client";
-import { WORKSPACE_DOMAIN } from "@/lib/constants";
 
 export default function AcceptInvitationPage() {
   const router = useRouter();
@@ -53,10 +52,6 @@ export default function AcceptInvitationPage() {
     setWorking(true);
     try {
       await organizationsApi.acceptInvitation({ token, name: name.trim(), password, accepted_terms: acceptedTerms });
-      if (inviteDetails && !WORKSPACE_DOMAIN.includes("localhost")) {
-        window.location.assign(`https://${inviteDetails.organization_slug}.${WORKSPACE_DOMAIN}/login?invited=1`);
-        return;
-      }
       const loginParams = new URLSearchParams({ invited: "1" });
       if (inviteDetails?.organization_slug) loginParams.set("workspace_slug", inviteDetails.organization_slug);
       router.push(`/login?${loginParams.toString()}`);

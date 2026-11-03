@@ -242,3 +242,9 @@ def verification_app_url(workspace_slug: str | None, token: str) -> str:
     if workspace_slug:
         parameters["workspace_slug"] = workspace_slug
     return f"{PUBLIC_APP_URL.rstrip('/')}/verify-email?{urlencode(parameters)}"
+
+
+def invitation_app_url(workspace_slug: str, token: str) -> str:
+    """Build an invite link on the canonical frontend (no wildcard DNS needed)."""
+    parameters = urlencode({"token": token, "workspace_slug": workspace_slug})
+    return f"{PUBLIC_APP_URL.rstrip('/')}/accept-invitation?{parameters}"
